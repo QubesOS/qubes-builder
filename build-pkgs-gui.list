@@ -1,0 +1,13 @@
+pulseaudio-libs-devel
+libXt-devel
+libXext-devel
+libconfig-devel
+qubes-core-appvm-devel-*DIST*
+qubes-core-appvm-libs-*DIST*
+libXdamage-devel
+libtool-ltdl-devel
+xorg-x11-server-devel
+ConsoleKit-devel
+PyQt4-devel
+libXcomposite-devel
+xen-devel

@@ -1,0 +1,8 @@
+gnupg
+git
+gcc
+python
+make
+rpm-build
+MAKEDEV
+glibc-devel

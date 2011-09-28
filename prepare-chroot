@@ -1,0 +1,47 @@
+#!/bin/sh
+
+DIR=$1
+DISTRO=$2
+if [ -n "$3" ]; then
+    PKGLISTFILE="$3"
+else
+    PKGLISTFILE="build-pkgs-base.list"
+fi
+
+YUM_OPTS="$YUM_OPTS -x kernel"
+
+set -e
+set -x
+
+INITIAL=
+
+if ! [ -d $DIR ]; then
+    INITIAL=1
+    mkdir -p $DIR
+
+    echo "-> Initializing RPM database..."
+    rpm --initdb --root=$DIR
+    rpm --import --root=$DIR keys_$DISTRO/*
+
+    echo "-> Installing core RPM packages..."
+    rpm -i --root=$DIR base_rpms_$DISTRO/*.rpm
+
+    # Always install at least base pkgs
+    PKGLISTFILE="build-pkgs-base.list $3"
+fi
+./update-local-repo.sh
+cp repos_$DISTRO/*.repo $DIR/etc/yum.repos.d/
+sed -i -e "s#ROOT#$PWD#" $DIR/etc/yum.repos.d/*-local.repo
+
+if ! [ -r $DIR/proc/cpuinfo ]; then
+    mount -t proc proc $DIR/proc
+fi
+
+PKGGROUPS="$(cat $PKGLISTFILE)"
+echo "-> Installing package groups..."
+yum install -y $YUM_OPTS --installroot=$DIR $PKGGROUPS
+if ! [ -d $DIR/home/user ]; then
+    [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
+    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user"
+fi

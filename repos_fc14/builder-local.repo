@@ -1,0 +1,4 @@
+[qubes-builder-pkgs]
+name = Qubes OS Builder Repository
+baseurl = file://ROOT/all-qubes-pkgs
+gpgcheck = 0
