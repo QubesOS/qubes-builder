@@ -8,6 +8,5 @@ libXdamage-devel
 libtool-ltdl-devel
 xorg-x11-server-devel
 ConsoleKit-devel
-PyQt4-devel
 libXcomposite-devel
 xen-devel
