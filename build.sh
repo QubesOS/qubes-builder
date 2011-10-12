@@ -24,14 +24,16 @@ DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 
 export USER_UID=$UID
-if ! [ -d $DIST ]; then
+if ! [ -e $DIST/home/user/.prepared_base ]; then
     sudo -E ./prepare-chroot $PWD/$DIST $DIST
+    touch $DIST/home/user/.prepared_base
 fi
 
-if [ -r $REQ_PACKAGES ]; then
+if [ -r $REQ_PACKAGES ] && ! [ -e $DIST/home/user/.installed_$REQ_PACKAGES ]; then
     sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
     sudo -E ./prepare-chroot $PWD/$DIST $DIST build-pkgs-temp.list
     rm -f build-pkgs-temp.list
+    touch $DIST/home/user/.installed_$REQ_PACKAGES
 fi
 
 mkdir -p $DIST_SRC_ROOT
