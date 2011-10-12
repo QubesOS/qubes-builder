@@ -67,11 +67,13 @@ template:
 	done
 
 kde-dom0:
-	MAKE_TARGET="rpms_stage1_completed" ./build.sh $(DIST_DOM0) kde-dom0
+	MAKE_TARGET="rpms_stage_completed1" ./build.sh $(DIST_DOM0) kde-dom0
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-kde-dom0-2.list
-	MAKE_TARGET="rpms_stage2_completed" ./build.sh $(DIST_DOM0) kde-dom0
+	MAKE_TARGET="rpms_stage_completed2" ./build.sh $(DIST_DOM0) kde-dom0
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-kde-dom0-3.list
-	MAKE_TARGET="rpms_stage3_completed" ./build.sh $(DIST_DOM0) kde-dom0
+	MAKE_TARGET="rpms_stage_completed3" ./build.sh $(DIST_DOM0) kde-dom0
+	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-kde-dom0-4.list
+	MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
 
 installer:
 	./build.sh $(DIST_DOM0) installer
