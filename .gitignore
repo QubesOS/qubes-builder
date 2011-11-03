@@ -3,3 +3,4 @@ fc14
 fc15
 qubes-src
 all-qubes-pkgs
+builder.conf
