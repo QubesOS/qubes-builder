@@ -3,3 +3,4 @@ startup-notification-devel
 libglade2-devel
 libwnck-devel
 xfconf-devel
+intltool
