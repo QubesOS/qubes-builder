@@ -58,7 +58,8 @@ qubes-manager:
 template:
 	for DIST in $(DISTS_VM); do \
 		TEMPLATE_NAME=$${DIST/fc/fedora-}-x64; \
-		export DIST; \
+		NO_SIGN=$(NO_SIGN); \
+		export DIST NO_SIGN; \
 		cd qubes-src/template-builder && \
 		sudo -E ./fedorize_image $$TEMPLATE_NAME.img clean_images/packages.list && \
 		./create_symlinks_in_rpms_to_install_dir.sh && \
