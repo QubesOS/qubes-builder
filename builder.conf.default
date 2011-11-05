@@ -7,7 +7,7 @@
 # GIT_BASEURL - base url of git repos
 # Default: git://git.qubes-os.org
 
-# GIT_SUBDIR - whom repo to clone
+# GIT_SUBDIR - whose repo to clone
 # Default: mainstream
 
 # GIT_SUFFIX - git component dir suffix

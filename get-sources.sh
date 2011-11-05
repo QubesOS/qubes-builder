@@ -2,7 +2,7 @@
 
 # Configuration by env:
 #  - GIT_BASEURL - base url of git repos
-#  - GIT_SUBDIR - whom repo to clone
+#  - GIT_SUBDIR - whose repo to clone
 #  - GIT_SUFFIX - git component dir suffix (default .git)
 #  - COMPONENT - component to clone
 #  - BRANCH - git branch
