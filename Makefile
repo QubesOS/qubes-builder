@@ -27,7 +27,8 @@ help:
 	@echo "make xfce4-dom0       -- compile XFCE4 window manager for dom0 UI (EXPERIMENTAL)"
 	@echo "make installer        -- compile installer packages (firstboot and anaconda)"
 	@echo "make sign-all         -- sign all packages (useful with NO_SIGN=1 in builder.conf)"
-	@echo "make clean            -- remove any downloaded sources and builded packages"
+	@echo "make clean-all        -- remove any downloaded sources and builded packages"
+	@echo "make clean-rpms       -- remove any downloaded sources and builded packages"
 
 get-sources:
 	./get-all-sources.sh
@@ -83,10 +84,18 @@ sign-all:
 
 qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager
 
-clean:
+
+clean-installer-rpms:
+	rm -rf $(SRC_DIR)/installer/yum/qubes-dom0/rpm/*.rpm
+	rm -rf $(SRC_DIR)/installer/yum/installer/rpm/*.rpm
+	$(SRC_DIR)/installer/yum/update_repo.sh
+
+clean-rpms: clean-installer-rpms
+	rm -rf all-qubes-pkgs/*.rpm
+
+clean-all: clean-rpms
 	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
-	rm -rf $(DISTS_ALL)
-	rm -rf qubes-src
-	rm -rf all-qubes-pkgs
+	sudo rm -rf $(DISTS_ALL)
+	rm -rf $(SRC_DIR)
 
 	
