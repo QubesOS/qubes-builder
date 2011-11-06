@@ -5,6 +5,8 @@
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc14
 
+SRC_DIR := qubes-src
+
 # Get rid of quotes
 DISTS_VM := $(shell echo $(DISTS_VM))
 
@@ -57,14 +59,7 @@ qubes-manager:
 
 template:
 	for DIST in $(DISTS_VM); do \
-		TEMPLATE_NAME=$${DIST/fc/fedora-}-x64; \
-		NO_SIGN=$(NO_SIGN); \
-		export DIST NO_SIGN; \
-		cd qubes-src/template-builder && \
-		sudo -E ./fedorize_image $$TEMPLATE_NAME.img clean_images/packages.list && \
-		./create_symlinks_in_rpms_to_install_dir.sh && \
-		sudo -E ./qubeize_image $$TEMPLATE_NAME.img $$TEMPLATE_NAME && \
-		./build_template_rpm $$TEMPLATE_NAME || exit 1; \
+		DIST=$$DIST NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/template-builder rpms || exit 1; \
 	done
 
 kde-dom0:
