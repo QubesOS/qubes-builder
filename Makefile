@@ -79,7 +79,7 @@ xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
 
 sign-all:
-	rpm --addsign qubes-src/*/rpm/*/*.rpm
+	rpm --addsign $(SRC_DIR)/*/rpm/*/*.rpm
 
 qubes: get-sources xen core kernel gui template kde-dom0 installer
 
