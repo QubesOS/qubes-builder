@@ -81,7 +81,7 @@ xfce4-dom0:
 sign-all:
 	rpm --addsign $(SRC_DIR)/*/rpm/*/*.rpm
 
-qubes: get-sources xen core kernel gui template kde-dom0 installer
+qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager
 
 clean:
 	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
