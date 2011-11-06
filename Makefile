@@ -29,6 +29,7 @@ help:
 	@echo "make sign-all         -- sign all packages (useful with NO_SIGN=1 in builder.conf)"
 	@echo "make clean-all        -- remove any downloaded sources and builded packages"
 	@echo "make clean-rpms       -- remove any downloaded sources and builded packages"
+	@echo "make iso              -- update installer repos, make iso"
 
 get-sources:
 	./get-all-sources.sh
@@ -97,5 +98,21 @@ clean-all: clean-rpms
 	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
 	sudo rm -rf $(DISTS_ALL)
 	rm -rf $(SRC_DIR)
+
+iso:
+	make -C $(SRC_DIR)/core update-repo-installer || exit 1
+	make -C $(SRC_DIR)/gui update-repo-installer || exit 1
+	make -C $(SRC_DIR)/kde-dom0 update-repo-installer || exit 1
+	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer || exit 1
+	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=xenlinux update-repo-installer || exit 1
+	for DIST in $(DISTS_VM); do \
+		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
+	done
+	make -C $(SRC_DIR)/qubes-manager update-repo-installer || exit 1
+	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
+	make -C $(SRC_DIR)/installer update-repo || exit 1
+	sudo make -C $(SRC_DIR)/installer/ iso || exit 1
+
+
 
 	
