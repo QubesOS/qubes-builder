@@ -12,6 +12,15 @@ DISTS_VM := $(shell echo $(DISTS_VM))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
+
+
+GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
+				$(SRC_DIR)/installer $(SRC_DIR)/kde-dom0 \
+				$(SRC_DIR)/kernel $(SRC_DIR)/qubes-manager \
+				$(SRC_DIR)/template-builder $(SRC_DIR)/xen \
+				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
+				.
+
 help:
 	@echo "make qubes            -- download and build all components"
 	@echo "make get-sources      -- download/update all sources"
@@ -30,6 +39,8 @@ help:
 	@echo "make clean-all        -- remove any downloaded sources and builded packages"
 	@echo "make clean-rpms       -- remove any downloaded sources and builded packages"
 	@echo "make iso              -- update installer repos, make iso"
+	@echo "make check            -- check for any uncommited changes and unsiged tags"
+	@echo "make push             -- do git push for all repos, including tags"
 
 get-sources:
 	./get-all-sources.sh
@@ -115,4 +126,32 @@ iso:
 
 
 
+check:
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git status | grep -v ^# | grep -v "nothing to commit" > /dev/null;\
+		if [ $$? -eq 0 ]; then \
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi ;\
+			echo "> $$REPO"; fi; \
+	    popd > /dev/null; \
+	done;
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git tag --contains HEAD | grep ^. > /dev/null;\
+		if [ $$? -ne 0 ]; then \
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi ;\
+			echo "> $$REPO"; fi; \
+	    popd > /dev/null; \
+	done;\
+
+push:
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		echo "Pushing changes from $$REPO to remote repo $(GIT_SUBDIR) $(BRANCH)...";\
+		git push $(GIT_SUBDIR) $(BRANCH) ;\
+		git push $(GIT_SUBDIR) $(BRANCH) --tags ;\
+		if [ $$? -ne 0 ]; then exit 1; fi;\
+	    popd > /dev/null; \
+	done;\
+	echo "All stuff pushed succesfully."
 	
