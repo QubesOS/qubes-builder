@@ -39,7 +39,7 @@ core:
 	for DIST in $(DISTS_ALL); do \
 		./build.sh $$DIST core || exit 1; \
 	done
-	MAKE_TARGET="rpms-vaio-fixes" ./build.sh $(DIST_DOM0) core || exit 1; \
+	MAKE_TARGET="rpms-vaio-fixes" ./build.sh $(DIST_DOM0) core || exit 1
 
 kernel: kernel-xenlinux kernel-pvops
 
