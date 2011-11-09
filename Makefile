@@ -111,9 +111,30 @@ clean-installer-rpms:
 	$(SRC_DIR)/installer/yum/update_repo.sh
 
 clean-rpms: clean-installer-rpms
-	rm -rf all-qubes-pkgs/*.rpm
+	sudo rm -rf all-qubes-pkgs/rpm/*.rpm
+	sudo createrepo --update all-qubes-pkgs
+	sudo rm -fr qubes-src/*/rpm/*/*.rpm
 
-clean-all: clean-rpms
+clean:
+	@for REPO in $(GIT_REPOS); do \
+		echo "$$REPO" ;\
+		if [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
+			make -C $$REPO BUILD_FLAVOR=pvops clean; \
+			make -C $$REPO BUILD_FLAVOR=xenlinux clean; \
+		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
+			for DIST in $(DISTS_VM); do \
+				DIST=$$DIST make -C $$REPO clean || exit 1; \
+			done ;\
+		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
+			echo ;\
+		elif [ $$REPO == "." ]; then \
+			echo ;\
+		else \
+			make -C $$REPO clean || exit 1; \
+		fi ;\
+	done;
+
+clean-all: clean-rpms clean
 	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
 	sudo rm -rf $(DISTS_ALL)
 	rm -rf $(SRC_DIR)
