@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 2 ]; then
     echo "Usage: $0 DIST COMPONENT [username]"
     exit 1
 fi
