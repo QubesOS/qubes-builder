@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 DIST COMPONENT"
+    echo "Usage: $0 DIST COMPONENT [username]"
     exit 1
 fi
 
@@ -12,10 +12,15 @@ set -e
 
 DIST=$1
 COMPONENT=$2
+RUN_AS_USER="user"
+if [ $# -gt 2 ]; then
+    RUN_AS_USER=$3
+fi
 
 SCRIPT_DIR=$PWD
 
 : ${MAKE_TARGET=rpms}
+
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/$DIST/home/user/qubes-src/
