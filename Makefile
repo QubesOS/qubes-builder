@@ -94,6 +94,7 @@ dom0-updates:
 
 installer:
 	./build.sh $(DIST_DOM0) installer
+	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-2.list
 
 xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
