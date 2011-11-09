@@ -96,7 +96,6 @@ installer:
 	./build.sh $(DIST_DOM0) installer
 
 xfce4-dom0:
-	COMPONENTS="xfce4-dom0" ./get-all-sources.sh
 	./build.sh $(DIST_DOM0) xfce4-dom0
 
 sign-all:
