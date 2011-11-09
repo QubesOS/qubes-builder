@@ -39,7 +39,7 @@ fi
 
 PKGGROUPS="$(cat $PKGLISTFILE)"
 echo "-> Installing package groups..."
-yum install -y $YUM_OPTS --installroot=$DIR $PKGGROUPS
+yum install -c $PWD/yum.conf -y $YUM_OPTS --installroot=$DIR $PKGGROUPS
 if ! [ -d $DIR/home/user ]; then
     [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
