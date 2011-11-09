@@ -161,8 +161,8 @@ iso:
 check:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
-		git status | grep -v ^# | grep -v "nothing to commit" > /dev/null;\
-		if [ $$? -eq 0 ]; then \
+		git status | grep "^nothing to commit" > /dev/null;\
+		if [ $$? -ne 0 ]; then \
 			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi ;\
 			echo "> $$REPO"; fi; \
 	    popd > /dev/null; \
