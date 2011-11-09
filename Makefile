@@ -19,6 +19,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/kernel $(SRC_DIR)/qubes-manager \
 				$(SRC_DIR)/template-builder $(SRC_DIR)/xen \
 				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
+				$(SRC_DIR)/dom0-updates \
 				.
 
 help:
@@ -84,6 +85,12 @@ kde-dom0:
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-kde-dom0-4.list
 	MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
 
+dom0-updates:
+	MAKE_TARGET="libdrm" ./build.sh $(DIST_DOM0) dom0-updates
+	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-dom0-updates-2.list
+	MAKE_TARGET="xorg-drv-intel" ./build.sh $(DIST_DOM0) dom0-updates
+	MAKE_TARGET="mesa" ./build.sh $(DIST_DOM0) dom0-updates
+
 installer:
 	./build.sh $(DIST_DOM0) installer
 
@@ -94,10 +101,11 @@ xfce4-dom0:
 sign-all:
 	rpm --addsign $(SRC_DIR)/*/rpm/*/*.rpm
 
-qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager
+qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager dom0-updates
 
 
 clean-installer-rpms:
+	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm
 	rm -rf $(SRC_DIR)/installer/yum/qubes-dom0/rpm/*.rpm
 	rm -rf $(SRC_DIR)/installer/yum/installer/rpm/*.rpm
 	$(SRC_DIR)/installer/yum/update_repo.sh
@@ -122,6 +130,7 @@ iso:
 	make -C $(SRC_DIR)/qubes-manager update-repo-installer || exit 1
 	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
 	make -C $(SRC_DIR)/installer update-repo || exit 1
+	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
 	sudo make -C $(SRC_DIR)/installer/ iso || exit 1
 
 

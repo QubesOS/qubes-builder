@@ -1,0 +1,9 @@
+libXvMC-devel
+libdrm-devel
+xcb-util-devel
+libatomic_ops-devel
+expat-devel
+makedepend
+libXmu-devel
+llvm-static
+libtalloc-devel
