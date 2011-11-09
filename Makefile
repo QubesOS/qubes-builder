@@ -155,6 +155,7 @@ iso:
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
 	MAKE_TARGET="iso" ./build.sh $(DIST_DOM0) installer root || exit 1
+	cp /etc/resolv.conf $(PWD)/$(DIST_DOM0)/etc/ || exit 1
 
 
 
