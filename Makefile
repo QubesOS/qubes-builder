@@ -48,7 +48,7 @@ get-sources:
 	./get-all-sources.sh
 
 xen:
-	MAKE_TARGET="import-keys rpms" ./build.sh $(DIST_DOM0) xen; \
+	MAKE_TARGET="rpms" ./build.sh $(DIST_DOM0) xen;
 
 core:
 	for DIST in $(DISTS_ALL); do \
