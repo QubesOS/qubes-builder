@@ -1,6 +1,6 @@
 #!/bin/sh
 
-: ${COMPONENTS="yum xen kernel core gui qubes-manager installer template-builder kde-dom0"}
+: ${COMPONENTS="yum xen kernel core gui qubes-manager installer template-builder kde-dom0 antievilmaid"}
 
 SCRIPT_DIR=$PWD
 SRC_ROOT=$PWD/qubes-src

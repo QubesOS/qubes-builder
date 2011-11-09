@@ -20,6 +20,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/template-builder $(SRC_DIR)/xen \
 				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
 				$(SRC_DIR)/dom0-updates \
+				$(SRC_DIR)/antievilmaid \
 				.
 
 help:
