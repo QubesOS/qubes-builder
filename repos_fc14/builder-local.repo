@@ -2,4 +2,4 @@
 name = Qubes OS Builder Repository
 baseurl = file://ROOT/all-qubes-pkgs
 gpgcheck = 0
-cost=10     # prefer this repo over everything else!
+cost=10
