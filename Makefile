@@ -106,15 +106,15 @@ qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager
 
 
 clean-installer-rpms:
-	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm
-	rm -rf $(SRC_DIR)/installer/yum/qubes-dom0/rpm/*.rpm
-	rm -rf $(SRC_DIR)/installer/yum/installer/rpm/*.rpm
+	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm || true
+	rm -rf $(SRC_DIR)/installer/yum/qubes-dom0/rpm/*.rpm || true
+	rm -rf $(SRC_DIR)/installer/yum/installer/rpm/*.rpm || true
 	$(SRC_DIR)/installer/yum/update_repo.sh
 
 clean-rpms: clean-installer-rpms
-	sudo rm -rf all-qubes-pkgs/rpm/*.rpm
+	sudo rm -rf all-qubes-pkgs/rpm/*.rpm || true
 	sudo createrepo --update all-qubes-pkgs
-	sudo rm -fr qubes-src/*/rpm/*/*.rpm
+	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true
 
 clean:
 	@for REPO in $(GIT_REPOS); do \
