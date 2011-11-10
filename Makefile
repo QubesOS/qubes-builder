@@ -100,7 +100,12 @@ xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
 
 sign-all:
-	rpm --addsign $(SRC_DIR)/*/rpm/*/*.rpm
+	# Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
+	@for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
+		if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
+			rpm --addsign $$RPM ;\
+		fi ;\
+	done
 
 qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager dom0-updates
 
