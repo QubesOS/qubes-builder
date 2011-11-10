@@ -165,9 +165,9 @@ iso:
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
 	sudo MAKE_TARGET="iso" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
-	ln -f $(SRC_DIR)/installer/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
-	@echo "Thank you building Qubes. Have a nice day!"
+	@echo "Thank you for building Qubes. Have a nice day!"
 
 
 
