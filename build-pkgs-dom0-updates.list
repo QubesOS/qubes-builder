@@ -7,3 +7,8 @@ makedepend
 libXmu-devel
 llvm-static
 libtalloc-devel
+chrpath
+groff
+ocaml-ocamldoc
+dejagnu
+tcl-devel
