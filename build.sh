@@ -47,7 +47,7 @@ cp -alt $DIST_SRC_ROOT $ORIG_SRC
 rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch}
 # Disable rpm signing in chroot - there are no signing keys
 sed -i -e 's/rpm --addsign/echo \0/' $DIST_SRC/Makefile*
-sudo chroot $DIST su - -c "cd /home/user/qubes-src/$COMPONENT; make $MAKE_TARGET" $RUN_AS_USER
+sudo -E chroot $DIST su - -c "cd /home/user/qubes-src/$COMPONENT; NO_SIGN="$NO_SIGN" make $MAKE_TARGET" $RUN_AS_USER
 for i in $DIST_SRC/rpm/*; do
     ARCH_RPM_DIR=$ORIG_SRC/rpm/`basename $i`
     mkdir -p $ARCH_RPM_DIR
