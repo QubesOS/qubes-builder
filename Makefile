@@ -98,14 +98,16 @@ installer:
 xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
 
+# Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
-	# Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
-	@for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
+	@echo Generating list of files to sign...
+	@FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
 		if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
-			rpm --addsign $$RPM ;\
+			FILE_LIST="$$FILE_LIST $$RPM" ;\
 		fi ;\
-	done
-	sudo ./update-local-repo.sh
+	done ; \
+	rpm --addsign $$FILE_LIST
+	./update-local-repo.sh
 
 qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager dom0-updates
 
