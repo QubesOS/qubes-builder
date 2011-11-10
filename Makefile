@@ -144,8 +144,8 @@ clean:
 
 clean-all: clean-rpms clean
 	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
-	sudo rm -rf $(DISTS_ALL)
-	rm -rf $(SRC_DIR)
+	sudo rm -rf $(DISTS_ALL) || true
+	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: iso
 iso:
