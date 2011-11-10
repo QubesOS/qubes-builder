@@ -105,6 +105,7 @@ sign-all:
 			rpm --addsign $$RPM ;\
 		fi ;\
 	done
+	sudo ./update-local-repo.sh
 
 qubes: get-sources xen core kernel gui template kde-dom0 installer qubes-manager dom0-updates
 
