@@ -145,6 +145,7 @@ clean-all: clean-rpms clean
 	sudo rm -rf $(DISTS_ALL)
 	rm -rf $(SRC_DIR)
 
+.PHONY: iso
 iso:
 	make -C $(SRC_DIR)/core update-repo-installer || exit 1
 	make -C $(SRC_DIR)/gui update-repo-installer || exit 1
@@ -162,6 +163,9 @@ iso:
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
 	sudo MAKE_TARGET="iso" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
+	mkdir iso/ && ln -f $(SRC_DIR)/installer/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	@echo "The ISO can be found in iso/ subdirectory."
+	@echo "Thank you building Qubes. Have a nice day!"
 
 
 
