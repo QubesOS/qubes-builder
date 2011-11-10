@@ -42,7 +42,7 @@ if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_$REQ_P
 fi
 
 mkdir -p $DIST_SRC_ROOT
-rm -rf $DIST_SRC
+sudo rm -rf $DIST_SRC
 cp -alt $DIST_SRC_ROOT $ORIG_SRC
 rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch}
 # Disable rpm signing in chroot - there are no signing keys
