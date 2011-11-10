@@ -53,3 +53,13 @@ for i in $DIST_SRC/rpm/*; do
     mkdir -p $ARCH_RPM_DIR
     mv -vt $ARCH_RPM_DIR $i/*
 done
+if [ $COMPONENT == "installer" ]; then
+    if [ $MAKE_TARGET == "iso" ]; then
+        if [ -d $DIST_SRC/build/work ]; then
+            sudo rm -fr $ORIG_SRC/build/ISO
+            sudo rm -fr $ORIG_SRC/build/work
+            sudo mv $DIST_SRC/build/work $ORIG_SRC/build/
+            sudo mv $DIST_SRC/build/ISO $ORIG_SRC/build/
+        fi
+    fi
+fi

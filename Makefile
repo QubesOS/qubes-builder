@@ -93,6 +93,7 @@ dom0-updates:
 	MAKE_TARGET="mesa" ./build.sh $(DIST_DOM0) dom0-updates
 
 installer:
+	sudo ./build.sh $(DIST_DOM0) installer
 
 xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
