@@ -93,8 +93,6 @@ dom0-updates:
 	MAKE_TARGET="mesa" ./build.sh $(DIST_DOM0) dom0-updates
 
 installer:
-	./build.sh $(DIST_DOM0) installer
-	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-2.list
 
 xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
@@ -161,6 +159,7 @@ iso:
 	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
 	cp /etc/resolv.conf $(PWD)/$(DIST_DOM0)/etc/ || exit 1
 	sudo MAKE_TARGET="iso" ./build.sh $(DIST_DOM0) installer root || exit 1
+	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
 
 
 
