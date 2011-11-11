@@ -12,3 +12,10 @@ groff
 ocaml-ocamldoc
 dejagnu
 tcl-devel
+libudev-devel
+libXfont-devel
+libfontenc-devel
+libdmx-devel
+libXaw-devel
+byacc
+xorg-x11-xtrans-devel

@@ -87,10 +87,9 @@ kde-dom0:
 	MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
 
 dom0-updates:
-	MAKE_TARGET="libdrm" ./build.sh $(DIST_DOM0) dom0-updates
+	MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-dom0-updates-2.list
-	MAKE_TARGET="xorg-drv-intel" ./build.sh $(DIST_DOM0) dom0-updates
-	MAKE_TARGET="mesa" ./build.sh $(DIST_DOM0) dom0-updates
+	MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
 
 installer:
 	./build.sh $(DIST_DOM0) installer
