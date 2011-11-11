@@ -8,7 +8,7 @@ else
     PKGLISTFILE="build-pkgs-base.list"
 fi
 
-YUM_OPTS="$YUM_OPTS -x kernel"
+YUM_OPTS="$YUM_OPTS -x kernel --disablerepo=updates"
 
 set -e
 set -x
