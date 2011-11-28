@@ -24,7 +24,7 @@ set -e
 
 GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
 
-branch_var="${BRANCH}_${COMPONENT}"
+branch_var="BRANCH_${COMPONENT}"
 
 if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
