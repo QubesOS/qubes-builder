@@ -19,3 +19,7 @@ libdmx-devel
 libXaw-devel
 byacc
 xorg-x11-xtrans-devel
+libtool
+bison
+gcc-c++
+libtool-ltdl-devel
