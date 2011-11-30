@@ -8,6 +8,7 @@ fi
 [ -r ./builder.conf ] && source ./builder.conf
 
 set -e
+shopt -s nullglob
 [ "$DEBUG" = "1" ] && set -x
 
 DIST=$1
@@ -62,4 +63,14 @@ if [ $COMPONENT == "installer" ]; then
             sudo mv $DIST_SRC/build/ISO $ORIG_SRC/build/
         fi
     fi
+fi
+if [ $COMPONENT == "dom0-updates" ]; then
+    # include additional dirs
+    for dir in nvidia-prioprietary-drivers; do
+	for i in $DIST_SRC/$dir/rpm/*; do
+	    ARCH_RPM_DIR=$ORIG_SRC/$dir/rpm/`basename $i`
+	    mkdir -p $ARCH_RPM_DIR
+	    mv -vt $ARCH_RPM_DIR $i/*
+	done
+    done
 fi

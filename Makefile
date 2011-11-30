@@ -90,6 +90,8 @@ dom0-updates:
 	MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-dom0-updates-2.list
 	MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
+	KERNEL_VER="`cat $(SRC_DIR)/kernel/version-xenlinux`-`cat $(SRC_DIR)/kernel/rel-xenlinux`.xenlinux.qubes.x86_64" \
+		MAKE_TARGET="nvidia KERNEL_VER=$$KERNEL_VER" ./build.sh $(DIST_DOM0) dom0-updates
 
 installer:
 	./build.sh $(DIST_DOM0) installer
