@@ -169,6 +169,7 @@ iso:
 	make -C $(SRC_DIR)/qubes-manager update-repo-installer || exit 1
 	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
 	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
+	make -C $(SRC_DIR)/addons update-repo-installer || exit 1
 	sudo cp /etc/resolv.conf $(PWD)/$(DIST_DOM0)/etc/ || exit 1
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
