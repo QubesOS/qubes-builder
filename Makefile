@@ -21,6 +21,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
 				$(SRC_DIR)/dom0-updates \
 				$(SRC_DIR)/antievilmaid \
+				$(SRC_DIR)/addons \
 				.
 
 help:
@@ -32,6 +33,7 @@ help:
 	@echo "make kernel-pvops     -- compile pvops kernel package (for VM)"
 	@echo "make kernel           -- compile both kernel packages"
 	@echo "make gui              -- compile gui packages (for both dom0 and VM)"
+	@echo "make addons           -- compile addons packages (for both dom0 and VM)"
 	@echo "make template         -- build template of VM system (require above steps to be done first)"
 	@echo "make qubes-manager    -- compile xen packages (for dom0)"
 	@echo "make kde-dom0         -- compile KDE packages for dom0 UI"
@@ -67,6 +69,11 @@ kernel-pvops:
 gui:
 	for DIST in $(DISTS_ALL); do \
 		./build.sh $$DIST gui || exit 1; \
+	done
+
+addons:
+	for DIST in $(DISTS_ALL); do \
+		./build.sh $$DIST addons || exit 1; \
 	done
 
 qubes-manager:
