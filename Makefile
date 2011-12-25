@@ -128,7 +128,7 @@ clean-installer-rpms:
 
 clean-rpms: clean-installer-rpms
 	sudo rm -rf all-qubes-pkgs/rpm/*.rpm || true
-	sudo createrepo --update all-qubes-pkgs || true
+	createrepo --update all-qubes-pkgs || true
 	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true
 
 clean:
