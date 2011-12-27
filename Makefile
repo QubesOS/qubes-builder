@@ -111,6 +111,7 @@ sign-all:
 	@echo Generating list of files to sign...
 	@FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
 		if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
+			echo "Adding file $$RPM" ;\
 			FILE_LIST="$$FILE_LIST $$RPM" ;\
 		fi ;\
 	done ; \
