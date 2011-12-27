@@ -108,6 +108,11 @@ xfce4-dom0:
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
+	@if ! rpm -qa | grep gpg-pubkey-ac1bf9b3 ; then \
+		echo "ERROR: Current Qubes signing key not in RPM db!" ;\
+		echo "Please import it first, using rpm --import" ;\
+		exit 1 ;\
+	fi
 	@echo Generating list of files to sign...
 	@FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
 		if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
