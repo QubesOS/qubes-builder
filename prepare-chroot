@@ -15,7 +15,7 @@ set -x
 
 INITIAL=
 
-if ! [ -d $DIR ]; then
+if ! [ -d $DIR/home/user ]; then
     INITIAL=1
     mkdir -p $DIR
 
@@ -27,7 +27,13 @@ if ! [ -d $DIR ]; then
     rpm -i --root=$DIR base_rpms_$DISTRO/*.rpm
 
     # Always install at least base pkgs
-    PKGLISTFILE="build-pkgs-base.list $3"
+    yum install -c $PWD/yum.conf -y $YUM_OPTS --installroot=$DIR `cat build-pkgs-base.list`
+
+    [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
+    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user"
+    # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
+    chroot $DIR rpm --rebuilddb
 fi
 ./update-local-repo.sh
 cp repos_$DISTRO/*.repo $DIR/etc/yum.repos.d/
@@ -37,13 +43,12 @@ if ! [ -r $DIR/proc/cpuinfo ]; then
     mount -t proc proc $DIR/proc
 fi
 
+if ! [ -d $DIR/tmp/all-qubes-pkgs/rpm ]; then
+    mkdir -p $DIR/tmp/all-qubes-pkgs
+    mount --bind $PWD/all-qubes-pkgs $DIR/tmp/all-qubes-pkgs
+fi
+cp /etc/resolv.conf $DIR/etc/
+
 PKGGROUPS="$(cat $PKGLISTFILE)"
 echo "-> Installing package groups..."
-yum install -c $PWD/yum.conf -y $YUM_OPTS --installroot=$DIR $PKGGROUPS
-if ! [ -d $DIR/home/user ]; then
-    [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
-    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
-    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user"
-    # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
-    chroot $DIR rpm --rebuilddb
-fi
+chroot $DIR yum install -y $YUM_OPTS $PKGGROUPS
