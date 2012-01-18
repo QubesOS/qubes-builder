@@ -120,7 +120,7 @@ sign-all:
 			FILE_LIST="$$FILE_LIST $$RPM" ;\
 		fi ;\
 	done ; \
-	rpm --addsign $$FILE_LIST
+	rpmsign --addsign $$FILE_LIST
 	sudo ./update-local-repo.sh
 
 qubes: get-sources xen core kernel gui addons template kde-dom0 installer qubes-manager dom0-updates
