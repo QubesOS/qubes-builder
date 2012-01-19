@@ -157,7 +157,10 @@ clean:
 	done;
 
 clean-all: clean-rpms clean
-	for dir in $(DISTS_ALL); do sudo umount $$dir/proc; done || true
+	for dir in $(DISTS_ALL); do 
+		sudo umount $$dir/proc;
+		sudo umount $$dir/tmp/all-qubes-pkgs;
+	done || true
 	sudo rm -rf $(DISTS_ALL) || true
 	sudo rm -rf $(SRC_DIR) || true
 
