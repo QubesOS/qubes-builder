@@ -23,9 +23,9 @@
 # Default: fc13
 
 # DISTS_VM - distributions for VM packages (can be list - separate with space)
-# Supported distros: fc13 fc14
-# Work in progress: fc15
-# Default: fc14
+# Supported distros: fc13 fc14 fc15
+# Work in progress: fc16
+# Default: fc15
 
 # NO_CHECK - disable signed tag checking - set "1" to use it
 # Default: no value
