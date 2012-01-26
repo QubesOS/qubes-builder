@@ -121,7 +121,9 @@ sign-all:
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
 		done ; \
-		rpmsign --addsign $$FILE_LIST ;\
+		sudo chmod go-rw /dev/tty ;\
+		echo | rpmsign --addsign $$FILE_LIST ;\
+		sudo chmod go+rw /dev/tty ;\
 	else \
 		echo  "NO_SIGN given, skipping package signing!" ;\
 	fi
