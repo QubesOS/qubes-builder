@@ -107,7 +107,6 @@ xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
-.PHONY: sigs-all
 sign-all:
 	@if ! [ $(NO_SIGN) ] ; then \
 		if ! rpm -qa | grep gpg-pubkey-ac1bf9b3 ; then \
@@ -130,9 +129,7 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-qubes-stage1: xen core kernel gui addons sign-all
-qubes-stage2: template kde-dom0 installer qubes-manager dom0-updates sign-all
-qubes: get-sources qubes-stage1 qubes-stage2
+qubes: get-sources xen core kernel gui addons sign-all template kde-dom0 installer qubes-manager dom0-updates sign-all
 
 
 clean-installer-rpms:
