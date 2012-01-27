@@ -129,7 +129,7 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-qubes: get-sources xen core kernel gui addons sign-all template kde-dom0 installer qubes-manager dom0-updates sign-all
+qubes: get-sources xen core kernel gui addons template kde-dom0 installer qubes-manager dom0-updates
 
 
 clean-installer-rpms:
