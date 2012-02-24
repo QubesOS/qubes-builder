@@ -22,7 +22,13 @@ set -e
 : ${GIT_BASEURL=git://git.qubes-os.org}
 : ${GIT_SUFFIX=.git}
 
-GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
+url_var="GIT_URL_${COMPONENT}"
+
+if [ -n "${!url_var}" ]; then
+    GIT_URL="${!url_var}"
+else
+    GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
+fi
 
 branch_var="BRANCH_${COMPONENT}"
 
