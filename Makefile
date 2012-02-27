@@ -212,6 +212,15 @@ check:
 	    popd > /dev/null; \
 	done;\
 
+show-vtags:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		echo -n "$$REPO: "; \
+		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' ';\
+		echo ;\
+	    popd > /dev/null; \
+	done
+
 push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
