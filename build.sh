@@ -42,8 +42,8 @@ if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_$REQ_P
     touch $DIST/home/user/.installed_$REQ_PACKAGES
 fi
 
-if ! [ -r $DIR/proc/cpuinfo ]; then
-    sudo mount -t proc proc $DIR/proc
+if ! [ -r $PWD/$DIST/proc/cpuinfo ]; then
+    sudo mount -t proc proc $PWD/$DIST/proc
 fi
 
 
