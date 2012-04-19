@@ -22,7 +22,7 @@ set -e
 
 [ -z "$COMPONENT" ] && { echo "ERROR: COMPONENT not set!"; exit 1; }
 
-url_var="GIT_URL_${COMPONENT}"
+url_var="GIT_URL_${COMPONENT/-/_}"
 
 if [ -n "${!url_var}" ]; then
     GIT_URL="${!url_var}"
@@ -30,7 +30,7 @@ else
     GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
 fi
 
-branch_var="BRANCH_${COMPONENT}"
+branch_var="BRANCH_${COMPONENT/-/_}"
 
 if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
