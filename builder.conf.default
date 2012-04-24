@@ -17,6 +17,11 @@
 # Default: master
 
 # BRANCH_<component> - per component branch (override BRANCH)
+# Replace '-' with '_' in component name
+# Default: no value
+
+# GIT_URL_<component> - custom git url for component (override other GIT_* vars)
+# Replace '-' with '_' in component name
 # Default: no value
 
 # DIST_DOM0 - distribution for dom0 packages

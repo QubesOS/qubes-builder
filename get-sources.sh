@@ -9,22 +9,28 @@
 #  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
 
+# Set defaults
+GIT_SUBDIR=mainstream
+BRANCH=master
+GIT_BASEURL=git://git.qubes-os.org
+GIT_SUFFIX=.git
+
 [ -r $SCRIPT_DIR/builder.conf ] && source $SCRIPT_DIR/builder.conf
 
 set -e
 [ "$DEBUG" = "1" ] && set -x
 
-# Set defaults
-: ${GIT_SUBDIR=mainstream}
-: ${BRANCH=master}
 [ -z "$COMPONENT" ] && { echo "ERROR: COMPONENT not set!"; exit 1; }
 
-: ${GIT_BASEURL=git://git.qubes-os.org}
-: ${GIT_SUFFIX=.git}
+url_var="GIT_URL_${COMPONENT/-/_}"
 
-GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
+if [ -n "${!url_var}" ]; then
+    GIT_URL="${!url_var}"
+else
+    GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
+fi
 
-branch_var="BRANCH_${COMPONENT}"
+branch_var="BRANCH_${COMPONENT/-/_}"
 
 if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"

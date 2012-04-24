@@ -163,9 +163,9 @@ clean:
 	done;
 
 clean-all: clean-rpms clean
-	for dir in $(DISTS_ALL); do 
-		sudo umount $$dir/proc;
-		sudo umount $$dir/tmp/all-qubes-pkgs;
+	for dir in $(DISTS_ALL); do \
+		sudo umount $$dir/proc;\
+		sudo umount $$dir/tmp/all-qubes-pkgs;\
 	done || true
 	sudo rm -rf $(DISTS_ALL) || true
 	sudo rm -rf $(SRC_DIR) || true
@@ -211,6 +211,15 @@ check:
 			echo "> $$REPO"; fi; \
 	    popd > /dev/null; \
 	done;\
+
+show-vtags:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		echo -n "$$REPO: "; \
+		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' ';\
+		echo ;\
+	    popd > /dev/null; \
+	done
 
 push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
