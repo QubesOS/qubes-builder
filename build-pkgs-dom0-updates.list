@@ -24,3 +24,5 @@ bison
 gcc-c++
 libtool-ltdl-devel
 kernel-devel-*.xenlinux.qubes.x86_64
+hal-devel
+libblkid-devel
