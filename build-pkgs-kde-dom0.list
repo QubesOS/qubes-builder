@@ -46,3 +46,11 @@ hal-devel
 cyrus-sasl-devel
 doxygen
 hardlink
+alsa-lib-devel
+bzip2-devel
+openssl-devel
+xz-devel
+libXcomposite-devel
+python-devel
+pulseaudio-libs-devel
+pciutils-devel
