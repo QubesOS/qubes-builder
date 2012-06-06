@@ -6,3 +6,4 @@ qubes-src
 all-qubes-pkgs
 builder.conf
 winpvsources.img
+rpm/
