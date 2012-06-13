@@ -19,7 +19,7 @@ sudo mkdir $MNT/winpvdrivers
 sudo rsync --exclude-from win-sources.exclude -r qubes-src/win-pvdrivers/* $MNT/winpvdrivers/
 sudo mkdir $MNT/core
 sudo rsync --exclude-from win-sources.exclude -r qubes-src/core/* $MNT/core/
-sudo cp win-makedist.bat $MNT/makedist.bat
+sudo rsync windows-build/* $MNT/
 sudo umount  $MNT
 sudo kpartx -d $IMG
 
