@@ -8,12 +8,12 @@ The resulting winpvsources.img file can be passed to a Windows-based HVM and bui
 
 ./win-mkinstalliso.sh
 
-The resulting qubes-win7.iso can be attached to a Windows HVM in order to install
+The resulting qubes-windows.iso can be attached to a Windows HVM in order to install
 the Qubes PV drivers.
 
 Windows Build Machine Preparation
 -----------------------------------
 1) WDK 7600 (edit makedist.bat for exact path to the DDK)
-2) WIX 3.0 (http://wix.sourceforge.net/downloadv3.html)
+2) WIX >= 3.6 RC (http://wix.codeplex.com/releases/view/88566)
 
 
