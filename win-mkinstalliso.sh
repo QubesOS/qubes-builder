@@ -11,7 +11,7 @@ DEV=/dev/mapper/`echo $OUTPUT | cut -f 3 -d ' '`
 sudo mount $DEV $MNT
 
 rm -f $ISODIR/*.msi
-cp $MNT/winpvdrivers/gplpv_*.msi $MNT/core/win/qubes*.msi $ISODIR/
+cp $MNT/winpvdrivers/gplpv_*.msi $MNT/core/win/qubes*.msi $MNT/*.exe $ISODIR/
 if [ $? -ne 0 ]; then
     echo "No installation files found! Have you built the drivers?"
     sudo umount  $MNT 
