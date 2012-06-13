@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SRCIMG=winpvsources.img
-ISOIMG=pvdrivers-win7.iso
+ISOIMG=pvdrivers-windows.iso
 MNT=mnt
 ISODIR=win-iso/
 
