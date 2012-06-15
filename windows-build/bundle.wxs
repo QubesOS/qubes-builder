@@ -12,6 +12,7 @@
         <Chain>
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_7x64"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_Win7x64_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -19,6 +20,7 @@
                 />
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_Vista2008x64"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_Vista2008x64_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -26,6 +28,7 @@
                 />
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_2003x64"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_2003x64_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -33,6 +36,7 @@
                 />
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_7x86"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_Win7x86_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -40,6 +44,7 @@
                 />
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_Vista2008x86"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_Vista2008x86_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -47,6 +52,7 @@
                 />
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_2003x86"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_2003x86_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -55,6 +61,7 @@
             <!-- XP (v5.1) have only 32bit version -->
             <MsiPackage Id="GPL_PV_Drivers_for_Windows_XPx86"
               SuppressSignatureVerification="yes"
+              Visible="yes" Permanent="yes"
               SourceFile="winpvdrivers\gplpv_XPx86_$(env.GPLPV_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="GPL PV Drivers for Windows"
@@ -63,6 +70,7 @@
 
             <MsiPackage Id="Qubes_Agent_for_Windows_x64"
               SuppressSignatureVerification="yes"
+              Visible="yes"
               SourceFile="core\win\qubesagent_Win7x64_$(env.CORE_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="Qubes Agent for Windows"
@@ -70,6 +78,7 @@
                 />
             <MsiPackage Id="Qubes_Agent_for_Windows_x86"
               SuppressSignatureVerification="yes"
+              Visible="yes"
               SourceFile="core\win\qubesagent_Win7x86_$(env.CORE_VERSION).msi"
                 EnableFeatureSelection="yes"
                 Name="Qubes Agent for Windows"
