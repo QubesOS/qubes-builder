@@ -6,6 +6,7 @@
             <bal:WixStandardBootstrapperApplication
             LicenseFile="license.rtf"
             LogoFile="qubeslogo.png"
+            SuppressOptionsUI="yes"
             />
         </BootstrapperApplicationRef>
         <Chain>
