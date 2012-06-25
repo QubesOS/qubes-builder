@@ -34,7 +34,7 @@ help:
 	@echo "make kernel           -- compile both kernel packages"
 	@echo "make gui              -- compile gui packages (for both dom0 and VM)"
 	@echo "make addons           -- compile addons packages (for both dom0 and VM)"
-	@echo "make template         -- build template of VM system (require above steps to be done first)"
+	@echo "make template         -- build template of VM system (require: core, gui, xen, addons, to be built first)"
 	@echo "make qubes-manager    -- compile xen packages (for dom0)"
 	@echo "make kde-dom0         -- compile KDE packages for dom0 UI"
 	@echo "make xfce4-dom0       -- compile XFCE4 window manager for dom0 UI (EXPERIMENTAL)"
