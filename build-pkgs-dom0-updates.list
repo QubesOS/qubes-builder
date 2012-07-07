@@ -1,5 +1,4 @@
 libXvMC-devel
-libdrm-devel
 xcb-util-devel
 libatomic_ops-devel
 expat-devel
@@ -26,3 +25,6 @@ libtool-ltdl-devel
 kernel-devel-*.xenlinux.qubes.x86_64
 hal-devel
 libblkid-devel
+flex
+intltool
+libxml2-python
