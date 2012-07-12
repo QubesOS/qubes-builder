@@ -179,6 +179,7 @@ iso:
 	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-vm || exit 1
 	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=xenlinux update-repo-installer-kernel-vm || exit 1
 	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=xenlinux update-repo-installer-kernel-dom0 || exit 1
+	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-dom0 || exit 1
 	for DIST in $(DISTS_VM); do \
 		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
 	done
