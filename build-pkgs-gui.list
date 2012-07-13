@@ -10,3 +10,4 @@ xorg-x11-server-devel
 ConsoleKit-devel
 libXcomposite-devel
 xen-devel
+pam-devel
