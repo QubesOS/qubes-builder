@@ -31,7 +31,7 @@ if ! [ -d $DIR/home/user ]; then
 
     [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
-    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user"
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
     # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
     chroot $DIR rpm --rebuilddb
 fi
