@@ -4,3 +4,4 @@ xorg-x11-server-devel
 llvm*
 kmodtool
 prelink
+mesa-libGL-devel
