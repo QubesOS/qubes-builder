@@ -22,6 +22,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/dom0-updates \
 				$(SRC_DIR)/antievilmaid \
 				$(SRC_DIR)/addons \
+				$(SRC_DIR)/docs \
 				.
 
 help:
@@ -79,6 +80,9 @@ addons:
 qubes-manager:
 	./build.sh $(DIST_DOM0) qubes-manager
 
+docs:
+	./build.sh $(DIST_DOM0) docs
+
 template:
 	for DIST in $(DISTS_VM); do \
 		DIST=$$DIST NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/template-builder rpms || exit 1; \
@@ -129,7 +133,7 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-qubes: get-sources xen core kernel gui addons template kde-dom0 installer qubes-manager dom0-updates sign-all
+qubes: get-sources xen core kernel gui addons docs template kde-dom0 installer qubes-manager dom0-updates sign-all
 
 
 clean-installer-rpms:
@@ -187,6 +191,7 @@ iso:
 	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
 	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
 	make -C $(SRC_DIR)/addons update-repo-installer || exit 1
+	make -C $(SRC_DIR)/docs update-repo-installer || exit 1
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
 	sudo MAKE_TARGET="iso" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
