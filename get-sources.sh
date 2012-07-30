@@ -60,8 +60,8 @@ if [ -n "$TAG" ]; then
     git tag -v $TAG || exit 1
 fi
 
-# For xen additionally download sources
-if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" ]; then
+# For additionally download sources
+if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
     make get-sources
     make verify-sources
 fi

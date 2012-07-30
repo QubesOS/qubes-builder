@@ -39,6 +39,7 @@ help:
 	@echo "make qubes-manager    -- compile xen packages (for dom0)"
 	@echo "make kde-dom0         -- compile KDE packages for dom0 UI"
 	@echo "make xfce4-dom0       -- compile XFCE4 window manager for dom0 UI (EXPERIMENTAL)"
+	@echo "make antievilmaid     -- build optional Anti Evil Maid packages"
 	@echo "make installer        -- compile installer packages (firstboot and anaconda)"
 	@echo "make sign-all         -- sign all packages (useful with NO_SIGN=1 in builder.conf)"
 	@echo "make clean-all        -- remove any downloaded sources and builded packages"
@@ -107,6 +108,10 @@ installer:
 
 xfce4-dom0:
 	./build.sh $(DIST_DOM0) xfce4-dom0
+
+antievilmaid:
+	MAKE_TARGET="all" ./build.sh $(DIST_DOM0) antievilmaid
+
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
