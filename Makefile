@@ -3,7 +3,7 @@
 -include builder.conf
 
 DIST_DOM0 ?= fc13
-DISTS_VM ?= fc15
+DISTS_VM ?= fc17
 
 SRC_DIR := qubes-src
 
