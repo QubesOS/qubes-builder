@@ -60,7 +60,7 @@ core:
 	done
 	MAKE_TARGET="rpms-vaio-fixes" ./build.sh $(DIST_DOM0) core || exit 1
 
-kernel: kernel-xenlinux kernel-pvops
+kernel: kernel-pvops
 
 kernel-xenlinux:
 	MAKE_TARGET="BUILD_FLAVOR=xenlinux rpms" ./build.sh $(DIST_DOM0) kernel
@@ -184,8 +184,6 @@ iso:
 	make -C $(SRC_DIR)/gui update-repo-installer || exit 1
 	make -C $(SRC_DIR)/kde-dom0 update-repo-installer || exit 1
 	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-vm || exit 1
-	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=xenlinux update-repo-installer-kernel-vm || exit 1
-	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=xenlinux update-repo-installer-kernel-dom0 || exit 1
 	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-dom0 || exit 1
 	for DIST in $(DISTS_VM); do \
 		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
