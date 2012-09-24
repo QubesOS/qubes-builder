@@ -28,3 +28,6 @@ libblkid-devel
 flex
 intltool
 libxml2-python
+e2fsprogs-devel
+libselinux-devel
+libXi-devel

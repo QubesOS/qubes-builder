@@ -8,3 +8,4 @@ MAKEDEV
 glibc-devel
 redhat-rpm-config
 yum
+tar
