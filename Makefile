@@ -153,7 +153,9 @@ clean-rpms: clean-installer-rpms
 clean:
 	@for REPO in $(GIT_REPOS); do \
 		echo "$$REPO" ;\
-		if [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
+		if ! [ -d $$REPO ]; then \
+			continue; \
+		elif [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
 			make -C $$REPO BUILD_FLAVOR=pvops clean; \
 			make -C $$REPO BUILD_FLAVOR=xenlinux clean; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
