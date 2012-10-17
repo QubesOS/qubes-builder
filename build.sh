@@ -54,6 +54,7 @@ mkdir -p $DIST_SRC_ROOT
 sudo rm -rf $DIST_SRC
 cp -alt $DIST_SRC_ROOT $ORIG_SRC
 rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch,SOURCES}
+[ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
 # Disable rpm signing in chroot - there are no signing keys
 sed -i -e 's/rpm --addsign/echo \0/' $DIST_SRC/Makefile*
 [ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
