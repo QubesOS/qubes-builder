@@ -17,8 +17,11 @@ mkdir -p $MNT
 sudo mount $DEV $MNT
 sudo mkdir $MNT/winpvdrivers
 sudo rsync --exclude-from win-sources.exclude -r qubes-src/win-pvdrivers/* $MNT/winpvdrivers/
-sudo mkdir $MNT/core
-sudo rsync --exclude-from win-sources.exclude -r qubes-src/core/* $MNT/core/
+if [ -d qubes-src/core-windows ]; then
+    sudo mkdir $MNT/core
+    sudo rsync --exclude-from win-sources.exclude -r qubes-src/core-windows/* $MNT/core/
+    sudo rsync --exclude-from win-sources.exclude -r qubes-src/core/vchan $MNT/core/
+fi
 sudo rsync windows-build/* $MNT/
 sudo umount  $MNT
 sudo kpartx -d $IMG

@@ -11,7 +11,8 @@ DEV=/dev/mapper/`echo $OUTPUT | cut -f 3 -d ' '`
 sudo mount $DEV $MNT
 
 rm -f $ISODIR/*.msi $ISODIR/*.exe
-cp $MNT/*.exe $ISODIR/
+# If no bundle exists, try to copy only pvdrivers
+cp $MNT/*.exe $ISODIR/ || cp $MNT/winpvdrivers/*.msi $ISODIR/
 if [ $? -ne 0 ]; then
     echo "No installation files found! Have you built the drivers?"
     sudo umount  $MNT 
