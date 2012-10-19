@@ -1,7 +1,7 @@
 #!/bin/sh
 
 : ${COMPONENTS="yum xen kernel core gui qubes-manager installer template-builder kde-dom0\
-                antievilmaid dom0-updates xfce4-dom0 addons docs"}
+                antievilmaid dom0-updates xfce4-dom0 addons docs win-pvdrivers"}
 
 SCRIPT_DIR=$PWD
 SRC_ROOT=$PWD/qubes-src
