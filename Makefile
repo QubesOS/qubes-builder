@@ -52,7 +52,9 @@ get-sources:
 	./get-all-sources.sh
 
 xen:
-	MAKE_TARGET="rpms" ./build.sh $(DIST_DOM0) xen;
+	for DIST in $(DISTS_ALL); do \
+		./build.sh $$DIST xen || exit 1; \
+	done
 
 core:
 	for DIST in $(DISTS_ALL); do \
