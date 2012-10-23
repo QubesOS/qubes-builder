@@ -29,9 +29,16 @@ if ! [ -d $DIR/home/user ]; then
     # Always install at least base pkgs
     yum install -c $PWD/yum.conf -y $YUM_OPTS --installroot=$DIR `cat build-pkgs-base.list`
 
-    [ -n "$SUDO_USER" ] && USER_OPTS="-u `id -u $SUDO_USER`"
+    [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
-    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+    if [ -n "$USER_GID" ]; then
+        chroot $DIR groupadd -g $USER_GID user
+    elif [ -n "$SUDO_GID" ]; then
+        chroot $DIR groupadd -g $SUDO_GID user
+    else
+        chroot $DIR groupadd user
+    fi
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
     # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
     chroot $DIR rpm --rebuilddb
 fi
