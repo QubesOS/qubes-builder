@@ -4,3 +4,4 @@ libglade2-devel
 libwnck-devel
 xfconf-devel
 intltool
+desktop-file-utils
