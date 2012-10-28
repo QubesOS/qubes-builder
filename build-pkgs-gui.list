@@ -9,5 +9,5 @@ libtool-ltdl-devel
 xorg-x11-server-devel
 ConsoleKit-devel
 libXcomposite-devel
-xen-devel
+xen-devel-*DIST*
 pam-devel
