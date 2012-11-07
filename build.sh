@@ -38,11 +38,11 @@ if ! [ -e $DIST/home/user/.prepared_base ]; then
     touch $DIST/home/user/.prepared_base
 fi
 
-if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_`basename $REQ_PACKAGES` ]; then
+if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
     sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
     sudo -E ./prepare-chroot $PWD/$DIST $DIST build-pkgs-temp.list
     rm -f build-pkgs-temp.list
-    touch $DIST/home/user/.installed_`basename $REQ_PACKAGES`
+    touch $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
 fi
 
 if ! [ -r $PWD/$DIST/proc/cpuinfo ]; then
