@@ -56,11 +56,16 @@ xen:
 		./build.sh $$DIST xen || exit 1; \
 	done
 
-core:
-	for DIST in $(DISTS_ALL); do \
-		./build.sh $$DIST core || exit 1; \
-	done
+core: core-dom0 core-vm
+
+core-dom0:
+	MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) core || exit 1
 	MAKE_TARGET="rpms-vaio-fixes" ./build.sh $(DIST_DOM0) core || exit 1
+
+core-vm:
+	for DIST in $(DISTS_ALL); do \
+		MAKE_TARGET="rpms-vm" ./build.sh $$DIST core || exit 1; \
+	done
 
 kernel: kernel-pvops
 
