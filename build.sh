@@ -29,8 +29,8 @@ DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
 
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "build-pkgs-$COMPONENT-$MAKE_TARGET.list" ] && REQ_PACKAGES="build-pkgs-$COMPONENT-$MAKE_TARGET.list"
-[ -r "$ORIG_SRC/build-pkgs-$COMPONENT.list" ] && REQ_PACKAGES="$ORIG_SRC/build-pkgs-$COMPONENT.list"
-[ -r "$ORIG_SRC/build-pkgs-$COMPONENT-$MAKE_TARGET.list" ] && REQ_PACKAGES="$ORIG_SRC/build-pkgs-$COMPONENT-$MAKE_TARGET.list"
+[ -r "$ORIG_SRC/build-deps.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps.list"
+[ -r "$ORIG_SRC/build-deps-$MAKE_TARGET.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET.list"
 
 export USER_UID=$UID
 if ! [ -e $DIST/home/user/.prepared_base ]; then

@@ -1,7 +1,0 @@
-libdrm-devel
-xorg-x11-util-macros
-xorg-x11-server-devel
-llvm*
-kmodtool
-prelink
-mesa-libGL-devel
