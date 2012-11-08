@@ -69,8 +69,6 @@ fi
 if [ "$COMPONENT" = "kernel" ]; then
     make BUILD_FLAVOR=pvops get-sources
     make BUILD_FLAVOR=pvops verify-sources
-    make BUILD_FLAVOR=xenlinux get-sources
-    make BUILD_FLAVOR=xenlinux verify-sources
 fi
 
 cd ..

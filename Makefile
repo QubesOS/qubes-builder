@@ -30,8 +30,7 @@ help:
 	@echo "make get-sources      -- download/update all sources"
 	@echo "make xen              -- compile xen packages (for both dom0 and VM)"
 	@echo "make core             -- compile qubes-core packages (for both dom0 and VM)"
-	@echo "make kernel-xenlinux  -- compile xenlinux kernel package (for dom0)"
-	@echo "make kernel-pvops     -- compile pvops kernel package (for VM)"
+	@echo "make kernel-pvops     -- compile pvops kernel package (for Dom0 and VM)"
 	@echo "make kernel           -- compile both kernel packages"
 	@echo "make gui              -- compile gui packages (for both dom0 and VM)"
 	@echo "make addons           -- compile addons packages (for both dom0 and VM)"
@@ -68,9 +67,6 @@ core-vm:
 	done
 
 kernel: kernel-pvops
-
-kernel-xenlinux:
-	MAKE_TARGET="BUILD_FLAVOR=xenlinux rpms" ./build.sh $(DIST_DOM0) kernel
 
 kernel-pvops:
 	MAKE_TARGET="BUILD_FLAVOR=pvops rpms" ./build.sh $(DIST_DOM0) kernel
@@ -163,7 +159,6 @@ clean:
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
 			make -C $$REPO BUILD_FLAVOR=pvops clean; \
-			make -C $$REPO BUILD_FLAVOR=xenlinux clean; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
 				DIST=$$DIST make -C $$REPO clean || exit 1; \
