@@ -21,7 +21,9 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
 				$(SRC_DIR)/dom0-updates \
 				$(SRC_DIR)/antievilmaid \
-				$(SRC_DIR)/addons \
+				$(SRC_DIR)/gpg-split \
+				$(SRC_DIR)/qubes-tor \
+				$(SRC_DIR)/thunderbird-qubes \
 				$(SRC_DIR)/docs \
 				.
 
@@ -34,6 +36,9 @@ help:
 	@echo "make kernel           -- compile both kernel packages"
 	@echo "make gui              -- compile gui packages (for both dom0 and VM)"
 	@echo "make addons           -- compile addons packages (for both dom0 and VM)"
+	@echo "make gpg-split        -- compile gpg-split addon packages (for both dom0 and VM)"
+	@echo "make qubes-tor        -- compile qubes-tor addon packages"
+	@echo "make thunderbird-qubes -- compile thunderbird-qubes addon packages"
 	@echo "make template         -- build template of VM system (require: core, gui, xen, addons, to be built first)"
 	@echo "make qubes-manager    -- compile xen packages (for dom0)"
 	@echo "make kde-dom0         -- compile KDE packages for dom0 UI"
@@ -76,10 +81,22 @@ gui:
 		./build.sh $$DIST gui || exit 1; \
 	done
 
-addons:
+gpg-split:
 	for DIST in $(DISTS_ALL); do \
-		./build.sh $$DIST addons || exit 1; \
+		./build.sh $$DIST gpg-split || exit 1; \
 	done
+
+qubes-tor:
+	for DIST in $(DISTS_VM); do \
+		./build.sh $$DIST qubes-tor || exit 1; \
+	done
+
+thunderbird-qubes:
+	for DIST in $(DISTS_VM); do \
+		./build.sh $$DIST thunderbird-qubes || exit 1; \
+	done
+
+addons: gpg-split qubes-tor thunderbird-qubes
 
 qubes-manager:
 	./build.sh $(DIST_DOM0) qubes-manager
@@ -194,10 +211,9 @@ iso:
 	make -C $(SRC_DIR)/qubes-manager update-repo-installer || exit 1
 	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
 	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
-	make -C $(SRC_DIR)/addons update-repo-installer || exit 1
+	make -C $(SRC_DIR)/gpg-split update-repo-installer || exit 1
 	make -C $(SRC_DIR)/docs update-repo-installer || exit 1
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
-	sudo ./prepare-chroot $(PWD)/$(DIST_DOM0) $(DIST_DOM0) build-pkgs-installer-iso.list
 	sudo MAKE_TARGET="iso" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
 	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
