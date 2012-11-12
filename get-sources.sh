@@ -41,24 +41,17 @@ if [ -d $COMPONENT -a "$CLEAN" != '1' ]; then
     git pull $GIT_URL $BRANCH || exit 1
     git fetch $GIT_URL --tags || exit 1
     popd > /dev/null
+    VERIFY_REF=HEAD
 else
     rm -rf $COMPONENT
     git clone -b $BRANCH $GIT_URL $COMPONENT
+    VERIFY_REF=HEAD
 fi
 
+$SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 cd $COMPONENT
-pwd
-LAST_COMMIT=`git log -1 --pretty=oneline|cut -d ' ' -f 1`
-TAG=`git tag --contains=$LAST_COMMIT`
 
-if [ -z "$TAG" -a "$NO_CHECK" != "1" ]; then
-    echo "Source is not tagged, cannot verify it!"
-    exit 1
-fi
 
-if [ -n "$TAG" ]; then
-    git tag -v $TAG || exit 1
-fi
 
 # For additionally download sources
 if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
