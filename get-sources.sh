@@ -8,6 +8,7 @@
 #  - BRANCH - git branch
 #  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
+#  - FETCH_ONLY=1 - fetch sources but do not merge
 #  - GIT_REMOTE=<remote-name> - use "remote" from git configuration instead of
 #    explicit URL
 #  - REPO=dir - specify repository directory, component will be guessed based
@@ -52,10 +53,10 @@ fi
 
 if [ -d $REPO -a "$CLEAN" != '1' ]; then
     pushd $REPO
-    git pull $GIT_URL $BRANCH || exit 1
+    git fetch $GIT_URL $BRANCH || exit 1
     git fetch $GIT_URL --tags || exit 1
     popd > /dev/null
-    VERIFY_REF=HEAD
+    VERIFY_REF=FETCH_HEAD
 else
     rm -rf $REPO
     git clone -b $BRANCH $GIT_URL $COMPONENT
@@ -64,7 +65,9 @@ fi
 
 $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
+if [ "$FETCH_ONLY" != "1" ]; then
 
+[ "$VERIFY_REF" == "FETCH_HEAD" ] && git merge FETCH_HEAD
 
 # For additionally download sources
 if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
@@ -77,3 +80,4 @@ if [ "$COMPONENT" = "kernel" ]; then
     make -C $COMPONENT BUILD_FLAVOR=pvops verify-sources
 fi
 
+fi
