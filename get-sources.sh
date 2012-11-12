@@ -8,6 +8,8 @@
 #  - BRANCH - git branch
 #  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
+#  - REPO=dir - specify repository directory, component will be guessed based
+#    on basename
 
 # Set defaults
 GIT_SUBDIR=mainstream
@@ -20,7 +22,11 @@ GIT_SUFFIX=.git
 set -e
 [ "$DEBUG" = "1" ] && set -x
 
+[ -n "$REPO" ] && COMPONENT="`basename $REPO`"
+
 [ -z "$COMPONENT" ] && { echo "ERROR: COMPONENT not set!"; exit 1; }
+
+[ -z "$REPO" ] && REPO="$COMPONENT"
 
 url_var="GIT_URL_${COMPONENT/-/_}"
 
@@ -36,32 +42,30 @@ if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
 fi
 
-if [ -d $COMPONENT -a "$CLEAN" != '1' ]; then
-    pushd $COMPONENT
+if [ -d $REPO -a "$CLEAN" != '1' ]; then
+    pushd $REPO
     git pull $GIT_URL $BRANCH || exit 1
     git fetch $GIT_URL --tags || exit 1
     popd > /dev/null
     VERIFY_REF=HEAD
 else
-    rm -rf $COMPONENT
+    rm -rf $REPO
     git clone -b $BRANCH $GIT_URL $COMPONENT
     VERIFY_REF=HEAD
 fi
 
 $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
-cd $COMPONENT
 
 
 
 # For additionally download sources
 if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
-    make get-sources
-    make verify-sources
+    make -C $COMPONENT get-sources
+    make -C $COMPONENT verify-sources
 fi
 
 if [ "$COMPONENT" = "kernel" ]; then
-    make BUILD_FLAVOR=pvops get-sources
-    make BUILD_FLAVOR=pvops verify-sources
+    make -C $COMPONENT BUILD_FLAVOR=pvops get-sources
+    make -C $COMPONENT BUILD_FLAVOR=pvops verify-sources
 fi
 
-cd ..
