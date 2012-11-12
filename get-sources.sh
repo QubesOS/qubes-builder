@@ -8,6 +8,8 @@
 #  - BRANCH - git branch
 #  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
+#  - GIT_REMOTE=<remote-name> - use "remote" from git configuration instead of
+#    explicit URL
 #  - REPO=dir - specify repository directory, component will be guessed based
 #    on basename
 
@@ -35,6 +37,9 @@ if [ -n "${!url_var}" ]; then
 else
     GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
 fi
+
+# Override GIT_URL with GIT_REMOTE if given
+[ -n "$GIT_REMOTE" ] && GIT_URL=$GIT_REMOTE
 
 branch_var="BRANCH_${COMPONENT/-/_}"
 
