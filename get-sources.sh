@@ -40,7 +40,7 @@ if [ -d $COMPONENT -a "$CLEAN" != '1' ]; then
     pushd $COMPONENT
     git pull $GIT_URL $BRANCH || exit 1
     git fetch $GIT_URL --tags || exit 1
-    popd
+    popd > /dev/null
 else
     rm -rf $COMPONENT
     git clone -b $BRANCH $GIT_URL $COMPONENT
