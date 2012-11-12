@@ -220,42 +220,42 @@ iso:
 	@echo "Thank you for building Qubes. Have a nice day!"
 
 
-
+.ONESHELL:
 check:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
-		pushd $$REPO > /dev/null; \
-		git status | grep "^nothing to commit" > /dev/null;\
-		if [ $$? -ne 0 ]; then \
-			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi ;\
-			echo "> $$REPO"; fi; \
-	    popd > /dev/null; \
-	done;
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
-		pushd $$REPO > /dev/null; \
-		git tag --contains HEAD | grep ^. > /dev/null;\
-		if [ $$? -ne 0 ]; then \
-			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi ;\
-			echo "> $$REPO"; fi; \
-	    popd > /dev/null; \
-	done;\
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
+		pushd $$REPO > /dev/null
+		git status | grep "^nothing to commit" > /dev/null
+		if [ $$? -ne 0 ]; then
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi
+			echo "> $$REPO"; fi
+	    popd > /dev/null
+	done
+	HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
+		pushd $$REPO > /dev/null
+		git tag --contains HEAD | grep ^. > /dev/null
+		if [ $$? -ne 0 ]; then
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi
+			echo "> $$REPO"; fi
+	    popd > /dev/null
+	done
 
 show-vtags:
-	@for REPO in $(GIT_REPOS); do \
-		pushd $$REPO > /dev/null; \
-		echo -n "$$REPO: "; \
-		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' ';\
-		echo ;\
-	    popd > /dev/null; \
+	@for REPO in $(GIT_REPOS); do
+		pushd $$REPO > /dev/null
+		echo -n "$$REPO: "
+		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '
+		echo
+	    popd > /dev/null
 	done
 
 push:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
-		pushd $$REPO > /dev/null; \
-		echo "Pushing changes from $$REPO to remote repo $(GIT_SUBDIR) $(BRANCH)...";\
-		git push $(GIT_SUBDIR) $(BRANCH) ;\
-		git push $(GIT_SUBDIR) $(BRANCH) --tags ;\
-		if [ $$? -ne 0 ]; then exit 1; fi;\
-	    popd > /dev/null; \
-	done;\
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
+		pushd $$REPO > /dev/null
+		echo "Pushing changes from $$REPO to remote repo $(GIT_SUBDIR) $(BRANCH)..."
+		git push $(GIT_SUBDIR) $(BRANCH)
+		git push $(GIT_SUBDIR) $(BRANCH) --tags
+		if [ $$? -ne 0 ]; then exit 1; fi
+	    popd > /dev/null
+	done
 	echo "All stuff pushed succesfully."
 	
