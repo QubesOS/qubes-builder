@@ -53,7 +53,14 @@ help:
 	@echo "make push             -- do git push for all repos, including tags"
 
 get-sources:
-	./get-all-sources.sh
+	set -a
+	source builder.conf
+	SCRIPT_DIR=$(PWD)
+	SRC_ROOT=$(PWD)/$(SRC_DIR)
+	REPOS="$(GIT_REPOS)"
+	for REPO in $(GIT_REPOS); do
+		$$SCRIPT_DIR/get-sources.sh
+	done
 
 xen:
 	for DIST in $(DISTS_ALL); do \
