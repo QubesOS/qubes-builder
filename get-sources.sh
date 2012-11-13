@@ -53,8 +53,8 @@ fi
 
 if [ -d $REPO -a "$CLEAN" != '1' ]; then
     pushd $REPO
-    git fetch $GIT_URL $BRANCH || exit 1
     git fetch $GIT_URL --tags || exit 1
+    git fetch $GIT_URL $BRANCH || exit 1
     popd > /dev/null
     VERIFY_REF=FETCH_HEAD
 else
@@ -67,7 +67,7 @@ $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
 if [ "$FETCH_ONLY" != "1" ]; then
 
-[ "$VERIFY_REF" == "FETCH_HEAD" ] && git merge FETCH_HEAD
+[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge FETCH_HEAD; )
 
 # For additionally download sources
 if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
