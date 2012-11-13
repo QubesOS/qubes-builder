@@ -15,10 +15,10 @@
 #    on basename
 
 # Set defaults
-GIT_SUBDIR=mainstream
-BRANCH=master
-GIT_BASEURL=git://git.qubes-os.org
-GIT_SUFFIX=.git
+: ${GIT_SUBDIR=mainstream}
+: ${BRANCH=master}
+: ${GIT_BASEURL=git://git.qubes-os.org}
+: ${GIT_SUFFIX=.git}
 
 [ -r $SCRIPT_DIR/builder.conf ] && source $SCRIPT_DIR/builder.conf
 
