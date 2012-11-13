@@ -214,7 +214,7 @@ iso:
 	make -C $(SRC_DIR)/gpg-split update-repo-installer || exit 1
 	make -C $(SRC_DIR)/docs update-repo-installer || exit 1
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
-	sudo MAKE_TARGET="iso" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
+	sudo MAKE_TARGET="iso RELEASE=$(RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
 	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
