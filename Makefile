@@ -269,6 +269,7 @@ push:
 # Force bash for some advanced substitution (eg ${!...})
 SHELL = /bin/bash
 prepare-merge:
+	set -a
 	source builder.conf
 	SCRIPT_DIR=$(PWD)
 	SRC_ROOT=$(PWD)/$(SRC_DIR)
@@ -277,7 +278,7 @@ prepare-merge:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE/-/_}"
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"
 	for REPO in $$REPOS; do
-		source $$SCRIPT_DIR/get-sources.sh
+		$$SCRIPT_DIR/get-sources.sh
 	done
 	echo "Changes to be merged:"
 	for REPO in $$REPOS; do
