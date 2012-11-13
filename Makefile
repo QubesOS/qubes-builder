@@ -74,7 +74,7 @@ core-vm:
 kernel: kernel-pvops
 
 kernel-pvops:
-	MAKE_TARGET="BUILD_FLAVOR=pvops rpms" ./build.sh $(DIST_DOM0) kernel
+	MAKE_TARGET="rpms BUILD_FLAVOR=pvops" ./build.sh $(DIST_DOM0) kernel
 
 gui:
 	for DIST in $(DISTS_ALL); do \

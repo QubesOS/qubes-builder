@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -lt 2 ]; then
     echo "Usage: $0 DIST COMPONENT [username]"
@@ -27,10 +27,11 @@ ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/$DIST/home/user/qubes-src/
 DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
 
+MAKE_TARGET_ONLY="${MAKE_TARGET/ */}"
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
-[ -r "build-pkgs-$COMPONENT-$MAKE_TARGET.list" ] && REQ_PACKAGES="build-pkgs-$COMPONENT-$MAKE_TARGET.list"
+[ -r "build-pkgs-$COMPONENT-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="build-pkgs-$COMPONENT-$MAKE_TARGET_ONLY.list"
 [ -r "$ORIG_SRC/build-deps.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps.list"
-[ -r "$ORIG_SRC/build-deps-$MAKE_TARGET.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET.list"
+[ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
 if ! [ -e $DIST/home/user/.prepared_base ]; then
@@ -66,7 +67,7 @@ for i in $DIST_SRC/rpm/*; do
     mv -vt $ARCH_RPM_DIR $i/*
 done
 if [ $COMPONENT == "installer" ]; then
-    if [ $MAKE_TARGET == "iso" ]; then
+    if [ "$MAKE_TARGET_ONLY" == "iso" ]; then
         if [ -d $DIST_SRC/build/work ]; then
             sudo rm -fr $ORIG_SRC/build/ISO
             sudo rm -fr $ORIG_SRC/build/work
