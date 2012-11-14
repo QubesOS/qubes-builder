@@ -182,7 +182,7 @@ clean:
 		if ! [ -d $$REPO ]; then \
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
-			make -C $$REPO BUILD_FLAVOR=pvops clean; \
+			make -C $$REPO clean; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
 				DIST=$$DIST make -C $$REPO clean || exit 1; \
