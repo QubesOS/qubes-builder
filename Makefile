@@ -29,6 +29,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 
 COMPONENTS := $(notdir $(filter-out .,$(GIT_REPOS)))
 
+.ONESHELL:
 help:
 	@echo "make qubes            -- download and build all components"
 	@echo "make get-sources      -- download/update all sources"
@@ -184,7 +185,6 @@ iso:
 	@echo "Thank you for building Qubes. Have a nice day!"
 
 
-.ONESHELL:
 check:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
