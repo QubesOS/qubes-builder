@@ -27,6 +27,8 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 				$(SRC_DIR)/docs \
 				.
 
+COMPONENTS := $(notdir $(filter-out .,$(GIT_REPOS)))
+
 help:
 	@echo "make qubes            -- download and build all components"
 	@echo "make get-sources      -- download/update all sources"
@@ -62,55 +64,23 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh
 	done
 
-xen:
-	for DIST in $(DISTS_ALL); do \
-		./build.sh $$DIST xen || exit 1; \
-	done
+$(COMPONENTS): % : %-dom0 %-vm
 
-core: core-dom0 core-vm
-
-core-dom0:
-	MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) core || exit 1
-	MAKE_TARGET="rpms-vaio-fixes" ./build.sh $(DIST_DOM0) core || exit 1
-
-core-vm:
-	for DIST in $(DISTS_ALL); do \
-		MAKE_TARGET="rpms-vm" ./build.sh $$DIST core || exit 1; \
-	done
-
-kernel: kernel-pvops
-
-kernel-pvops:
-	MAKE_TARGET="rpms BUILD_FLAVOR=pvops" ./build.sh $(DIST_DOM0) kernel
-
-gui:
-	for DIST in $(DISTS_ALL); do \
-		./build.sh $$DIST gui || exit 1; \
-	done
-
-gpg-split:
-	for DIST in $(DISTS_ALL); do \
-		./build.sh $$DIST gpg-split || exit 1; \
-	done
-
-qubes-tor:
+%-vm:
 	for DIST in $(DISTS_VM); do \
-		./build.sh $$DIST qubes-tor || exit 1; \
+		MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
 	done
 
-thunderbird-qubes:
-	for DIST in $(DISTS_VM); do \
-		./build.sh $$DIST thunderbird-qubes || exit 1; \
-	done
+%-dom0:
+	MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
 
-addons: gpg-split qubes-tor thunderbird-qubes
+# With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
+# from xfce4 repo...). "Empty" rule because real package are built by above
+# generic rule as xfce4-dom0-dom0
+xfce4-dom0:
+	true
 
-qubes-manager:
-	./build.sh $(DIST_DOM0) qubes-manager
-
-docs:
-	./build.sh $(DIST_DOM0) docs
-
+# Some components requires custom rules
 template:
 	for DIST in $(DISTS_VM); do \
 		DIST=$$DIST NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/template-builder rpms || exit 1; \
@@ -128,16 +98,6 @@ dom0-updates:
 	MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
 	MAKE_TARGET="stage3" ./build.sh $(DIST_DOM0) dom0-updates
 	MAKE_TARGET="stage4" ./build.sh $(DIST_DOM0) dom0-updates
-
-installer:
-	./build.sh $(DIST_DOM0) installer
-
-xfce4-dom0:
-	./build.sh $(DIST_DOM0) xfce4-dom0
-
-antievilmaid:
-	MAKE_TARGET="all" ./build.sh $(DIST_DOM0) antievilmaid
-
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
@@ -162,8 +122,10 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-qubes: get-sources xen core kernel gui addons docs template kde-dom0 installer qubes-manager dom0-updates sign-all
+addons: gpg-split qubes-tor thunderbird-qubes
 
+# Explicit build order
+qubes: get-sources xen core kernel gui addons docs template kde-dom0 installer qubes-manager dom0-updates sign-all
 
 clean-installer-rpms:
 	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm || true
