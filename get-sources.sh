@@ -14,14 +14,6 @@
 #  - REPO=dir - specify repository directory, component will be guessed based
 #    on basename
 
-# Set defaults
-: ${GIT_SUBDIR=mainstream}
-: ${BRANCH=master}
-: ${GIT_BASEURL=git://git.qubes-os.org}
-: ${GIT_SUFFIX=.git}
-
-[ -r $SCRIPT_DIR/builder.conf ] && source $SCRIPT_DIR/builder.conf
-
 set -e
 [ "$DEBUG" = "1" ] && set -x
 

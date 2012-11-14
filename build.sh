@@ -5,8 +5,6 @@ if [ $# -lt 2 ]; then
     exit 1
 fi
 
-[ -r ./builder.conf ] && source ./builder.conf
-
 set -e
 shopt -s nullglob
 [ "$DEBUG" = "1" ] && set -x

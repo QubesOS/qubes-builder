@@ -2,6 +2,11 @@
 #Include config file
 -include builder.conf
 
+# Set defaults
+GIT_SUBDIR ?= mainstream
+BRANCH ?= master
+GIT_BASEURL ?= git://git.qubes-os.org
+GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
 
@@ -29,6 +34,7 @@ GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
 
 COMPONENTS := $(notdir $(filter-out .,$(GIT_REPOS)))
 
+.EXPORT_ALL_VARIABLES:
 .ONESHELL:
 help:
 	@echo "make qubes            -- download and build all components"
@@ -57,10 +63,8 @@ help:
 
 get-sources:
 	@set -a
-	@source builder.conf
 	@SCRIPT_DIR=$(PWD)
 	@SRC_ROOT=$(PWD)/$(SRC_DIR)
-	@REPOS="$(GIT_REPOS)"
 	@for REPO in $(GIT_REPOS); do
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
@@ -236,7 +240,6 @@ push:
 SHELL = /bin/bash
 prepare-merge:
 	@set -a
-	source builder.conf
 	SCRIPT_DIR=$(PWD)
 	SRC_ROOT=$(PWD)/$(SRC_DIR)
 	FETCH_ONLY=1
