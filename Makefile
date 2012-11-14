@@ -207,19 +207,14 @@ clean-all: clean-rpms clean
 
 .PHONY: iso
 iso:
-	make -C $(SRC_DIR)/core update-repo-installer || exit 1
-	make -C $(SRC_DIR)/gui update-repo-installer || exit 1
-	make -C $(SRC_DIR)/kde-dom0 update-repo-installer || exit 1
-	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-vm || exit 1
-	make -C $(SRC_DIR)/kernel BUILD_FLAVOR=pvops update-repo-installer-kernel-dom0 || exit 1
+	for repo in $(filter-out template-builder,$(GIT_REPOS)); do \
+	    if make -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
+	        make -C $$repo update-repo-installer || exit 1; \
+	    fi; \
+	done
 	for DIST in $(DISTS_VM); do \
 		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
 	done
-	make -C $(SRC_DIR)/qubes-manager update-repo-installer || exit 1
-	make -C $(SRC_DIR)/xen update-repo-installer || exit 1
-	make -C $(SRC_DIR)/dom0-updates update-repo-installer || exit 1
-	make -C $(SRC_DIR)/gpg-split update-repo-installer || exit 1
-	make -C $(SRC_DIR)/docs update-repo-installer || exit 1
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
 	sudo MAKE_TARGET="iso RELEASE=$(RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
 	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
