@@ -237,7 +237,7 @@ prepare-merge:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE/-/_}"
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"
 	for REPO in $$REPOS; do
-		$$SCRIPT_DIR/get-sources.sh
+		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 	echo "Changes to be merged:"
 	for REPO in $$REPOS; do
