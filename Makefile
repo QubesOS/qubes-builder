@@ -65,7 +65,7 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 
-$(COMPONENTS): % : %-dom0 %-vm
+$(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
 	for DIST in $(DISTS_VM); do \
