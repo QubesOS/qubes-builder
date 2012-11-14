@@ -218,8 +218,8 @@ push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
 		echo "Pushing changes from $$REPO to remote repo $(GIT_SUBDIR) $(BRANCH)..."
-		git push $(GIT_SUBDIR) $(BRANCH)
-		git push $(GIT_SUBDIR) $(BRANCH) --tags
+		git push -q $(GIT_SUBDIR) $(BRANCH)
+		git push -q $(GIT_SUBDIR) $(BRANCH) --tags
 		if [ $$? -ne 0 ]; then exit 1; fi
 	    popd > /dev/null
 	done
