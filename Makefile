@@ -83,8 +83,15 @@ xfce4-dom0:
 
 # Some components requires custom rules
 template:
-	@for DIST in $(DISTS_VM); do \
-		DIST=$$DIST NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/template-builder rpms || exit 1; \
+	@for DIST in $(DISTS_VM); do
+	    export DIST NO_SIGN
+	    make -s -C $(SRC_DIR)/template-builder prepare-repo-template || exit 1
+	    for repo in $(GIT_REPOS); do \
+	        if make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
+	            make -s -C $$repo update-repo-template || exit 1
+	        fi
+	    done
+	    make -s -C $(SRC_DIR)/template-builder rpms || exit 1
 	done
 
 kde-dom0:
