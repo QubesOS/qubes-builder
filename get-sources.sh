@@ -59,7 +59,7 @@ if [ -d $REPO -a "$CLEAN" != '1' ]; then
     VERIFY_REF=FETCH_HEAD
 else
     rm -rf $REPO
-    git clone -b $BRANCH $GIT_URL $COMPONENT
+    git clone -b $BRANCH $GIT_URL $REPO
     VERIFY_REF=HEAD
 fi
 
