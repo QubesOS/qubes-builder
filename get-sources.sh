@@ -70,14 +70,9 @@ if [ "$FETCH_ONLY" != "1" ]; then
 [ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge FETCH_HEAD; )
 
 # For additionally download sources
-if [ "$COMPONENT" = "xen" -o "$COMPONENT" = "kde-dom0" -o "$COMPONENT" = "antievilmaid" ]; then
-    make -C $COMPONENT get-sources
-    make -C $COMPONENT verify-sources
-fi
-
-if [ "$COMPONENT" = "kernel" ]; then
-    make -C $COMPONENT BUILD_FLAVOR=pvops get-sources
-    make -C $COMPONENT BUILD_FLAVOR=pvops verify-sources
+if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
+    make -C $REPO get-sources
+    make -C $REPO verify-sources
 fi
 
 fi
