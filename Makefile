@@ -62,7 +62,7 @@ get-sources:
 	SRC_ROOT=$(PWD)/$(SRC_DIR)
 	REPOS="$(GIT_REPOS)"
 	for REPO in $(GIT_REPOS); do
-		$$SCRIPT_DIR/get-sources.sh
+		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 
 $(COMPONENTS): % : %-dom0 %-vm
@@ -88,12 +88,14 @@ template:
 	done
 
 kde-dom0:
+	set -e
 	MAKE_TARGET="rpms_stage_completed1" ./build.sh $(DIST_DOM0) kde-dom0
 	MAKE_TARGET="rpms_stage_completed2" ./build.sh $(DIST_DOM0) kde-dom0
 	MAKE_TARGET="rpms_stage_completed3" ./build.sh $(DIST_DOM0) kde-dom0
 	MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
 
 dom0-updates:
+	set -e
 	MAKE_TARGET="stage0" ./build.sh $(DIST_DOM0) dom0-updates
 	MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
 	MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
