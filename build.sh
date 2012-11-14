@@ -57,14 +57,14 @@ cp -alt $DIST_SRC_ROOT $ORIG_SRC
 rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch,SOURCES}
 [ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
 # Disable rpm signing in chroot - there are no signing keys
-sed -i -e 's/rpm --addsign/echo \0/' $DIST_SRC/Makefile*
+sed -i -e 's/rpm --addsign/@true \0/' $DIST_SRC/Makefile*
 [ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
 sudo -E chroot $DIST su - -c "cd /home/user/qubes-src/$COMPONENT; NO_SIGN="$NO_SIGN" make $MAKE_TARGET" $RUN_AS_USER
 [ -x $ORIG_SRC/qubes-builder-post-hook.sh ] && source $ORIG_SRC/qubes-builder-post-hook.sh
 for i in $DIST_SRC/rpm/*; do
     ARCH_RPM_DIR=$ORIG_SRC/rpm/`basename $i`
     mkdir -p $ARCH_RPM_DIR
-    mv -vt $ARCH_RPM_DIR $i/*
+    mv -t $ARCH_RPM_DIR $i/*
 done
 if [ $COMPONENT == "installer" ]; then
     if [ "$MAKE_TARGET_ONLY" == "iso" ]; then
@@ -82,7 +82,7 @@ if [ $COMPONENT == "dom0-updates" ]; then
 	for i in $DIST_SRC/$dir/rpm/*; do
 	    ARCH_RPM_DIR=$ORIG_SRC/$dir/rpm/`basename $i`
 	    mkdir -p $ARCH_RPM_DIR
-	    mv -vt $ARCH_RPM_DIR $i/*
+	    mv -t $ARCH_RPM_DIR $i/*
 	done
     done
 fi

@@ -68,39 +68,39 @@ get-sources:
 $(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	for DIST in $(DISTS_VM); do \
+	@for DIST in $(DISTS_VM); do \
 		MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
 	done
 
 %-dom0:
-	MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
+	@MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
 # from xfce4 repo...). "Empty" rule because real package are built by above
 # generic rule as xfce4-dom0-dom0
 xfce4-dom0:
-	true
+	@true
 
 # Some components requires custom rules
 template:
-	for DIST in $(DISTS_VM); do \
+	@for DIST in $(DISTS_VM); do \
 		DIST=$$DIST NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/template-builder rpms || exit 1; \
 	done
 
 kde-dom0:
-	set -e
-	MAKE_TARGET="rpms_stage_completed1" ./build.sh $(DIST_DOM0) kde-dom0
-	MAKE_TARGET="rpms_stage_completed2" ./build.sh $(DIST_DOM0) kde-dom0
-	MAKE_TARGET="rpms_stage_completed3" ./build.sh $(DIST_DOM0) kde-dom0
-	MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
+	@set -e
+	@MAKE_TARGET="rpms_stage_completed1" ./build.sh $(DIST_DOM0) kde-dom0
+	@MAKE_TARGET="rpms_stage_completed2" ./build.sh $(DIST_DOM0) kde-dom0
+	@MAKE_TARGET="rpms_stage_completed3" ./build.sh $(DIST_DOM0) kde-dom0
+	@MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
 
 dom0-updates:
-	set -e
-	MAKE_TARGET="stage0" ./build.sh $(DIST_DOM0) dom0-updates
-	MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
-	MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
-	MAKE_TARGET="stage3" ./build.sh $(DIST_DOM0) dom0-updates
-	MAKE_TARGET="stage4" ./build.sh $(DIST_DOM0) dom0-updates
+	@set -e
+	@MAKE_TARGET="stage0" ./build.sh $(DIST_DOM0) dom0-updates
+	@MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
+	@MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
+	@MAKE_TARGET="stage3" ./build.sh $(DIST_DOM0) dom0-updates
+	@MAKE_TARGET="stage4" ./build.sh $(DIST_DOM0) dom0-updates
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
