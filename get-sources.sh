@@ -51,7 +51,8 @@ if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
 fi
 
-echo "Getting sources for $COMPONENT from $GIT_URL $BRANCH..."
+echo "-> Updateing sources for $COMPONENT..."
+echo "--> Fetching from $GIT_URL $BRANCH..."
 if [ -d $REPO -a "$CLEAN" != '1' ]; then
     pushd $REPO > /dev/null
     git fetch -q $GIT_URL --tags || exit 1
@@ -64,16 +65,20 @@ else
     VERIFY_REF=HEAD
 fi
 
+echo "--> Veryfing tags..."
 $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
 if [ "$FETCH_ONLY" != "1" ]; then
 
-[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge FETCH_HEAD; )
+echo "--> Merging..."
+[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge -q FETCH_HEAD; )
 
 # For additionally download sources
 if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
-    make -C $REPO get-sources
-    make -C $REPO verify-sources
+    echo "--> Downloading additional sources for $COMPONENT..."
+    make --quiet -C $REPO get-sources
+    echo "--> Veryfing the sources..."
+    make --quiet -C $REPO verify-sources
 fi
-
 fi
+echo
