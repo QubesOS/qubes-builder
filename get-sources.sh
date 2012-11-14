@@ -51,15 +51,16 @@ if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
 fi
 
+echo "Getting sources for $COMPONENT from $GIT_URL $BRANCH..."
 if [ -d $REPO -a "$CLEAN" != '1' ]; then
-    pushd $REPO
-    git fetch $GIT_URL --tags || exit 1
-    git fetch $GIT_URL $BRANCH || exit 1
+    pushd $REPO > /dev/null
+    git fetch -q $GIT_URL --tags || exit 1
+    git fetch -q $GIT_URL $BRANCH || exit 1
     popd > /dev/null
     VERIFY_REF=FETCH_HEAD
 else
     rm -rf $REPO
-    git clone -b $BRANCH $GIT_URL $REPO
+    git clone -q -b $BRANCH $GIT_URL $REPO
     VERIFY_REF=HEAD
 fi
 

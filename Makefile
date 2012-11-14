@@ -56,12 +56,12 @@ help:
 	@echo "make push             -- do git push for all repos, including tags"
 
 get-sources:
-	set -a
-	source builder.conf
-	SCRIPT_DIR=$(PWD)
-	SRC_ROOT=$(PWD)/$(SRC_DIR)
-	REPOS="$(GIT_REPOS)"
-	for REPO in $(GIT_REPOS); do
+	@set -a
+	@source builder.conf
+	@SCRIPT_DIR=$(PWD)
+	@SRC_ROOT=$(PWD)/$(SRC_DIR)
+	@REPOS="$(GIT_REPOS)"
+	@for REPO in $(GIT_REPOS); do
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 

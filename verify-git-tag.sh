@@ -26,6 +26,6 @@ if [ -z "$TAG" ]; then
 	exit 1
 fi
 
-git tag -v $TAG || exit 1
+git tag -v $TAG > /dev/null 2> /dev/null || exit 1
 
 exit 0
