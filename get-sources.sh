@@ -71,7 +71,7 @@ $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 if [ "$FETCH_ONLY" != "1" ]; then
 
 echo "--> Merging..."
-[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge -q FETCH_HEAD; )
+[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge --commit -q FETCH_HEAD; )
 
 # For additionally download sources
 if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
