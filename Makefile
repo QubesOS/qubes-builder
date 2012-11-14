@@ -235,7 +235,7 @@ push:
 # Force bash for some advanced substitution (eg ${!...})
 SHELL = /bin/bash
 prepare-merge:
-	set -a
+	@set -a
 	source builder.conf
 	SCRIPT_DIR=$(PWD)
 	SRC_ROOT=$(PWD)/$(SRC_DIR)
