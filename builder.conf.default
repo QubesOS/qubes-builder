@@ -41,7 +41,7 @@
 # Supported distros: fc15 fc17
 # Default: fc17
 
-# RELEASE - set release version of result iso
+# QUBES_RELEASE - set release version of result iso
 # Default: test-build
 
 # NO_CHECK - disable signed tag checking - set "1" to use it

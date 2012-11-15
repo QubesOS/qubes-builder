@@ -192,7 +192,7 @@ iso:
 		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
 	done
 	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
-	sudo MAKE_TARGET="iso RELEASE=$(RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
+	sudo MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
 	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
