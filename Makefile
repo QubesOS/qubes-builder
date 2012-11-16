@@ -9,6 +9,7 @@ GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
+VERBOSE ?= 0
 
 SRC_DIR := qubes-src
 
