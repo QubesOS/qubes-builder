@@ -33,12 +33,14 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 
 export USER_UID=$UID
 if ! [ -e $DIST/home/user/.prepared_base ]; then
+    echo "-> Preparing $DIST build environment"
     sudo -E ./prepare-chroot $PWD/$DIST $DIST
     touch $DIST/home/user/.prepared_base
 fi
 
 if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
     sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
+    echo "-> Installing $COMPONENT build dependencies in $DIST environment"
     sudo -E ./prepare-chroot $PWD/$DIST $DIST build-pkgs-temp.list
     rm -f build-pkgs-temp.list
     touch $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
