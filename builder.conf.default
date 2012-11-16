@@ -53,9 +53,14 @@
 # NO_SIGN - disable signing of builded rpms - set "1" to use it
 # Default: no value
 
-# DEBUG - print verbose messages - set "1" to use it
+# DEBUG - print verbose messages about qubes-builder itself - set "1" to use it
 # Default: no value
 
+# VERBOSE - verbosity level of build process
+# 0 - print almost no messages but all build process
+# 1 - print (almost) only warnings
+# 2 - full output
+# Default: 0
 
 # Example for using local git dirs as repo:
 # GIT_BASEURL=/home/user/qubes-src

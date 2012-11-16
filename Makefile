@@ -9,6 +9,7 @@ GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
+VERBOSE ?= 0
 
 SRC_DIR := qubes-src
 
@@ -72,12 +73,16 @@ get-sources:
 $(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	@for DIST in $(DISTS_VM); do \
-		MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
-	done
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm`" ]; then
+	    for DIST in $(DISTS_VM); do \
+	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1
+	    done
+	fi
 
 %-dom0:
-	@MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0`" ]; then
+	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
+	fi
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
 # from xfce4 repo...). "Empty" rule because real package are built by above

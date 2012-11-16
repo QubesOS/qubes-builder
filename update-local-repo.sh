@@ -10,4 +10,4 @@ if ls qubes-src/*/rpm/*/*.rpm >/dev/null 2>&1; then
     ln -f qubes-src/*/rpm/*/*.rpm $REPO_DIR/rpm/
 fi
 
-createrepo --update $REPO_DIR                         
+createrepo -q --update $REPO_DIR
