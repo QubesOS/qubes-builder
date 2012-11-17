@@ -86,9 +86,13 @@ if [ $BUILD_RETCODE -gt 0 ]; then
 fi
 set -e
 [ -x $ORIG_SRC/qubes-builder-post-hook.sh ] && source $ORIG_SRC/qubes-builder-post-hook.sh
+echo "--> Done:"
 for i in $DIST_SRC/rpm/*; do
     ARCH_RPM_DIR=$ORIG_SRC/rpm/`basename $i`
     mkdir -p $ARCH_RPM_DIR
+    for pkg in $i/*; do
+        echo "     $ARCH_RPM_DIR/`basename $pkg`"
+    done
     mv -t $ARCH_RPM_DIR $i/*
 done
 if [ $COMPONENT == "installer" ]; then
