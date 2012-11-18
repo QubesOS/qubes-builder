@@ -94,7 +94,7 @@ for i in $DIST_SRC/rpm/*; do
     ARCH_RPM_DIR=$ORIG_SRC/rpm/`basename $i`
     mkdir -p $ARCH_RPM_DIR
     for pkg in $i/*; do
-        echo "     $ARCH_RPM_DIR/`basename $pkg`"
+        echo "     qubes-src/$COMPONENT/rpm/`basename $i`/`basename $pkg`"
     done
     mv -t $ARCH_RPM_DIR $i/*
 done
