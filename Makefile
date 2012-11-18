@@ -100,7 +100,12 @@ template:
 	            make -s -C $$repo update-repo-template || exit 1
 	        fi
 	    done
-	    make -s -C $(SRC_DIR)/template-builder rpms || exit 1
+	    if [ "$(VERBOSE)" -eq 0 ]; then
+	        echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
+	        make -s -C $(SRC_DIR)/template-builder rpms > build-logs/template-$$DIST.log 2>&1 || exit 1
+	    else
+	        make -s -C $(SRC_DIR)/template-builder rpms || exit 1
+	    fi
 	done
 
 kde-dom0:
