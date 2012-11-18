@@ -63,6 +63,9 @@ BUILD_INITIAL_INFO="-> Building $COMPONENT $MAKE_TARGET_ONLY for $DIST"
 BUILD_LOG=
 if [ $VERBOSE -eq 0 ]; then
     BUILD_LOG="build-logs/$COMPONENT-$MAKE_TARGET_ONLY-$DIST.log"
+    if [ -e "$BUILD_LOG" ]; then
+	mv -f "$BUILD_LOG" "$BUILD_LOG.old"
+    fi
     BUILD_INITIAL_INFO="$BUILD_INITIAL_INFO (logfile: $BUILD_LOG)..."
 fi
 echo "$BUILD_INITIAL_INFO"
