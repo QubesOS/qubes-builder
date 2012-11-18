@@ -59,7 +59,13 @@ rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch,SOURCES}
 # Disable rpm signing in chroot - there are no signing keys
 sed -i -e 's/rpm --addsign/@true \0/' $DIST_SRC/Makefile*
 
-echo "-> Building $COMPONENT $MAKE_TARGET_ONLY for $DIST"
+BUILD_INITIAL_INFO="-> Building $COMPONENT $MAKE_TARGET_ONLY for $DIST"
+BUILD_LOG=
+if [ $VERBOSE -eq 0 ]; then
+    BUILD_LOG="build-logs/$COMPONENT-$MAKE_TARGET_ONLY-$DIST.log"
+    BUILD_INITIAL_INFO="$BUILD_INITIAL_INFO (logfile: $BUILD_LOG)..."
+fi
+echo "$BUILD_INITIAL_INFO"
 if [ $VERBOSE -eq 1 ]; then
     sed -i -e 's/rpmbuild/rpmbuild --quiet/' $DIST_SRC/Makefile*
     MAKE_OPTS="$MAKE_OPTS -s"
@@ -67,9 +73,7 @@ fi
 [ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
 set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
-BUILD_LOG=
 if [ $VERBOSE -eq 0 ]; then
-    BUILD_LOG="build-logs/$COMPONENT-$MAKE_TARGET_ONLY-$DIST.log"
     sudo -E chroot $DIST su - -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
     BUILD_RETCODE=$?
 else
@@ -80,7 +84,6 @@ if [ $BUILD_RETCODE -gt 0 ]; then
     echo "--> build failed!"
     if [ -n "$BUILD_LOG" ]; then
         tail $BUILD_LOG
-        echo "--> Full build log: $BUILD_LOG"
     fi
     exit 1
 fi
