@@ -191,17 +191,26 @@ clean-all: clean-rpms clean
 
 .PHONY: iso
 iso:
-	for repo in $(filter-out template-builder,$(GIT_REPOS)); do \
-	    if make -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
-	        make -C $$repo update-repo-installer || exit 1; \
+	@echo "-> Preparing for ISO build..."
+	@make -s -C $(SRC_DIR)/installer clean-repos || exit 1
+	@echo "--> Copying RPMs from individual repos..."
+	@for repo in $(filter-out template-builder,$(GIT_REPOS)); do \
+	    if make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
+	        if ! make -s -C $$repo update-repo-installer ; then \
+				echo "make update-repo-installer failed for repo $$repo"; \
+				exit 1; \
+			fi \
 	    fi; \
 	done
-	for DIST in $(DISTS_VM); do \
-		DIST=$$DIST make -C $(SRC_DIR)/template-builder update-repo-installer || exit 1; \
+	@for DIST in $(DISTS_VM); do \
+		if ! DIST=$$DIST make -s -C $(SRC_DIR)/template-builder update-repo-installer ; then \
+				echo "make update-repo-installer failed for template dist=$$DIST"; \
+				exit 1; \
+		fi \
 	done
-	NO_SIGN=$(NO_SIGN) make -C $(SRC_DIR)/installer update-repo || exit 1
-	sudo MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
-	ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	@NO_SIGN=$(NO_SIGN) make -s -C $(SRC_DIR)/installer update-repo || exit 1
+	@sudo VERBOSE=$(VERBOSE) MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" NO_SIGN=$(NO_SIGN) ./build.sh $(DIST_DOM0) installer root || exit 1
+	@ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
 
