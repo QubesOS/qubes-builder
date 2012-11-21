@@ -24,6 +24,7 @@ SCRIPT_DIR=$PWD
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/$DIST/home/user/qubes-src/
 DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
+BUILDER_REPO_DIR=$PWD/all-qubes-pkgs/$DIST
 
 MAKE_TARGET_ONLY="${MAKE_TARGET/ */}"
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
@@ -99,6 +100,8 @@ for i in $DIST_SRC/rpm/*; do
     for pkg in $i/*; do
         echo "     qubes-src/$COMPONENT/rpm/`basename $i`/`basename $pkg`"
     done
+    mkdir -p $BUILDER_REPO_DIR/rpm
+    cp -t $BUILDER_REPO_DIR/rpm $i/*
     mv -t $ARCH_RPM_DIR $i/*
 done
 if [ $COMPONENT == "installer" ]; then
