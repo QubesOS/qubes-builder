@@ -134,7 +134,6 @@ sign-all:
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
 		done ; \
-		echo "--> The following packages will be signed: $$FILE_LIST"; \
 		echo "--> Singing..."; \
 		sudo chmod go-rw /dev/tty ;\
 		echo | rpmsign --addsign $$FILE_LIST ;\
