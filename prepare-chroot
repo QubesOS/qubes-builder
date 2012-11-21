@@ -44,7 +44,7 @@ if ! [ -d $DIR/home/user ]; then
     # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
     chroot $DIR rpm --rebuilddb
 fi
-./update-local-repo.sh
+./update-local-repo.sh $DISTRO
 cp repos_$DISTRO/*.repo $DIR/etc/yum.repos.d/
 sed -i -e "s#ROOT#$PWD#" $DIR/etc/yum.repos.d/*-local.repo
 
