@@ -60,6 +60,9 @@
 # NO_SIGN - disable signing of builded rpms - set "1" to use it
 # Default: no value
 
+# SIGN_KEY - set key used to sign packages
+# Default: no value
+
 # DEBUG - print verbose messages about qubes-builder itself - set "1" to use it
 # Default: no value
 

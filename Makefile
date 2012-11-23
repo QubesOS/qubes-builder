@@ -133,8 +133,12 @@ sign-all:
 			fi ;\
 		done ; \
 		echo "--> Singing..."; \
+		RPMSIGN_OPTS=; \
+		if [ -n "$$SIGN_KEY" ]; then \
+			RPMSIGN_OPTS="--define _gpg_name '$$SIGN_KEY'"; \
+		fi; \
 		sudo chmod go-rw /dev/tty ;\
-		echo | rpmsign --addsign $$FILE_LIST ;\
+		echo | rpmsign $$RPMSIGN_OPTS --addsign $$FILE_LIST ;\
 		sudo chmod go+rw /dev/tty ;\
 	else \
 		echo  "--> NO_SIGN given, skipping package signing!" ;\
