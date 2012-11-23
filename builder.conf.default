@@ -30,6 +30,9 @@
 
 # COMPONENTS - list of Qubes components. Can be used to easily add custom
 # components to build environment.
+# Preferred use is:
+#  - append: COMPONENTS+=something
+#  - prepend: COMPONENTS=something $(COMPONENTS)
 # Default: see Makefile
 
 # REMOTE_COMPONENTS_<git-remote> - track only selected Qubes components for

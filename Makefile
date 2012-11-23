@@ -6,9 +6,13 @@ GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
 VERBOSE ?= 0
-COMPONENTS ?= core gui installer kde-dom0 kernel qubes-manager template-builder \
-			  xen xfce4-dom0 yum dom0-updates antievilmaid gpg-split qubes-tor \
-			  thunderbird-qubes docs
+# Beware of build order
+COMPONENTS ?= xen core kernel gui \
+			  gpg-split qubes-tor thunderbird-qubes docs \
+			  template-builder \
+			  installer kde-dom0 xfce4-dom0 \
+			  qubes-manager dom0-updates \
+			  yum antievilmaid
 
 #Include config file
 -include builder.conf
@@ -77,6 +81,10 @@ $(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 xfce4-dom0:
 	@true
 
+# Nothing to be done there
+yum-dom0 yum-vm:
+	@true
+
 # Some components requires custom rules
 template:
 	@for DIST in $(DISTS_VM); do
@@ -133,9 +141,7 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-# Explicit build order
-qubes: get-sources xen core kernel gui gpg-split qubes-tor thunderbird-qubes \
-	docs template kde-dom0 installer qubes-manager dom0-updates sign-all
+qubes: get-sources $(COMPONENTS) sign-all
 
 clean-installer-rpms:
 	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm || true
