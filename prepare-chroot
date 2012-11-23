@@ -54,7 +54,7 @@ fi
 
 if ! [ -d $DIR/tmp/all-qubes-pkgs/rpm ]; then
     mkdir -p $DIR/tmp/all-qubes-pkgs
-    mount --bind $PWD/all-qubes-pkgs $DIR/tmp/all-qubes-pkgs
+    mount --bind $PWD/all-qubes-pkgs/$DISTRO $DIR/tmp/all-qubes-pkgs
 fi
 cp /etc/resolv.conf $DIR/etc/
 

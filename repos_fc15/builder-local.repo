@@ -1,5 +1,5 @@
 [qubes-builder-pkgs]
 name = Qubes OS Builder Repository
-baseurl = file:///tmp/all-qubes-pkgs/fc15
+baseurl = file:///tmp/all-qubes-pkgs
 gpgcheck = 0
 cost=10
