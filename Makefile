@@ -143,8 +143,8 @@ clean-installer-rpms:
 	$(SRC_DIR)/installer/yum/update_repo.sh || true
 
 clean-rpms: clean-installer-rpms
-	sudo rm -rf all-qubes-pkgs/rpm/*.rpm || true
-	createrepo --update all-qubes-pkgs || true
+	sudo rm -rf qubes-rpms-mirror-repo/rpm/*.rpm || true
+	createrepo --update qubes-rpms-mirror-repo || true
 	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true
 
 clean:
@@ -171,7 +171,7 @@ clean-all: clean-rpms clean
 	for dir in $(DISTS_ALL); do \
 		if ! [ -d $$dir ]; then continue; fi; \
 		sudo umount $$dir/proc; \
-		sudo umount $$dir/tmp/all-qubes-pkgs; \
+		sudo umount $$dir/tmp/qubes-rpms-mirror-repo; \
 	done || true
 	sudo rm -rf $(DISTS_ALL) || true
 	sudo rm -rf $(SRC_DIR) || true

@@ -52,9 +52,9 @@ if ! [ -r $DIR/proc/cpuinfo ]; then
     mount -t proc proc $DIR/proc
 fi
 
-if ! [ -d $DIR/tmp/all-qubes-pkgs/rpm ]; then
-    mkdir -p $DIR/tmp/all-qubes-pkgs
-    mount --bind $PWD/all-qubes-pkgs/$DISTRO $DIR/tmp/all-qubes-pkgs
+if ! [ -d $DIR/tmp/qubes-rpms-mirror-repo/rpm ]; then
+    mkdir -p $DIR/tmp/qubes-rpms-mirror-repo
+    mount --bind $PWD/qubes-rpms-mirror-repo/$DISTRO $DIR/tmp/qubes-rpms-mirror-repo
 fi
 cp /etc/resolv.conf $DIR/etc/
 

@@ -1,0 +1,4 @@
+RPM packages in this repo are hard links to the actual RPMs located in
+qubes-src/*/rpm/ directories that have been most recently built. They
+might be used by other components in their build processes (e.g. *-devel
+packages).
