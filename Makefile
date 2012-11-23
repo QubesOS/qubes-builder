@@ -1,7 +1,3 @@
-
-#Include config file
--include builder.conf
-
 # Set defaults
 GIT_SUBDIR ?= mainstream
 BRANCH ?= master
@@ -13,6 +9,9 @@ VERBOSE ?= 0
 COMPONENTS ?= core gui installer kde-dom0 kernel qubes-manager template-builder \
 			  xen xfce4-dom0 yum dom0-updates antievilmaid gpg-split qubes-tor \
 			  thunderbird-qubes docs
+
+#Include config file
+-include builder.conf
 
 SRC_DIR := qubes-src
 
