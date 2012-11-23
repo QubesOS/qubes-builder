@@ -101,7 +101,7 @@ for i in $DIST_SRC/rpm/*; do
         echo "     qubes-src/$COMPONENT/rpm/`basename $i`/`basename $pkg`"
     done
     mkdir -p $BUILDER_REPO_DIR/rpm
-    cp -t $BUILDER_REPO_DIR/rpm $i/*
+    ln -f -t $BUILDER_REPO_DIR/rpm $i/*
     mv -t $ARCH_RPM_DIR $i/*
 done
 if [ $COMPONENT == "installer" ]; then
