@@ -244,6 +244,11 @@ push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
 		PUSH_REMOTE=`git config branch.$(BRANCH).remote`
+		if [ -z "$$PUSH_REMOTE" ]; then
+			echo "No remote repository set for $$REPO, branch $(BRANCH),"
+			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"
+			exit 1
+		fi
 		echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
 		TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
 		git push -q $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
