@@ -251,7 +251,8 @@ push:
 		fi
 		echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
 		TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
-		git push -q $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
+		[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q
+		git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
 		if [ $$? -ne 0 ]; then exit 1; fi
 	    popd > /dev/null
 	done
