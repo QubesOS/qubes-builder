@@ -247,14 +247,15 @@ push:
 		if [ -z "$$PUSH_REMOTE" ]; then
 			echo "No remote repository set for $$REPO, branch $(BRANCH),"
 			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"
-			exit 1
+			echo "Not pushing anything!"
+		else
+			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
+			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
+			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q
+			git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
+			if [ $$? -ne 0 ]; then exit 1; fi
 		fi
-		echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
-		TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
-		[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q
-		git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
-		if [ $$? -ne 0 ]; then exit 1; fi
-	    popd > /dev/null
+		popd > /dev/null
 	done
 	echo "All stuff pushed succesfully."
 	
