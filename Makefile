@@ -244,8 +244,8 @@ push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
 		echo "Pushing changes from $$REPO to remote repo $(GIT_SUBDIR) $(BRANCH)..."
-		git push -q $(GIT_SUBDIR) $(BRANCH)
-		git push -q $(GIT_SUBDIR) $(BRANCH) --tags
+		TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
+		git push -q $(GIT_SUBDIR) $(BRANCH) $$TAGS_FROM_BRANCH
 		if [ $$? -ne 0 ]; then exit 1; fi
 	    popd > /dev/null
 	done
