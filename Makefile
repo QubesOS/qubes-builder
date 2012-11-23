@@ -130,10 +130,9 @@ sign-all:
 	fi
 	sudo ./update-local-repo.sh
 
-addons: gpg-split qubes-tor thunderbird-qubes
-
 # Explicit build order
-qubes: get-sources xen core kernel gui addons docs template kde-dom0 installer qubes-manager dom0-updates sign-all
+qubes: get-sources xen core kernel gui gpg-split qubes-tor thunderbird-qubes \
+	docs template kde-dom0 installer qubes-manager dom0-updates sign-all
 
 clean-installer-rpms:
 	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm || true
