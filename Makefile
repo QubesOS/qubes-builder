@@ -86,7 +86,7 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-template:
+template template-builder:
 	@for DIST in $(DISTS_VM); do
 	    export DIST NO_SIGN
 	    make -s -C $(SRC_DIR)/template-builder prepare-repo-template || exit 1
