@@ -28,6 +28,10 @@
 # make prepare-merge GIT_REMOTE="joanna"
 # Default: no value
 
+# COMPONENTS - list of Qubes components. Can be used to easily add custom
+# components to build environment.
+# Default: see Makefile
+
 # REMOTE_COMPONENTS_<git-remote> - track only selected Qubes components for
 # given remote repository. Can be specified multiple times (for each remote).
 # Example:

@@ -10,6 +10,9 @@ GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
 VERBOSE ?= 0
+COMPONENTS ?= core gui installer kde-dom0 kernel qubes-manager template-builder \
+			  xen xfce4-dom0 yum dom0-updates antievilmaid gpg-split qubes-tor \
+			  thunderbird-qubes docs
 
 SRC_DIR := qubes-src
 
@@ -18,22 +21,7 @@ DISTS_VM := $(shell echo $(DISTS_VM))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
-
-
-GIT_REPOS := $(SRC_DIR)/core $(SRC_DIR)/gui \
-				$(SRC_DIR)/installer $(SRC_DIR)/kde-dom0 \
-				$(SRC_DIR)/kernel $(SRC_DIR)/qubes-manager \
-				$(SRC_DIR)/template-builder $(SRC_DIR)/xen \
-				$(SRC_DIR)/xfce4-dom0 $(SRC_DIR)/yum \
-				$(SRC_DIR)/dom0-updates \
-				$(SRC_DIR)/antievilmaid \
-				$(SRC_DIR)/gpg-split \
-				$(SRC_DIR)/qubes-tor \
-				$(SRC_DIR)/thunderbird-qubes \
-				$(SRC_DIR)/docs \
-				.
-
-COMPONENTS := $(notdir $(filter-out .,$(GIT_REPOS)))
+GIT_REPOS := $(addprefix $(SRC_DIR)/,$(COMPONENTS)) .
 
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:
