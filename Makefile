@@ -10,8 +10,9 @@ VERBOSE ?= 0
 COMPONENTS ?= xen core kernel gui \
 			  gpg-split qubes-tor thunderbird-qubes docs \
 			  template-builder \
-			  installer kde-dom0 xfce4-dom0 \
+			  kde-dom0 xfce4-dom0 \
 			  qubes-manager dom0-updates \
+			  installer \
 			  yum antievilmaid
 
 #Include config file
