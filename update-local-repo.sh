@@ -7,4 +7,4 @@ set -e
 REPO_DIR=$PWD/qubes-rpms-mirror-repo/$1
 
 mkdir -p $REPO_DIR/rpm
-createrepo -q --update $REPO_DIR
+createrepo -q $REPO_DIR
