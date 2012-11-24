@@ -57,6 +57,8 @@ if ! [ -d $DIR/tmp/qubes-rpms-mirror-repo/rpm ]; then
     mount --bind $PWD/qubes-rpms-mirror-repo/$DISTRO $DIR/tmp/qubes-rpms-mirror-repo
 fi
 cp /etc/resolv.conf $DIR/etc/
+# some packages assumes existence of this file
+touch $DIR/etc/fstab
 
 PKGGROUPS="$(cat $PKGLISTFILE)"
 echo "-> Installing package groups..."

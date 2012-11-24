@@ -10,8 +10,9 @@ VERBOSE ?= 0
 COMPONENTS ?= xen core kernel gui \
 			  gpg-split qubes-tor thunderbird-qubes docs \
 			  template-builder \
-			  installer kde-dom0 xfce4-dom0 \
+			  kde-dom0 xfce4-dom0 \
 			  qubes-manager dom0-updates \
+			  installer \
 			  yum antievilmaid
 
 #Include config file
@@ -31,27 +32,17 @@ GIT_REPOS := $(addprefix $(SRC_DIR)/,$(COMPONENTS)) .
 help:
 	@echo "make qubes            -- download and build all components"
 	@echo "make get-sources      -- download/update all sources"
-	@echo "make xen              -- compile xen packages (for both dom0 and VM)"
-	@echo "make core             -- compile qubes-core packages (for both dom0 and VM)"
-	@echo "make kernel-pvops     -- compile pvops kernel package (for Dom0 and VM)"
-	@echo "make kernel           -- compile both kernel packages"
-	@echo "make gui              -- compile gui packages (for both dom0 and VM)"
-	@echo "make addons           -- compile addons packages (for both dom0 and VM)"
-	@echo "make gpg-split        -- compile gpg-split addon packages (for both dom0 and VM)"
-	@echo "make qubes-tor        -- compile qubes-tor addon packages"
-	@echo "make thunderbird-qubes -- compile thunderbird-qubes addon packages"
-	@echo "make template         -- build template of VM system (require: core, gui, xen, addons, to be built first)"
-	@echo "make qubes-manager    -- compile xen packages (for dom0)"
-	@echo "make kde-dom0         -- compile KDE packages for dom0 UI"
-	@echo "make xfce4-dom0       -- compile XFCE4 window manager for dom0 UI (EXPERIMENTAL)"
-	@echo "make antievilmaid     -- build optional Anti Evil Maid packages"
-	@echo "make installer        -- compile installer packages (firstboot and anaconda)"
-	@echo "make sign-all         -- sign all packages (useful with NO_SIGN=1 in builder.conf)"
+	@echo "make sign-all         -- sign all packages"
 	@echo "make clean-all        -- remove any downloaded sources and builded packages"
-	@echo "make clean-rpms       -- remove any downloaded sources and builded packages"
+	@echo "make clean-rpms       -- remove any builded packages"
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make check            -- check for any uncommited changes and unsiged tags"
 	@echo "make push             -- do git push for all repos, including tags"
+	@echo "make COMPONENT        -- build both dom0 and VM part of COMPONENT"
+	@echo "make COMPONENT-dom0   -- build only dom0 part of COMPONENT"
+	@echo "make COMPONENT-vm     -- build only VM part of COMPONENT"
+	@echo "COMPONENT can be one of:"
+	@echo "  $(COMPONENTS)"
 
 get-sources:
 	@set -a
@@ -61,17 +52,17 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 
-$(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm`" ]; then
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then
 	    for DIST in $(DISTS_VM); do \
 	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1
 	    done
 	fi
 
 %-dom0:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0`" ]; then
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then
 	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
 	fi
 
