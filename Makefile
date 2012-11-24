@@ -89,6 +89,7 @@ template template-builder:
 	    if [ "$(VERBOSE)" -eq 0 ]; then
 	        echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
 	        make -s -C $(SRC_DIR)/template-builder rpms > build-logs/template-$$DIST.log 2>&1 || exit 1
+			echo "--> Done."
 	    else
 	        make -s -C $(SRC_DIR)/template-builder rpms || exit 1
 	    fi
@@ -126,7 +127,8 @@ sign-all:
 		echo "--> Singing..."; \
 		RPMSIGN_OPTS=; \
 		if [ -n "$$SIGN_KEY" ]; then \
-			RPMSIGN_OPTS="--define _gpg_name '$$SIGN_KEY'"; \
+			RPMSIGN_OPTS="--define='%_gpg_name $$SIGN_KEY'"; \
+			echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
 		fi; \
 		sudo chmod go-rw /dev/tty ;\
 		echo | rpmsign $$RPMSIGN_OPTS --addsign $$FILE_LIST ;\
