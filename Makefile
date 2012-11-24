@@ -64,14 +64,14 @@ get-sources:
 $(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm`" ]; then
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then
 	    for DIST in $(DISTS_VM); do \
 	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1
 	    done
 	fi
 
 %-dom0:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0`" ]; then
+	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then
 	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
 	fi
 
