@@ -61,7 +61,7 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
 
-$(filter-out template kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
 	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm`" ]; then
