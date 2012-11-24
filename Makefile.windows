@@ -2,5 +2,5 @@
 win-pvdrivers core-windows:
 	@echo Automatic build of Windows packages is currently unsupported.
 	@echo Please follow the instructions in README.windows and build them manually.
-	@exit 1
+	@exit 0
 
