@@ -135,8 +135,12 @@ sign-all:
 		sudo chmod go+rw /dev/tty ;\
 	else \
 		echo  "--> NO_SIGN given, skipping package signing!" ;\
-	fi
-	sudo ./update-local-repo.sh
+	fi; \
+	for dist in $(shell ls qubes-rpms-mirror-repo/); do \
+		if [ -d qubes-rpms-mirror-repo/$$dist/rpm ]; then \
+			sudo ./update-local-repo.sh $$dist; \
+		fi \
+	done
 
 qubes: get-sources $(COMPONENTS) sign-all
 
