@@ -145,33 +145,33 @@ sign-all:
 qubes: get-sources $(COMPONENTS) sign-all
 
 clean-installer-rpms:
-	rm -rf $(SRC_DIR)/installer/yum/dom0-updates/rpm/*.rpm || true
-	rm -rf $(SRC_DIR)/installer/yum/qubes-dom0/rpm/*.rpm || true
-	rm -rf $(SRC_DIR)/installer/yum/installer/rpm/*.rpm || true
-	$(SRC_DIR)/installer/yum/update_repo.sh || true
+	(cd qubes-src/installer/yum && ./clean_repos.sh)
 
 clean-rpms: clean-installer-rpms
-	sudo rm -rf qubes-rpms-mirror-repo/rpm/*.rpm || true
-	createrepo --update qubes-rpms-mirror-repo || true
-	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true
+	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
+		echo "Cleaning up rpms in qubes-rpms-mirror-repo/$$dist/rpm/..."; \
+		sudo rm -rf qubes-rpms-mirror-repo/$$dist/rpm/*.rpm || true ;\
+		createrepo -q --update qubes-rpms-mirror-repo || true; \
+	done
+	@echo 'Cleaning up rpms in qubes-src/*/rpm/*/*...'; \
+	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true; \
+
 
 clean:
 	@for REPO in $(GIT_REPOS); do \
 		echo "$$REPO" ;\
 		if ! [ -d $$REPO ]; then \
 			continue; \
-		elif [ $$REPO == "$(SRC_DIR)/kernel" ]; then \
-			make -C $$REPO clean; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
-				DIST=$$DIST make -C $$REPO clean || exit 1; \
+				DIST=$$DIST make -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
 		elif [ $$REPO == "." ]; then \
 			echo ;\
 		else \
-			make -C $$REPO clean || exit 1; \
+			make -s -C $$REPO clean; \
 		fi ;\
 	done;
 
