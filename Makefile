@@ -291,3 +291,27 @@ show-unmerged:
 		fi
 		popd > /dev/null
 	done
+
+update-repo-current:
+	@for REPO in $(GIT_REPOS); do
+		[ $$REPO == '.' ] && break
+		if make -C $$REPO -n update-repo-current >/dev/null 2>/dev/null; then
+			echo "Updating $$REPO... "
+			make -s -C $$REPO update-repo-current || echo
+		else
+			echo "Updating $$REPO... skipping."
+		fi
+	done
+	(cd qubes-src/yum/ && ./update_repo.sh)
+
+update-repo-current-testing:
+	@for REPO in $(GIT_REPOS); do
+		[ $$REPO == '.' ] && break
+		if make -C $$REPO -n update-repo-current-testing >/dev/null 2>/dev/null; then
+			echo "Updating $$REPO... "
+			make -s -C $$REPO update-repo-current-testing || echo
+		else
+			echo "Updating $$REPO... skipping."
+		fi
+	done
+	(cd qubes-src/yum/ && ./update_repo.sh)
