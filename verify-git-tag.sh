@@ -19,7 +19,7 @@ else
 	REF="HEAD"
 fi
 
-TAG=`git tag --contains=$REF | head -n 1`
+TAG=`git tag --points-at=$REF | head -n 1`
 
 if [ -z "$TAG" ]; then
 	echo "Source is not tagged, cannot verify it!"
