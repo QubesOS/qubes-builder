@@ -247,7 +247,7 @@ push:
 			echo "Not pushing anything!"
 		else
 			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
-			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (tag: '| sed 's/^.\{7\} (\(\(tag: [^, )]*\(, \)\?\)*\).*/\1/;s/tag: //g;s/, / /g'`
+			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`
 			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q
 			git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
 			if [ $$? -ne 0 ]; then exit 1; fi
