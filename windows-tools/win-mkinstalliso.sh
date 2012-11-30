@@ -1,9 +1,12 @@
 #!/bin/sh
 
-SRCIMG=winpvsources.img
-ISOIMG=pvdrivers-windows.iso
+TIMESTAMP=$(date -u +%Y%m%d%H%M)
+echo $TIMESTAMP > iso_build_timestamp
+
+SRCIMG=windows-tools-sources.img
+ISOIMG=qubes-windows-tools-$TIMESTAMP.iso
 MNT=mnt
-ISODIR=win-iso/
+ISODIR=win-iso-build/
 
 OUTPUT=`sudo kpartx -a -v $SRCIMG`
 # sample output: add map loop0p1 (253:1): 0 2095104 linear /dev/loop0 2048
