@@ -119,7 +119,7 @@ sign-all:
 	@if ! [ $(NO_SIGN) ] ; then \
 		sudo rpm --import qubes-release-*-signing-key.asc ; \
 		echo "--> Checking which packages need to be signed (to avoid double signatures)..." ; \
-		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm); do \
+		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm) windows-tools/rpm/noarch/*.rpm; do \
 			if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
