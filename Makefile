@@ -233,6 +233,8 @@ show-vtags:
 		pushd $$REPO > /dev/null
 		echo -n "$$REPO: "
 		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '
+		echo -n '('
+		git name-rev --name-only HEAD | tr '\n' ')'
 		echo
 	    popd > /dev/null
 	done
