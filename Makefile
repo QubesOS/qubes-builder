@@ -232,10 +232,14 @@ show-vtags:
 	@for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
 		echo -n "$$REPO: "
+		git config --get-color color.decorate.tag "red bold"
 		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '
+		git config --get-color "" "reset"
 		echo -n '('
-		git name-rev --name-only HEAD | tr '\n' ')'
-		echo
+		git config --get-color color.decorate.branch "green bold"
+		git name-rev --name-only HEAD | tr -d '\n'
+		git config --get-color "" "reset"
+		echo ')'
 	    popd > /dev/null
 	done
 
