@@ -298,6 +298,16 @@ show-unmerged:
 		popd > /dev/null
 	done
 
+do-merge:
+	@set -a
+	REPOS="$(GIT_REPOS)"
+	for REPO in $$REPOS; do
+		pushd $$REPO > /dev/null
+		echo "Merging FETCH_HEAD into $$REPO"
+		git merge --no-edit FETCH_HEAD || exit 1
+		popd > /dev/null
+	done
+
 update-repo-current:
 	@for REPO in $(GIT_REPOS); do
 		[ $$REPO == '.' ] && break
