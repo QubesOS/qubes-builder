@@ -247,6 +247,7 @@ push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
 		pushd $$REPO > /dev/null
 		PUSH_REMOTE=`git config branch.$(BRANCH).remote`
+		[ -n "$(GIT_REMOTE)" ] && PUSH_REMOTE="$(GIT_REMOTE)"
 		if [ -z "$$PUSH_REMOTE" ]; then
 			echo "No remote repository set for $$REPO, branch $(BRANCH),"
 			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"
