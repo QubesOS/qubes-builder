@@ -13,6 +13,8 @@ YUM_OPTS="$YUM_OPTS -x kernel"
 set -e
 if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
     set -x
+else
+    YUM_OPTS="$YUM_OPTS -q"
 fi
 
 INITIAL=
@@ -29,7 +31,7 @@ if ! [ -d $DIR/home/user ]; then
     rpm -i --root=$DIR base_rpms_$DISTRO/*.rpm
 
     # Always install at least base pkgs
-    yum install -c $PWD/yum.conf -q -y $YUM_OPTS --installroot=$DIR `cat build-pkgs-base.list`
+    yum install -c $PWD/yum.conf -y $YUM_OPTS --installroot=$DIR `cat build-pkgs-base.list`
 
     [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
@@ -62,4 +64,4 @@ touch $DIR/etc/fstab
 
 PKGGROUPS="$(cat $PKGLISTFILE)"
 echo "-> Installing package groups..."
-chroot $DIR yum install -q -y $YUM_OPTS $PKGGROUPS
+chroot $DIR yum install -y $YUM_OPTS $PKGGROUPS
