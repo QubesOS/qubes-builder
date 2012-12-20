@@ -276,15 +276,7 @@ prepare-merge:
 	for REPO in $$REPOS; do
 		$$SCRIPT_DIR/get-sources.sh || exit 1
 	done
-	echo "Changes to be merged:"
-	for REPO in $$REPOS; do
-		pushd $$REPO > /dev/null
-		if [ -n "`git log ..FETCH_HEAD`" ]; then
-			echo "> $$REPO: git merge FETCH_HEAD"
-			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD
-		fi
-		popd > /dev/null
-	done
+	$(MAKE) --no-print-directory show-unmerged
 
 show-unmerged:
 	@set -a
