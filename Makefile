@@ -285,7 +285,15 @@ show-unmerged:
 	for REPO in $$REPOS; do
 		pushd $$REPO > /dev/null
 		if [ -n "`git log ..FETCH_HEAD`" ]; then
-			echo "> $$REPO: git merge FETCH_HEAD"
+			if [ -n "`git rev-list FETCH_HEAD..HEAD`" ]; then
+				MERGE_TYPE="`git config --get-color color.decorate.tag 'red bold'`"
+				MERGE_TYPE="$${MERGE_TYPE}merge"
+			else
+				MERGE_TYPE="`git config --get-color color.decorate.tag 'green bold'`"
+				MERGE_TYPE="$${MERGE_TYPE}fast-forward"
+			fi
+			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"
+			echo "> $$REPO $$MERGE_TYPE: git merge FETCH_HEAD"
 			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD
 		fi
 		popd > /dev/null
