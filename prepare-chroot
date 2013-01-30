@@ -42,7 +42,7 @@ if ! [ -d $DIR/home/user ]; then
     else
         chroot $DIR groupadd user
     fi
-    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic;useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic loop;useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
     # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
     chroot $DIR rpm --rebuilddb 2> /dev/null
 fi
