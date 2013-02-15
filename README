@@ -5,6 +5,7 @@ and should ensure the following packages are installed:
 * createrepo
 * rpm-build
 * rpm-sign (if signing of build packages is enabled)
+* rpmdevtools
 * make 
 
 Unusually one can install those packages by just issuing:
