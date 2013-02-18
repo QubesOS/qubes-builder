@@ -70,10 +70,10 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
     normal="`echo -e '\033[0;0m'`"
     if [ -n "`git name-rev --name-only $BRANCH 2> /dev/null`" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
-        git co $BRANCH || exit 1
+        git checkout $BRANCH || exit 1
     else
         echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
-        git co FETCH_HEAD -b $BRANCH || exit 1
+        git checkout FETCH_HEAD -b $BRANCH || exit 1
     fi
     popd &> /dev/null
 fi
