@@ -79,6 +79,11 @@ yum-dom0 yum-vm:
 # Some components requires custom rules
 template template-builder:
 	@for DIST in $(DISTS_VM); do
+	    # some sources can be downloaded and verified during template building
+	    # process - e.g. archlinux template
+	    export GNUPGHOME="$(PWD)/keyrings/template-$$DIST"
+	    mkdir -p "$$GNUPGHOME"
+	    chmod 700 "$$GNUPGHOME"
 	    export DIST NO_SIGN
 	    make -s -C $(SRC_DIR)/template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \

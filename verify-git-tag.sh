@@ -11,6 +11,9 @@ if [ "$NO_CHECK" == "1" ]; then
 	exit 0
 fi
 
+if [ -n "$KEYRING_DIR_GIT" ]; then
+    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
+fi
 pushd $1 > /dev/null
 
 if [ -n "$2" ]; then

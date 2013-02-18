@@ -83,6 +83,9 @@ echo "--> Merging..."
 
 # For additionally download sources
 if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
+    export GNUPGHOME="$PWD/keyrings/$COMPONENT"
+    mkdir -p "$GNUPGHOME"
+    chmod 700 "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
     make --quiet -C $REPO get-sources
     echo "--> Veryfing the sources..."
