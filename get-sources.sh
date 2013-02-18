@@ -62,6 +62,22 @@ $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
 if [ "$FETCH_ONLY" != "1" ]; then
 
+CURRENT_BRANCH=`git name-rev --name-only HEAD`
+if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+    pushd $REPO &> /dev/null
+    red="`echo -e '\033[1;31m'`"
+    green="`echo -e '\033[1;32m'`"
+    normal="`echo -e '\033[0;0m'`"
+    if [ -n "`git name-rev --name-only $BRANCH 2> /dev/null`" ]; then
+        echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
+        git co $BRANCH || exit 1
+    else
+        echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
+        git co FETCH_HEAD -b $BRANCH || exit 1
+    fi
+    popd &> /dev/null
+fi
+
 echo "--> Merging..."
 [ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge --commit -q FETCH_HEAD; )
 
