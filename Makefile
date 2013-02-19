@@ -38,11 +38,18 @@ help:
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make check            -- check for any uncommited changes and unsiged tags"
 	@echo "make push             -- do git push for all repos, including tags"
+	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
+	@echo "make prepare-merge    -- fetch the sources from git, but only show new commits instead of merging"
+	@echo "make show-unmerged    -- list fetched but unmerged commits (see make prepare-merge)"
+	@echo "make do-merge         -- merge fetched commits"
 	@echo "make COMPONENT        -- build both dom0 and VM part of COMPONENT"
 	@echo "make COMPONENT-dom0   -- build only dom0 part of COMPONENT"
 	@echo "make COMPONENT-vm     -- build only VM part of COMPONENT"
 	@echo "COMPONENT can be one of:"
 	@echo "  $(COMPONENTS)"
+	@echo ""
+	@echo "You can also specify COMPONENTS=\"c1 c2 c3 ...\" on command line"
+	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
 get-sources:
 	@set -a
