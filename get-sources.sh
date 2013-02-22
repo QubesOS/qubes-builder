@@ -62,7 +62,7 @@ $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
 if [ "$FETCH_ONLY" != "1" ]; then
 
-CURRENT_BRANCH=`git name-rev --name-only HEAD`
+CURRENT_BRANCH=`cd $REPO; git name-rev --name-only HEAD`
 if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
     pushd $REPO &> /dev/null
     red="`echo -e '\033[1;31m'`"
