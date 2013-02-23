@@ -9,6 +9,7 @@ VERBOSE ?= 0
 # Beware of build order
 COMPONENTS ?= xen core kernel gui \
 			  gpg-split qubes-tor thunderbird-qubes docs \
+			  qpdf-converter \
 			  template-builder \
 			  kde-dom0 xfce4-dom0 \
 			  qubes-manager dom0-updates \
