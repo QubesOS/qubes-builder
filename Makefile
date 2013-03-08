@@ -7,7 +7,7 @@ DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
 VERBOSE ?= 0
 # Beware of build order
-COMPONENTS ?= xen core kernel gui \
+COMPONENTS ?= xen libvchan qrexec core core-agent-linux kernel gui \
 			  gpg-split qubes-tor thunderbird-qubes docs \
 			  qpdf-converter \
 			  template-builder \
