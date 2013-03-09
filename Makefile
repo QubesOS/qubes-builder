@@ -345,3 +345,15 @@ update-repo-current-testing:
 		fi
 	done
 	(cd qubes-src/yum/ && ./update_repo.sh)
+
+update-repo-unstable:
+	@for REPO in $(GIT_REPOS); do
+		[ $$REPO == '.' ] && break
+		if make -C $$REPO -n update-repo-unstable >/dev/null 2>/dev/null; then
+			echo "Updating $$REPO... "
+			make -s -C $$REPO update-repo-unstable || echo
+		else
+			echo "Updating $$REPO... skipping."
+		fi
+	done
+	(cd qubes-src/yum/ && ./update_repo-unstable.sh)
