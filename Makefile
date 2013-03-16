@@ -7,14 +7,26 @@ DIST_DOM0 ?= fc13
 DISTS_VM ?= fc17
 VERBOSE ?= 0
 # Beware of build order
-COMPONENTS ?= xen libvchan qrexec core core-agent-linux kernel gui \
-			  gpg-split qubes-tor thunderbird-qubes docs \
-			  qpdf-converter \
-			  template-builder \
-			  kde-dom0 xfce4-dom0 \
-			  qubes-manager dom0-updates \
-			  installer \
-			  yum antievilmaid
+COMPONENTS ?= xen \
+			  core-vchan-xen \
+			  core-qrexec-linux \
+			  core \
+			  core-dom0-linux \
+			  core-agent-linux \
+			  linux-kernel \
+			  gui \
+			  qubes-app-linux-split-gpg \
+			  qubes-app-linux-tor \
+			  qubes-app-thunderbird \
+			  qubes-app-linux-pdf-converter \
+			  linux-template-builder \
+			  desktop-kde \
+			  desktop-xfce4 \
+			  qubes-manager \
+			  linux-dom0-updates \
+			  linux-installer \
+			  linux-yum \
+			  antievilmaid
 
 #Include config file
 -include builder.conf
