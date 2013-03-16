@@ -20,8 +20,8 @@ COMPONENTS ?= xen \
 			  qubes-app-thunderbird \
 			  qubes-app-linux-pdf-converter \
 			  linux-template-builder \
-			  desktop-kde \
-			  desktop-xfce4 \
+			  desktop-linux-kde \
+			  desktop-linux-xfce4 \
 			  qubes-manager \
 			  linux-dom0-updates \
 			  linux-installer \
