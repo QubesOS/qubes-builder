@@ -75,14 +75,20 @@ get-sources:
 $(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then
+	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then
+		for DIST in $(DISTS_VM); do
+			make --no-print-directory -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* all || exit 1
+		done
+	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then
 	    for DIST in $(DISTS_VM); do \
 	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1
 	    done
 	fi
 
 %-dom0:
-	@if [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then
+	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then
+		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1
+	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then
 	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
 	fi
 
@@ -107,7 +113,13 @@ template template-builder:
 	    export DIST NO_SIGN
 	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \
-	        if make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
+			if [ -r $$repo/Makefile.builder ]; then
+				make --no-print-directory -f Makefile.generic \
+					PACKAGE_SET=vm \
+					COMPONENT=`basename $$repo` \
+					UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-template-builder/yum_repo_qubes/$$DIST \
+					update-repo
+	        elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 	            make -s -C $$repo update-repo-template || exit 1
 	        fi
 	    done
