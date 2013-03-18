@@ -105,7 +105,7 @@ template template-builder:
 	    mkdir -p "$$GNUPGHOME"
 	    chmod 700 "$$GNUPGHOME"
 	    export DIST NO_SIGN
-	    make -s -C $(SRC_DIR)/template-builder prepare-repo-template || exit 1
+	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \
 	        if make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 	            make -s -C $$repo update-repo-template || exit 1
@@ -113,10 +113,10 @@ template template-builder:
 	    done
 	    if [ "$(VERBOSE)" -eq 0 ]; then
 	        echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
-	        make -s -C $(SRC_DIR)/template-builder rpms > build-logs/template-$$DIST.log 2>&1 || exit 1
+	        make -s -C $(SRC_DIR)/linux-template-builder rpms > build-logs/template-$$DIST.log 2>&1 || exit 1
 			echo "--> Done."
 	    else
-	        make -s -C $(SRC_DIR)/template-builder rpms || exit 1
+	        make -s -C $(SRC_DIR)/linux-template-builder rpms || exit 1
 	    fi
 	done
 
