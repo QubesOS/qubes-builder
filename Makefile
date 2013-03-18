@@ -14,7 +14,10 @@ COMPONENTS ?= xen \
 			  core-dom0-linux \
 			  core-agent-linux \
 			  linux-kernel \
-			  gui \
+			  gui-common \
+			  gui-daemon \
+			  gui-agent-linux \
+			  gui-agent-xen-hvm-stubdom \
 			  qubes-app-linux-split-gpg \
 			  qubes-app-linux-tor \
 			  qubes-app-thunderbird \
