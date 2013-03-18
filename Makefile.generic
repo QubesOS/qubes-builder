@@ -1,0 +1,130 @@
+# Generic makfile to build Qubes component package
+#
+# Variables used as "parameters":
+#  DIST
+#  SRC_DIR
+#  COMPONENT
+#  PACKAGE_SET (currently "dom0" or "vm")
+
+### Global variables
+
+.EXPORT_ALL_VARIABLES:
+ifneq (,$(findstring fc,$(DIST)))
+DISTRIBUTION := fedora
+else
+DISTRIBUTION := $(DIST)
+endif
+
+THIS_MAKEFILE = Makefile.generic
+
+ORIG_SRC = $(SRC_DIR)/$(COMPONENT)
+
+# repository for ready packages; directory content is distro-specific
+BUILDER_REPO_DIR = $(PWD)/qubes-rpms-mirror-repo/$(DIST)
+
+# build environment
+CHROOT_DIR = $(PWD)/chroot-$(DIST)
+
+# Logfile
+BUILD_LOG="build-logs/$(COMPONENT)-$(PACKAGE_SET)-$(DIST).log"
+
+### Load component-specific settings
+
+# Component specific settins. Generic variables:
+#  SOURCE_PREP - make target to run at "prep" stage
+#  SOURCE_COPY_IN - make target to run after "copy-in" stage
+#  SOURCE_COPY_OUT - make target to run after "copy-out" stage
+# Above are mainly to extend Makefile with some component-specific actions
+# (like handling additional sources)
+#
+#
+# Check Makefile.DISTRIBUTION for distribution-specific supported variables
+include $(ORIG_SRC)/Makefile.builder
+
+### Load distro-specific settings
+
+# This file should define:
+# 1. variables:
+#   PACKAGE_LIST - list of packages to build. Targets 'build-dep', 'package' and 'copy-out'
+#     will be run for each word on the list, with PACKAGE set to current word
+#   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
+#     CHROOT_DIR (qubes-src will be created in this directory)
+# targets:
+#   dist-prepare-chroot - initial preparation of chroot environment
+#   dist-prep - some preparation of sources (if needed)
+#   dist-build-dep - install build dependencies (should operate on chroot directory)
+#   dist-package - compile package (should operate on chroot directory)
+#   dist-copy-out - copy compiled package out of chroot env; this target should
+#     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
+#     BUILDER_REPO_DIR
+#
+#   dist-build-dep, dist-package and dist-copy-out targets are run in separate
+#   process with stdout+stderr redirected to log file. If you want to print
+#   some message, use 3-rd file descriptor
+#
+# This file can specify additional targets (like update-repo-*)
+include Makefile.$(DISTRIBUTION)
+
+
+DIST_SRC_ROOT=$(DIST_BUILD_DIR)/qubes-src
+DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
+
+.PHONY: copy-in
+copy-in: generic-copy-in $(SOURCE_COPY_IN)
+
+.PHONY: generic-copy-in
+generic-copy-in:
+	@mkdir -p $(CHROOT_DIR)/$(DIST_SRC_ROOT)
+	@cp $(THIS_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
+	@cp Makefile.$(DISTRIBUTION) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
+	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
+	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
+
+.PHONY: prep
+prep: generic-prep dist-prep $(SOURCE_PREP)
+
+.PHONY: generic-prep
+generic-prep:
+	@if [ -e "$(BUILD_LOG)" ]; then\
+	   mv -f "$(BUILD_LOG)" "$(BUILD_LOG).old";\
+	fi
+
+.PHONY: prepare-chroot
+prepare-chroot: dist-prepare-chroot
+
+.PHONY: all
+ifneq (,$(PACKAGE_LIST))
+all: prepare-chroot prep copy-in packages
+else ifeq (2,$(VERBOSE))
+# Do nothing if no packages to compile
+all:
+	$(info -> Nothing to be done in $(COMPONENT) for $(DIST) $(PACKAGE_SET))
+	@true
+else
+# Do nothing if no packages to compile
+all:
+	@true
+endif
+
+.PHONY: packages
+packages:
+	@for package in $(PACKAGE_LIST); do\
+		echo "-> Building $(COMPONENT) ($$package) for $(DIST) $(PACKAGE_SET) (logfile: $(BUILD_LOG))";\
+		if [ $(VERBOSE) -eq 0 ]; then\
+			$(MAKE) -f $(THIS_MAKEFILE) PACKAGE=$$package package 3>&1 >>"$(BUILD_LOG)" 2>&1;\
+			BUILD_RETCODE=$$?;\
+		elif [ $(VERBOSE) -eq 1 ]; then\
+			$(MAKE) -s -f $(THIS_MAKEFILE) PACKAGE=$$package package 3>&2 2>&1 | tee -a $(BUILD_LOG);\
+			BUILD_RETCODE=$$?;\
+		else\
+			$(MAKE) -f $(THIS_MAKEFILE) PACKAGE=$$package package 3>&2 2>&1 | tee -a $(BUILD_LOG);\
+			BUILD_RETCODE=$$?;\
+		fi;\
+		if [ $$BUILD_RETCODE -gt 0 ]; then\
+			echo "--> build failed!";\
+			[ $(VERBOSE) -eq 0 ] && tail "$(BUILD_LOG)";\
+		fi;\
+	done
+
+.PHONY: package
+package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)

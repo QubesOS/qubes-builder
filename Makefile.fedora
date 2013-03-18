@@ -1,0 +1,86 @@
+# Generic makefile for Fedora packages build
+#
+# For "API" documentation check Makefile.generic
+#
+# Variables supposed to be in component's Makefile.builder:
+#  RPM_SPEC_FILES - list of spec files to build
+
+### Variables required Makefile.generic
+# Use spec files list as PACKAGE_LIST
+PACKAGE_LIST = $(RPM_SPEC_FILES)
+DIST_BUILD_DIR = /home/user
+
+### Local variables
+RUN_AS_USER = user
+RPMS_DIR = rpm/
+
+### Private "functions"
+# List packages produced by by given spec file(s)
+RPM_QUERY_DEFINES  = --define "dist .$(DIST)" 
+RPM_QUERY_DEFINES += --define "fedora $(subst fc,,$(DIST))"
+RPM_QUERY_FORMAT = "rpm/%{ARCH}/%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}.rpm\n"
+
+# this '[ -n "$(1)" ] && ' is to suppress "call" at function definition
+spec_packages = $(shell cd $(ORIG_SRC); [ -n "$(1)" ] && rpm -q $(RPM_QUERY_DEFINES) --qf $(RPM_QUERY_FORMAT) --specfile $(1))
+
+### Targets required by Makefile.generic to build packages
+dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
+	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
+		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
+	fi
+	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo/rpm ]; then\
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo;\
+	fi
+	@sudo cp yum.conf $(CHROOT_DIR)/etc/yum.conf
+
+$(CHROOT_DIR)/home/user/.prepared_base:
+	@echo "-> Preparing $(DIST) build environment"
+	@sudo -E ./prepare-chroot $(CHROOT_DIR) $(DIST) || exit 1
+	@touch $(CHROOT_DIR)/home/user/.prepared_base
+	
+dist-prep:
+	@true
+
+dist-build-dep:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	./update-local-repo.sh $(DIST)
+	sudo -E chroot $(CHROOT_DIR) sh -c 'cd $(DIST_SRC); yum-builddep -y $(PACKAGE)'
+
+dist-package:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
+	sudo -E chroot $(CHROOT_DIR) su -c 'cd $(DIST_SRC); rpmbuild --define "_rpmdir $(RPMS_DIR)" -bb $(PACKAGE)' $(RUN_AS_USER)
+
+dist-copy-out:
+	@echo "--> Done:" >&3
+	@set -e;\
+	for arch_chroot_dir in $(CHROOT_DIR)/$(DIST_SRC)/rpm/*; do\
+		arch_rpm_dir=$(ORIG_SRC)/rpm/`basename $$arch_chroot_dir`;\
+		mkdir -p $$arch_rpm_dir;\
+		for pkg in $$arch_chroot_dir/*; do\
+			echo "      $$arch_rpm_dir/`basename $$pkg`" >&3 ;\
+		done;\
+		mkdir -p $(BUILDER_REPO_DIR)/rpm;\
+		ln -f -t $(BUILDER_REPO_DIR)/rpm $$arch_chroot_dir/*;\
+		mv -t $$arch_rpm_dir $$arch_chroot_dir/*;\
+	done
+
+### Additional targets
+
+# Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
+# requested repository (UPDATE_REPO)
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+ifeq (,$(RPM_SPEC_FILES))
+	@true
+else
+	cd $(ORIG_SRC); ln -f $(call spec_packages,$(RPM_SPEC_FILES)) $(UPDATE_REPO)/rpm/
+endif
+
