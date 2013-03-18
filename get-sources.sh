@@ -26,7 +26,7 @@ set -e
 
 [ -z "$REPO" ] && REPO="$COMPONENT"
 
-url_var="GIT_URL_${COMPONENT/-/_}"
+url_var="GIT_URL_${COMPONENT//-/_}"
 
 if [ -n "${!url_var}" ]; then
     GIT_URL="${!url_var}"
@@ -37,7 +37,7 @@ fi
 # Override GIT_URL with GIT_REMOTE if given
 [ -n "$GIT_REMOTE" ] && GIT_URL=$GIT_REMOTE
 
-branch_var="BRANCH_${COMPONENT/-/_}"
+branch_var="BRANCH_${COMPONENT//-/_}"
 
 if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"

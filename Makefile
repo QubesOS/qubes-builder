@@ -311,7 +311,7 @@ prepare-merge:
 	SRC_ROOT=$(PWD)/$(SRC_DIR)
 	FETCH_ONLY=1
 	REPOS="$(GIT_REPOS)"
-	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE/-/_}"
+	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"
 	for REPO in $$REPOS; do
 		$$SCRIPT_DIR/get-sources.sh || exit 1
