@@ -109,6 +109,7 @@ endif
 .PHONY: packages
 packages:
 	@for package in $(PACKAGE_LIST); do\
+		set -o pipefail;\
 		echo "-> Building $(COMPONENT) ($$package) for $(DIST) $(PACKAGE_SET) (logfile: $(BUILD_LOG))";\
 		if [ $(VERBOSE) -eq 0 ]; then\
 			$(MAKE) -f $(THIS_MAKEFILE) PACKAGE=$$package package 3>&1 >>"$(BUILD_LOG)" 2>&1;\
@@ -123,6 +124,7 @@ packages:
 		if [ $$BUILD_RETCODE -gt 0 ]; then\
 			echo "--> build failed!";\
 			[ $(VERBOSE) -eq 0 ] && tail "$(BUILD_LOG)";\
+			exit 1;\
 		fi;\
 	done
 
