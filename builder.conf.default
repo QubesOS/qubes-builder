@@ -42,11 +42,11 @@
 # Default: no value
 
 # DIST_DOM0 - distribution for dom0 packages
-# Default: fc13
+# Default: fc18
 
 # DISTS_VM - distributions for VM packages (can be list - separate with space)
-# Supported distros: fc15 fc17
-# Default: fc17
+# Supported distros: fc15 fc17 fc18
+# Default: fc18
 
 # QUBES_RELEASE - set release version of result iso
 # Default: test-build

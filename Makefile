@@ -3,8 +3,8 @@ GIT_SUBDIR ?= mainstream
 BRANCH ?= master
 GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
-DIST_DOM0 ?= fc13
-DISTS_VM ?= fc17
+DIST_DOM0 ?= fc18
+DISTS_VM ?= fc18
 VERBOSE ?= 0
 # Beware of build order
 COMPONENTS ?= xen \
