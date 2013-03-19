@@ -14,6 +14,10 @@ DIST_BUILD_DIR = /home/user
 RUN_AS_USER = user
 RPMS_DIR = rpm/
 
+# Use += to allow Makefile.builder define some initial value
+RPM_BUILD_DEFINES  = --define "_rpmdir $(RPMS_DIR)"
+RPM_BUILD_DEFINES += --define "qubes_builder 1"
+
 ### Private "functions"
 # List packages produced by by given spec file(s)
 RPM_QUERY_DEFINES  = --define "dist .$(DIST)" 
@@ -54,7 +58,7 @@ ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
-	sudo -E chroot $(CHROOT_DIR) su -c 'cd $(DIST_SRC); rpmbuild --define "_rpmdir $(RPMS_DIR)" -bb $(PACKAGE)' $(RUN_AS_USER)
+	sudo -E chroot $(CHROOT_DIR) su -c 'cd $(DIST_SRC); rpmbuild $(RPM_BUILD_DEFINES) -bb $(PACKAGE)' $(RUN_AS_USER)
 
 dist-copy-out:
 	@echo "--> Done:" >&3
