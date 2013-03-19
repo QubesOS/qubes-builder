@@ -7,7 +7,7 @@ DIST_DOM0 ?= fc18
 DISTS_VM ?= fc18
 VERBOSE ?= 0
 # Beware of build order
-COMPONENTS ?= xen \
+COMPONENTS ?= vmm-xen \
 			  core-vchan-xen \
 			  core-qrexec-linux \
 			  core \
