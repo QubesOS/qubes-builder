@@ -1,12 +1,6 @@
-gnupg
-git
-gcc
+@development-tools
 python
-make
-rpm-build
 MAKEDEV
-glibc-devel
-redhat-rpm-config
 yum
 yum-utils
 tar
