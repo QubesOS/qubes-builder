@@ -29,6 +29,7 @@ COMPONENTS ?= vmm-xen \
 			  linux-dom0-updates \
 			  linux-installer \
 			  linux-yum \
+			  vmm-xen-windows-pvdrivers \
 			  antievilmaid
 
 #Include config file
