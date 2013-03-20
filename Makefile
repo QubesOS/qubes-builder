@@ -32,6 +32,8 @@ COMPONENTS ?= vmm-xen \
 			  vmm-xen-windows-pvdrivers \
 			  antievilmaid
 
+LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
+
 #Include config file
 -include builder.conf
 
@@ -358,38 +360,26 @@ do-merge:
 		popd > /dev/null
 	done
 
-update-repo-current:
+update-repo-current update-repo-current-testing update-repo-unstable: update-repo-%:
 	@for REPO in $(GIT_REPOS); do
 		[ $$REPO == '.' ] && break
-		if make -C $$REPO -n update-repo-current >/dev/null 2>/dev/null; then
+		if [ -r $$REPO/Makefile.builder ]; then
+			echo "Updating $$REPO..."
+			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
+				UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
+				COMPONENT=`basename $$REPO` \
+				update-repo
+			for DIST in $(DISTS_VM); do
+				make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
+					UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
+					COMPONENT=`basename $$REPO` \
+					update-repo
+			done
+		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then
 			echo "Updating $$REPO... "
-			make -s -C $$REPO update-repo-current || echo
+			make -s -C $$REPO update-repo-$* || echo
 		else
 			echo "Updating $$REPO... skipping."
 		fi
 	done
-	(cd qubes-src/yum/ && ./update_repo.sh)
-
-update-repo-current-testing:
-	@for REPO in $(GIT_REPOS); do
-		[ $$REPO == '.' ] && break
-		if make -C $$REPO -n update-repo-current-testing >/dev/null 2>/dev/null; then
-			echo "Updating $$REPO... "
-			make -s -C $$REPO update-repo-current-testing || echo
-		else
-			echo "Updating $$REPO... skipping."
-		fi
-	done
-	(cd qubes-src/yum/ && ./update_repo.sh)
-
-update-repo-unstable:
-	@for REPO in $(GIT_REPOS); do
-		[ $$REPO == '.' ] && break
-		if make -C $$REPO -n update-repo-unstable >/dev/null 2>/dev/null; then
-			echo "Updating $$REPO... "
-			make -s -C $$REPO update-repo-unstable || echo
-		else
-			echo "Updating $$REPO... skipping."
-		fi
-	done
-	(cd qubes-src/yum/ && ./update_repo-unstable.sh)
+	(cd $(LINUX_REPO_BASEDIR)/.. && ./update_repo-$*.sh)
