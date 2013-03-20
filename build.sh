@@ -104,7 +104,7 @@ for i in $DIST_SRC/rpm/*; do
     ln -f -t $BUILDER_REPO_DIR/rpm $i/*
     mv -t $ARCH_RPM_DIR $i/*
 done
-if [ $COMPONENT == "installer" ]; then
+if [ $COMPONENT == "installer" -o $COMPONENT == "linux-installer" ]; then
     if [ "$MAKE_TARGET_ONLY" == "iso" ]; then
         if [ -d $DIST_SRC/build/work ]; then
             sudo rm -fr $ORIG_SRC/build/ISO

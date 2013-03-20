@@ -234,9 +234,10 @@ iso:
 	    if [ -r $$repo/Makefile.builder ]; then
 			make --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=dom0 \
+				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
 				UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-installer/yum/qubes-dom0 \
-				update-repo
+				update-repo || exit 1
 	    elif make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! make -s -C $$repo update-repo-installer ; then \
 				echo "make update-repo-installer failed for repo $$repo"; \
