@@ -107,7 +107,7 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-template template-builder:
+template linux-template-builder:
 	@for DIST in $(DISTS_VM); do
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
@@ -117,12 +117,12 @@ template template-builder:
 	    export DIST NO_SIGN
 	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \
-			if [ -r $$repo/Makefile.builder ]; then
+	        if [ -r $$repo/Makefile.builder ]; then
 				make --no-print-directory -f Makefile.generic \
 					PACKAGE_SET=vm \
 					COMPONENT=`basename $$repo` \
 					UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-template-builder/yum_repo_qubes/$$DIST \
-					update-repo
+					update-repo || exit 1
 	        elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 	            make -s -C $$repo update-repo-template || exit 1
 	        fi
@@ -228,10 +228,16 @@ clean-all: clean-rpms clean
 .PHONY: iso
 iso:
 	@echo "-> Preparing for ISO build..."
-	@make -s -C $(SRC_DIR)/installer clean-repos || exit 1
+	@make -s -C $(SRC_DIR)/linux-installer clean-repos || exit 1
 	@echo "--> Copying RPMs from individual repos..."
-	@for repo in $(filter-out template-builder,$(GIT_REPOS)); do \
-	    if make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
+	@for repo in $(filter-out linux-template-builder,$(GIT_REPOS)); do \
+	    if [ -r $$repo/Makefile.builder ]; then
+			make --no-print-directory -f Makefile.generic \
+				PACKAGE_SET=dom0 \
+				COMPONENT=`basename $$repo` \
+				UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-installer/yum/qubes-dom0 \
+				update-repo
+	    elif make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! make -s -C $$repo update-repo-installer ; then \
 				echo "make update-repo-installer failed for repo $$repo"; \
 				exit 1; \
@@ -239,14 +245,15 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST make -s -C $(SRC_DIR)/template-builder update-repo-installer ; then \
+		if ! DIST=$$DIST UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-installer/yum/qubes-dom0 \
+			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
 		fi \
 	done
-	@make -s -C $(SRC_DIR)/installer update-repo || exit 1
-	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./build.sh $(DIST_DOM0) installer root || exit 1
-	@ln -f $(SRC_DIR)/installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	@make -s -C $(SRC_DIR)/linux-installer update-repo || exit 1
+	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./build.sh $(DIST_DOM0) linux-installer root || exit 1
+	@ln -f $(SRC_DIR)/linux-installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
 
