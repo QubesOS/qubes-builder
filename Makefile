@@ -186,7 +186,7 @@ sign-all:
 qubes: get-sources $(COMPONENTS) sign-all
 
 clean-installer-rpms:
-	(cd qubes-src/installer/yum && ./clean_repos.sh)
+	(cd qubes-src/installer/yum || cd qubes-src/linux-installer/yum && ./clean_repos.sh)
 
 clean-rpms: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
@@ -218,11 +218,11 @@ clean:
 
 clean-all: clean-rpms clean
 	for dir in $(DISTS_ALL); do \
-		if ! [ -d $$dir ]; then continue; fi; \
-		sudo umount $$dir/proc; \
-		sudo umount $$dir/tmp/qubes-rpms-mirror-repo; \
+		if ! [ -d chroot-$$dir ]; then continue; fi; \
+		sudo umount chroot-$$dir/proc; \
+		sudo umount chroot-$$dir/tmp/qubes-rpms-mirror-repo; \
 	done || true
-	sudo rm -rf $(DISTS_ALL) || true
+	sudo rm -rf $(addprefix chroot-,$(DISTS_ALL)) || true
 	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: iso
