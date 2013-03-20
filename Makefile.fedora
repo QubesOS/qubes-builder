@@ -25,7 +25,7 @@ RPM_QUERY_DEFINES += --define "fedora $(subst fc,,$(DIST))"
 RPM_QUERY_FORMAT = "rpm/%{ARCH}/%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}.rpm\n"
 
 # this '[ -n "$(1)" ] && ' is to suppress "call" at function definition
-spec_packages = $(shell cd $(ORIG_SRC); [ -n "$(1)" ] && rpm -q $(RPM_QUERY_DEFINES) --qf $(RPM_QUERY_FORMAT) --specfile $(1))
+spec_packages = $(shell cd $(ORIG_SRC) && [ -n "$(1)" ] && rpm -q $(RPM_QUERY_DEFINES) --qf $(RPM_QUERY_FORMAT) --specfile $(1))
 
 ### Targets required by Makefile.generic to build packages
 dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
@@ -85,6 +85,6 @@ endif
 ifeq (,$(RPM_SPEC_FILES))
 	@true
 else
-	cd $(ORIG_SRC); ln -f $(call spec_packages,$(RPM_SPEC_FILES)) $(UPDATE_REPO)/rpm/
+	@cd $(ORIG_SRC) && ln -f $(foreach SPEC,$(RPM_SPEC_FILES),$(call spec_packages,$(SPEC))) $(UPDATE_REPO)/rpm/
 endif
 
