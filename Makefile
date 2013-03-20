@@ -9,9 +9,9 @@ VERBOSE ?= 0
 # Beware of build order
 COMPONENTS ?= vmm-xen \
 			  core-vchan-xen \
-			  core-qrexec-linux \
-			  core \
-			  core-dom0-linux \
+			  linux-utils \
+			  core-admin \
+			  core-admin-linux \
 			  core-agent-linux \
 			  linux-kernel \
 			  gui-common \
