@@ -22,7 +22,7 @@ SCRIPT_DIR=$PWD
 
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
-DIST_SRC_ROOT=$PWD/$DIST/home/user/qubes-src/
+DIST_SRC_ROOT=$PWD/chroot-$DIST/home/user/qubes-src/
 DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
 BUILDER_REPO_DIR=$PWD/qubes-rpms-mirror-repo/$DIST
 
@@ -33,22 +33,22 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -e $DIST/home/user/.prepared_base ]; then
+if ! [ -e chroot-$DIST/home/user/.prepared_base ]; then
     echo "-> Preparing $DIST build environment"
-    sudo -E ./prepare-chroot $PWD/$DIST $DIST
-    touch $DIST/home/user/.prepared_base
+    sudo -E ./prepare-chroot $PWD/chroot-$DIST $DIST
+    touch chroot-$DIST/home/user/.prepared_base
 fi
 
-if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
+if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
     sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
-    sudo -E ./prepare-chroot $PWD/$DIST $DIST build-pkgs-temp.list
+    sudo -E ./prepare-chroot $PWD/chroot-$DIST $DIST build-pkgs-temp.list
     rm -f build-pkgs-temp.list
-    touch $DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
+    touch chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
 fi
 
-if ! [ -r $PWD/$DIST/proc/cpuinfo ]; then
-    sudo mount -t proc proc $PWD/$DIST/proc
+if ! [ -r $PWD/chroot-$DIST/proc/cpuinfo ]; then
+    sudo mount -t proc proc $PWD/chroot-$DIST/proc
 fi
 
 
@@ -78,10 +78,10 @@ fi
 set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
 if [ $VERBOSE -eq 0 ]; then
-    sudo -E chroot $DIST su - -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
+    sudo -E chroot chroot-$DIST su - -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
     BUILD_RETCODE=$?
 else
-    sudo -E chroot $DIST su - -c "$MAKE_CMD" $RUN_AS_USER
+    sudo -E chroot chroot-$DIST su - -c "$MAKE_CMD" $RUN_AS_USER
     BUILD_RETCODE=$?
 fi
 if [ $BUILD_RETCODE -gt 0 ]; then
