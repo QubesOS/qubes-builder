@@ -27,12 +27,13 @@ COMPONENTS ?= vmm-xen \
 			  desktop-linux-xfce4 \
 			  qubes-manager \
 			  linux-dom0-updates \
-			  linux-installer \
+			  linux-installer-qubes-os \
 			  linux-yum \
 			  vmm-xen-windows-pvdrivers \
 			  antievilmaid
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
+INSTALLER_COMPONENT ?= linux-installer-qubes-os
 
 #Include config file
 -include builder.conf
@@ -163,7 +164,7 @@ sign-all:
 		sudo rpm --import qubes-release-*-signing-key.asc ; \
 		echo "--> Checking which packages need to be signed (to avoid double signatures)..." ; \
 		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm) windows-tools/rpm/noarch/*.rpm; do \
-			if ! qubes-src/installer/rpm_verify $$RPM > /dev/null; then \
+			if ! qubes-src/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
 		done ; \
@@ -188,7 +189,7 @@ sign-all:
 qubes: get-sources $(COMPONENTS) sign-all
 
 clean-installer-rpms:
-	(cd qubes-src/installer/yum || cd qubes-src/linux-installer/yum && ./clean_repos.sh)
+	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh)
 
 clean-rpms: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
@@ -230,7 +231,7 @@ clean-all: clean-rpms clean
 .PHONY: iso
 iso:
 	@echo "-> Preparing for ISO build..."
-	@make -s -C $(SRC_DIR)/linux-installer clean-repos || exit 1
+	@make -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos || exit 1
 	@echo "--> Copying RPMs from individual repos..."
 	@for repo in $(filter-out linux-template-builder,$(GIT_REPOS)); do \
 	    if [ -r $$repo/Makefile.builder ]; then
@@ -238,7 +239,7 @@ iso:
 				PACKAGE_SET=dom0 \
 				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-installer/yum/qubes-dom0 \
+				UPDATE_REPO=$(PWD)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 				update-repo || exit 1
 	    elif make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! make -s -C $$repo update-repo-installer ; then \
@@ -248,15 +249,15 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-installer/yum/qubes-dom0 \
+		if ! DIST=$$DIST UPDATE_REPO=$(PWD)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
 		fi \
 	done
-	@make -s -C $(SRC_DIR)/linux-installer update-repo || exit 1
-	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./build.sh $(DIST_DOM0) linux-installer root || exit 1
-	@ln -f $(SRC_DIR)/linux-installer/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	@make -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) update-repo || exit 1
+	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./build.sh $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
+	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
 
