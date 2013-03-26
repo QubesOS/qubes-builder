@@ -57,7 +57,7 @@ else
     VERIFY_REF=HEAD
 fi
 
-echo "--> Veryfing tags..."
+echo "--> Verifying tags..."
 $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 
 if [ "$FETCH_ONLY" != "1" ]; then
@@ -88,7 +88,7 @@ if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
     chmod 700 "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
     make --quiet -C $REPO get-sources
-    echo "--> Veryfing the sources..."
+    echo "--> Verifying the sources..."
     make --quiet -C $REPO verify-sources
 fi
 fi
