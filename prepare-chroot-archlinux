@@ -1,0 +1,63 @@
+#!/bin/sh
+
+DIR=$1
+DISTRO=$2
+if [ -n "$3" ]; then
+    PKGLISTFILE="$3"
+else
+    PKGLISTFILE="build-pkgs-base.list"
+fi
+
+set -e
+if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
+    set -x
+fi
+
+INITIAL=
+
+if ! [ -d $DIR/home/user ]; then
+    INITIAL=1
+    mkdir -p $DIR
+
+    mkdir -p mnt_archlinux_dvd
+    export CACHEDIR=qubes-src/linux-template-builder/cache_archlinux/
+    export INSTALLDIR=$DIR
+    export SCRIPTSDIR=qubes-src/linux-template-builder/scripts_archlinux/
+
+    qubes-src/linux-template-builder/scripts_archlinux/00_prepare.sh
+
+    qubes-src/linux-template-builder/scripts_archlinux/01_install_core.sh
+
+    # Note: Enable x86 repos
+    sudo mount $CACHEDIR/root-image.fs mnt_archlinux_dvd
+    su -c "echo '[multilib]' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'SigLevel = PackageRequired' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'Include = /etc/pacman.d/mirrorlist' >> $INSTALLDIR/etc/pacman.conf"
+
+    su -c "echo '[qubes]' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'SigLevel = Optional TrustAll' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'Server = file:///tmp/qubes-rpms-mirror-repo/pkgs' >> $INSTALLDIR/etc/pacman.conf"
+
+    sudo ./mnt_archlinux_dvd/usr/bin/arch-chroot $INSTALLDIR sh -c "pacman -Sy"
+    sudo umount mnt_archlinux_dvd
+
+    [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
+    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+    if [ -n "$USER_GID" ]; then
+        chroot $DIR groupadd -g $USER_GID user
+    elif [ -n "$SUDO_GID" ]; then
+        chroot $DIR groupadd -g $SUDO_GID user
+    else
+        chroot $DIR groupadd user
+    fi
+    #cd dev; /sbin/MAKEDEV generic loop;
+    chroot $DIR sh -c "useradd -g user -G wheel $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+
+    # Install required makepkg dependencies
+    chroot $DIR sh -c "pacman -Sy --needed --noconfirm --asdeps binutils fakeroot sudo" 
+
+    # Fixup so that the user can sudo without password
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/qubes-build-user
+
+fi
+

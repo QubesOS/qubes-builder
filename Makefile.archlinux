@@ -1,0 +1,123 @@
+# Generic makefile for Fedora packages build
+#
+# For "API" documentation check Makefile.generic
+#
+# Variables used as "parameters":
+#  DIST
+#  SRC_DIR
+#  COMPONENT
+#  PACKAGE_SET (currently "dom0" or "vm")
+
+### Load component-specific settings
+
+# Component specific settins. Generic variables:
+#  SOURCE_PREP - make target to run at "prep" stage
+#  SOURCE_COPY_IN - make target to run after "copy-in" stage
+#  SOURCE_COPY_OUT - make target to run after "copy-out" stage
+# Above are mainly to extend Makefile with some component-specific actions
+# (like handling additional sources)
+#
+#
+# Check Makefile.DISTRIBUTION for distribution-specific supported variables
+
+### Load distro-specific settings
+
+# This file should define:
+# 1. variables:
+#   PACKAGE_LIST - list of packages to build. Targets 'build-dep', 'package' and 'copy-out'
+#     will be run for each word on the list, with PACKAGE set to current word
+#   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
+#     CHROOT_DIR (qubes-src will be created in this directory)
+# targets:
+#   dist-prepare-chroot - initial preparation of chroot environment
+#   dist-prep - some preparation of sources (if needed)
+#   dist-build-dep - install build dependencies (should operate on chroot directory)
+#   dist-package - compile package (should operate on chroot directory)
+#   dist-copy-out - copy compiled package out of chroot env; this target should
+#     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
+#     BUILDER_REPO_DIR
+#
+#   dist-build-dep, dist-package and dist-copy-out targets are run in separate
+#   process with stdout+stderr redirected to log file. If you want to print
+#   some message, use 3-rd file descriptor
+#
+# This file can specify additional targets (like update-repo-*)
+
+
+### Variables required Makefile.generic
+# Use spec files list as PACKAGE_LIST
+PACKAGE_LIST = $(ARCH_BUILD_DIRS)
+DIST_BUILD_DIR = /home/user
+
+### Local variables
+RUN_AS_USER = user
+PKGS_DIR = pkgs/
+
+
+### Targets required by Makefile.generic to build packages
+dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
+	# Need pts, dev, and sys for pgp initialization things
+	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
+		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
+		sudo mount --bind /dev $(CHROOT_DIR)/dev;\
+		sudo mount --bind /dev/pts $(CHROOT_DIR)/dev/pts;\
+		sudo mount --bind /sys $(CHROOT_DIR)/sys;\
+	fi
+	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo/pkgs ]; then\
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-rpms-mirror-repo;\
+	fi
+
+$(CHROOT_DIR)/home/user/.prepared_base:
+	@echo "-> Preparing $(DIST) build environment"
+	@sudo -E ./prepare-chroot-archlinux $(CHROOT_DIR) $(DIST) || exit 1
+	@touch $(CHROOT_DIR)/home/user/.prepared_base
+	
+dist-prep:
+	@true
+
+dist-build-dep:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	sudo chroot $(CHROOT_DIR) su user -c 'cd /tmp/qubes-rpms-mirror-repo; repo-add pkgs/qubes.db.tar.gz pkgs/*.pkg.tar.xz;'
+	sudo chroot $(CHROOT_DIR) sh -c 'pacman -Sy'
+
+
+dist-package:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+#	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
+	echo "Building package in $(DIST_SRC)"
+	sudo chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC);cp $(PACKAGE)/PKGBUILD* .;makepkg --syncdeps --noconfirm --skipinteg'
+
+
+dist-copy-out:
+	@echo "--> Done:" >&3
+	@set -e;\
+	for arch_chroot_dir in $(CHROOT_DIR)/$(DIST_SRC)/; do\
+		arch_rpm_dir=$(ORIG_SRC)/pkgs/`basename $$arch_chroot_dir`;\
+		mkdir -p $$arch_rpm_dir;\
+		for pkg in $$arch_chroot_dir/*.pkg.tar.xz; do\
+			echo "      $$arch_rpm_dir/`basename $$pkg`" >&3 ;\
+		done;\
+		mkdir -p $(BUILDER_REPO_DIR)/pkgs;\
+		ln -f -t $(BUILDER_REPO_DIR)/pkgs $$arch_chroot_dir/*.pkg.tar.xz;\
+	done
+#mv -t $$arch_pm_dir $$arch_chroot_dir/*;\
+
+### Additional targets
+
+# Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
+# requested repository (UPDATE_REPO)
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+ifeq (,$(RPM_SPEC_FILES))
+	@true
+else
+	@cd $(ORIG_SRC) && ln -f $(foreach SPEC,$(RPM_SPEC_FILES),$(call spec_packages,$(SPEC))) $(UPDATE_REPO)/rpm/
+endif
+
