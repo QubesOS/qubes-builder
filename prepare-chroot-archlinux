@@ -40,6 +40,7 @@ if ! [ -d $DIR/home/user ]; then
 
     sudo ./mnt_archlinux_dvd/usr/bin/arch-chroot $INSTALLDIR sh -c "pacman -Sy"
     sudo umount mnt_archlinux_dvd
+    cp /etc/resolv.conf $DIR/etc/
 
     [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
