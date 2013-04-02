@@ -50,17 +50,21 @@ if ! [ -d $DIR/home/user ]; then
     sudo umount mnt_archlinux_dvd
 
     # Fixup so that the user can sudo without password
-    su -c "echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> $INSTALLDIR/etc/sudoers.d/qubes-build-user"
+    sudo sh -c "echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> $INSTALLDIR/etc/sudoers.d/qubes-build-user"
 
     # Note: Enable x86 repos
-    su -c "echo '[multilib]' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'SigLevel = PackageRequired' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'Include = /etc/pacman.d/mirrorlist' >> $INSTALLDIR/etc/pacman.conf"
+    sudo tee -a $INSTALLDIR/etc/pacman.conf <<EOF
+[multilib]
+SigLevel = PackageRequired
+Include = /etc/pacman.d/mirrorlist
+EOF
 
     # Register custom repository (it will be created later)
-    su -c "echo '[qubes]' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'SigLevel = Optional TrustAll' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'Server = file:///tmp/qubes-rpms-mirror-repo/pkgs' >> $INSTALLDIR/etc/pacman.conf"
+    sudo tee -a $INSTALLDIR/etc/pacman.conf <<EOF
+[qubes]
+SigLevel = Optional TrustAll
+Server = file:///tmp/qubes-rpms-mirror-repo/pkgs
+EOF
 
 fi
 
