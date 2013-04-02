@@ -102,15 +102,15 @@ dist-copy-out:
 	@echo "--> Done:" >&3
 	@set -e;\
 	for arch_chroot_dir in $(CHROOT_DIR)/$(DIST_SRC)/; do\
-		arch_rpm_dir=$(ORIG_SRC)/pkgs/`basename $$arch_chroot_dir`;\
-		mkdir -p $$arch_rpm_dir;\
+		arch_pkg_dir=$(ORIG_SRC)/pkgs;\
+		mkdir -p $$arch_pkg_dir;\
 		for pkg in $$arch_chroot_dir/*.pkg.tar.xz; do\
-			echo "      $$arch_rpm_dir/`basename $$pkg`" >&3 ;\
+			echo "      $$arch_pkg_dir/`basename $$pkg`" >&3 ;\
 		done;\
 		mkdir -p $(BUILDER_REPO_DIR)/pkgs;\
 		ln -f -t $(BUILDER_REPO_DIR)/pkgs $$arch_chroot_dir/*.pkg.tar.xz;\
-	done
-#mv -t $$arch_pm_dir $$arch_chroot_dir/*;\
+	done; \
+	mv -t $$arch_pkg_dir $$arch_chroot_dir/*.pkg.tar.xz
 
 ### Additional targets
 
