@@ -82,7 +82,9 @@ ifndef PACKAGE
 endif
 	# Add all available package to the custom repository.
 	# Or initialize it with a random packages because pacman does not deal correctly with empty repositories
-	sudo chroot $(CHROOT_DIR) su user -c 'cd /tmp/qubes-rpms-mirror-repo; [ ! -e pkgs/qubes.db ] && sudo cp /var/cache/pacman/pkg/pacman*.pkg.tar.xz ./pkgs;'
+	if [ ! -e "$(BUILDER_REPO_DIR)/pkgs/qubes.db" ]; then \
+		sudo cp $(CHROOT_DIR)/var/cache/pacman/pkg/pacman*.pkg.tar.xz "$(BUILDER_REPO_DIR)/pkgs/"; \
+	fi
 	sudo chroot $(CHROOT_DIR) su user -c 'cd /tmp/qubes-rpms-mirror-repo; repo-add pkgs/qubes.db.tar.gz pkgs/*.pkg.tar.xz;'
 	sudo chroot $(CHROOT_DIR) sh -c 'pacman -Sy'
 
