@@ -114,15 +114,4 @@ dist-copy-out:
 
 ### Additional targets
 
-# Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
-# requested repository (UPDATE_REPO)
-update-repo:
-ifndef UPDATE_REPO
-	$(error "You need to specify destination repo in UPDATE_REPO variable")
-endif
-ifeq (,$(RPM_SPEC_FILES))
-	@true
-else
-	@cd $(ORIG_SRC) && ln -f $(foreach SPEC,$(RPM_SPEC_FILES),$(call spec_packages,$(SPEC))) $(UPDATE_REPO)/rpm/
-endif
-
+# TODO? update-repo target
