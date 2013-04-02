@@ -28,18 +28,8 @@ if ! [ -d $DIR/home/user ]; then
 
     qubes-src/linux-template-builder/scripts_archlinux/01_install_core.sh
 
-    # Note: Enable x86 repos
     sudo mount $CACHEDIR/root-image.fs mnt_archlinux_dvd
-    su -c "echo '[multilib]' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'SigLevel = PackageRequired' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'Include = /etc/pacman.d/mirrorlist' >> $INSTALLDIR/etc/pacman.conf"
 
-    su -c "echo '[qubes]' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'SigLevel = Optional TrustAll' >> $INSTALLDIR/etc/pacman.conf"
-    su -c "echo 'Server = file:///tmp/qubes-rpms-mirror-repo/pkgs' >> $INSTALLDIR/etc/pacman.conf"
-
-    sudo ./mnt_archlinux_dvd/usr/bin/arch-chroot $INSTALLDIR sh -c "pacman -Sy"
-    sudo umount mnt_archlinux_dvd
     cp /etc/resolv.conf $DIR/etc/
 
     [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
@@ -55,10 +45,22 @@ if ! [ -d $DIR/home/user ]; then
     chroot $DIR sh -c "useradd -g user -G wheel $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
 
     # Install required makepkg dependencies
-    chroot $DIR sh -c "pacman -Sy --needed --noconfirm --asdeps binutils fakeroot sudo" 
+    sudo ./mnt_archlinux_dvd/usr/bin/arch-chroot $INSTALLDIR sh -c "pacman -Sy --needed --noconfirm --asdeps binutils fakeroot sudo" 
+
+    sudo umount mnt_archlinux_dvd
 
     # Fixup so that the user can sudo without password
-    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/qubes-build-user
+    su -c "echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> $INSTALLDIR/etc/sudoers.d/qubes-build-user"
+
+    # Note: Enable x86 repos
+    su -c "echo '[multilib]' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'SigLevel = PackageRequired' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'Include = /etc/pacman.d/mirrorlist' >> $INSTALLDIR/etc/pacman.conf"
+
+    # Register custom repository (it will be created later)
+    su -c "echo '[qubes]' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'SigLevel = Optional TrustAll' >> $INSTALLDIR/etc/pacman.conf"
+    su -c "echo 'Server = file:///tmp/qubes-rpms-mirror-repo/pkgs' >> $INSTALLDIR/etc/pacman.conf"
 
 fi
 
