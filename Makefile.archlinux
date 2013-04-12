@@ -86,7 +86,7 @@ endif
 		sudo cp $(CHROOT_DIR)/var/cache/pacman/pkg/pacman*.pkg.tar.xz "$(BUILDER_REPO_DIR)/pkgs/"; \
 	fi
 	sudo chroot $(CHROOT_DIR) su user -c 'cd /tmp/qubes-rpms-mirror-repo; repo-add pkgs/qubes.db.tar.gz pkgs/*.pkg.tar.xz;'
-	sudo chroot $(CHROOT_DIR) sh -c 'pacman -Sy'
+	sudo chroot $(CHROOT_DIR) sh -c 'pacman -Syu --noconfirm'
 
 
 dist-package:
