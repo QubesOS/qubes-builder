@@ -114,4 +114,21 @@ dist-copy-out:
 
 ### Additional targets
 
-# TODO? update-repo target
+# Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
+# requested repository (UPDATE_REPO)
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+ifeq (,$(ARCH_BUILD_DIRS))
+	@true
+else
+	mkdir -p $(UPDATE_REPO)/pkgs
+	for arch_build_dir in $(ARCH_BUILD_DIRS); do\
+		pkgname=`cat $(ORIG_SRC)/$$arch_build_dir/PKGBUILD | grep pkgname | cut -d "=" -f 2`;\
+		ln -f $(ORIG_SRC)/pkgs/$$pkgname-*.pkg.tar.xz $(UPDATE_REPO)/pkgs/;\
+	done; \
+
+endif
+
+
