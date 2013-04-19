@@ -27,13 +27,13 @@ COMPONENTS ?= vmm-xen \
 			  desktop-linux-xfce4 \
 			  qubes-manager \
 			  linux-dom0-updates \
-			  linux-installer-qubes-os \
+			  installer-qubes-os \
 			  linux-yum \
 			  vmm-xen-windows-pvdrivers \
 			  antievilmaid
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
-INSTALLER_COMPONENT ?= linux-installer-qubes-os
+INSTALLER_COMPONENT ?= installer-qubes-os
 
 #Include config file
 -include builder.conf
