@@ -289,7 +289,7 @@ show-vtags:
 		git config --get-color "" "reset"
 		echo -n '('
 		git config --get-color color.decorate.branch "green bold"
-		git name-rev --name-only HEAD | tr -d '\n'
+		git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'
 		git config --get-color "" "reset"
 		echo ')'
 	    popd > /dev/null
