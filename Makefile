@@ -371,8 +371,8 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 				COMPONENT=`basename $$REPO` \
 				update-repo
 			for DIST in $(DISTS_VM); do
-				make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-					UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
+				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
+					UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
 					update-repo
 			done
