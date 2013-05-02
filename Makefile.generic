@@ -28,6 +28,9 @@ CHROOT_DIR = $(PWD)/chroot-$(DIST)
 # Logfile
 BUILD_LOG="build-logs/$(COMPONENT)-$(PACKAGE_SET)-$(DIST).log"
 
+# environment variables for build process (inside of chroot)
+CHROOT_ENV = BACKEND_VMM=$(BACKEND_VMM)
+
 ### Load component-specific settings
 
 # Component specific settins. Generic variables:

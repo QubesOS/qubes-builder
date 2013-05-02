@@ -34,6 +34,7 @@ COMPONENTS ?= vmm-xen \
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
+BACKEND_VMM ?= xen
 
 #Include config file
 -include builder.conf
