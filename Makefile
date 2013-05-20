@@ -73,31 +73,31 @@ help:
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
 get-sources:
-	@set -a
-	@SCRIPT_DIR=$(PWD)
-	@SRC_ROOT=$(PWD)/$(SRC_DIR)
-	@for REPO in $(GIT_REPOS); do
-		$$SCRIPT_DIR/get-sources.sh || exit 1
+	@set -a; \
+	SCRIPT_DIR=$(PWD); \
+	SRC_ROOT=$(PWD)/$(SRC_DIR); \
+	for REPO in $(GIT_REPOS); do \
+		$$SCRIPT_DIR/get-sources.sh || exit 1; \
 	done
 
 $(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
-	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then
-		for DIST in $(DISTS_VM); do
-			make --no-print-directory -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* all || exit 1
-		done
-	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then
+	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+		for DIST in $(DISTS_VM); do \
+			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
+		done; \
+	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM); do \
-	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1
-	    done
+	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
+	    done; \
 	fi
 
 %-dom0:
-	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then
-		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1
-	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then
-	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1
+	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
+	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
+	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1; \
 	fi
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
@@ -264,124 +264,124 @@ iso:
 
 
 check:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
-		pushd $$REPO > /dev/null
-		git status | grep "^nothing to commit" > /dev/null
-		if [ $$? -ne 0 ]; then
-			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi
-			echo "> $$REPO"; fi
-	    popd > /dev/null
-	done
-	HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
-		pushd $$REPO > /dev/null
-		git tag --contains HEAD | grep ^. > /dev/null
-		if [ $$? -ne 0 ]; then
-			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi
-			echo "> $$REPO"; fi
-	    popd > /dev/null
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git status | grep "^nothing to commit" > /dev/null; \
+		if [ $$? -ne 0 ]; then \
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Uncommited changes in:"; fi; \
+			echo "> $$REPO"; fi; \
+	    popd > /dev/null; \
+	done; \
+	HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git tag --contains HEAD | grep ^. > /dev/null; \
+		if [ $$? -ne 0 ]; then \
+			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi; \
+			echo "> $$REPO"; fi; \
+	    popd > /dev/null; \
 	done
 
 show-vtags:
-	@for REPO in $(GIT_REPOS); do
-		pushd $$REPO > /dev/null
-		echo -n "$$REPO: "
-		git config --get-color color.decorate.tag "red bold"
-		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '
-		git config --get-color "" "reset"
-		echo -n '('
-		git config --get-color color.decorate.branch "green bold"
-		git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'
-		git config --get-color "" "reset"
-		echo ')'
-	    popd > /dev/null
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		echo -n "$$REPO: "; \
+		git config --get-color color.decorate.tag "red bold"; \
+		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '; \
+		git config --get-color "" "reset"; \
+		echo -n '('; \
+		git config --get-color color.decorate.branch "green bold"; \
+		git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'; \
+		git config --get-color "" "reset"; \
+		echo ')'; \
+	    popd > /dev/null; \
 	done
 
 push:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do
-		pushd $$REPO > /dev/null
-		PUSH_REMOTE=`git config branch.$(BRANCH).remote`
-		[ -n "$(GIT_REMOTE)" ] && PUSH_REMOTE="$(GIT_REMOTE)"
-		if [ -z "$$PUSH_REMOTE" ]; then
-			echo "No remote repository set for $$REPO, branch $(BRANCH),"
-			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"
-			echo "Not pushing anything!"
-		else
-			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."
-			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`
-			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q
-			git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH
-			if [ $$? -ne 0 ]; then exit 1; fi
-		fi
-		popd > /dev/null
-	done
+	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		PUSH_REMOTE=`git config branch.$(BRANCH).remote`; \
+		[ -n "$(GIT_REMOTE)" ] && PUSH_REMOTE="$(GIT_REMOTE)"; \
+		if [ -z "$$PUSH_REMOTE" ]; then \
+			echo "No remote repository set for $$REPO, branch $(BRANCH),"; \
+			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"; \
+			echo "Not pushing anything!"; \
+		else \
+			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."; \
+			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`; \
+			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q; \
+			git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH; \
+			if [ $$? -ne 0 ]; then exit 1; fi; \
+		fi; \
+		popd > /dev/null; \
+	done; \
 	echo "All stuff pushed succesfully."
 	
 # Force bash for some advanced substitution (eg ${!...})
 SHELL = /bin/bash
 prepare-merge:
-	@set -a
-	SCRIPT_DIR=$(PWD)
-	SRC_ROOT=$(PWD)/$(SRC_DIR)
-	FETCH_ONLY=1
-	REPOS="$(GIT_REPOS)"
-	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"
-	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"
-	for REPO in $$REPOS; do
-		$$SCRIPT_DIR/get-sources.sh || exit 1
-	done
+	@set -a; \
+	SCRIPT_DIR=$(CURDIR); \
+	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
+	FETCH_ONLY=1; \
+	REPOS="$(GIT_REPOS)"; \
+	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
+	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
+	for REPO in $$REPOS; do \
+		$$SCRIPT_DIR/get-sources.sh || exit 1; \
+	done; \
 	$(MAKE) --no-print-directory show-unmerged
 
 show-unmerged:
-	@set -a
-	REPOS="$(GIT_REPOS)"
-	echo "Changes to be merged:"
-	for REPO in $$REPOS; do
-		pushd $$REPO > /dev/null
-		if [ -n "`git log ..FETCH_HEAD`" ]; then
-			if [ -n "`git rev-list FETCH_HEAD..HEAD`" ]; then
-				MERGE_TYPE="`git config --get-color color.decorate.tag 'red bold'`"
-				MERGE_TYPE="$${MERGE_TYPE}merge"
-			else
-				MERGE_TYPE="`git config --get-color color.decorate.tag 'green bold'`"
-				MERGE_TYPE="$${MERGE_TYPE}fast-forward"
-			fi
-			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"
-			echo "> $$REPO $$MERGE_TYPE: git merge FETCH_HEAD"
-			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD
-		fi
-		popd > /dev/null
+	@set -a; \
+	REPOS="$(GIT_REPOS)"; \
+	echo "Changes to be merged:"; \
+	for REPO in $$REPOS; do \
+		pushd $$REPO > /dev/null; \
+		if [ -n "`git log ..FETCH_HEAD`" ]; then \
+			if [ -n "`git rev-list FETCH_HEAD..HEAD`" ]; then \
+				MERGE_TYPE="`git config --get-color color.decorate.tag 'red bold'`"; \
+				MERGE_TYPE="$${MERGE_TYPE}merge"; \
+			else; \
+				MERGE_TYPE="`git config --get-color color.decorate.tag 'green bold'`"; \
+				MERGE_TYPE="$${MERGE_TYPE}fast-forward"; \
+			fi; \
+			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"; \
+			echo "> $$REPO $$MERGE_TYPE: git merge FETCH_HEAD"; \
+			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD; \
+		fi; \
+		popd > /dev/null; \
 	done
 
 do-merge:
-	@set -a
-	REPOS="$(GIT_REPOS)"
-	for REPO in $$REPOS; do
-		pushd $$REPO > /dev/null
-		echo "Merging FETCH_HEAD into $$REPO"
-		git merge --no-edit FETCH_HEAD || exit 1
-		popd > /dev/null
+	@set -a; \
+	REPOS="$(GIT_REPOS)"; \
+	for REPO in $$REPOS; do \
+		pushd $$REPO > /dev/null; \
+		echo "Merging FETCH_HEAD into $$REPO"; \
+		git merge --no-edit FETCH_HEAD || exit 1; \
+		popd > /dev/null; \
 	done
 
 update-repo-current update-repo-current-testing update-repo-unstable: update-repo-%:
-	@for REPO in $(GIT_REPOS); do
-		[ $$REPO == '.' ] && break
-		if [ -r $$REPO/Makefile.builder ]; then
-			echo "Updating $$REPO..."
+	@for REPO in $(GIT_REPOS); do \
+		[ $$REPO == '.' ] && break; \
+		if [ -r $$REPO/Makefile.builder ]; then \
+			echo "Updating $$REPO..."; \
 			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
 				UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
 				COMPONENT=`basename $$REPO` \
-				update-repo
-			for DIST in $(DISTS_VM); do
+				update-repo; \
+			for DIST in $(DISTS_VM); do \
 				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
 					UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
-					update-repo
-			done
-		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then
-			echo "Updating $$REPO... "
-			make -s -C $$REPO update-repo-$* || echo
-		else
-			echo "Updating $$REPO... skipping."
-		fi
-	done
+					update-repo; \
+			done; \
+		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then \
+			echo "Updating $$REPO... "; \
+			make -s -C $$REPO update-repo-$* || echo; \
+		else \
+			echo "Updating $$REPO... skipping."; \
+		fi; \
+	done; \
 	(cd $(LINUX_REPO_BASEDIR)/.. && ./update_repo-$*.sh)
