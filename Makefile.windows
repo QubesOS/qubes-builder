@@ -1,6 +1,132 @@
+# Generic makefile for Windows build
+#
+# For "API" documentation check Makefile.generic
+#
+# Variables supposed to be in component's Makefile.builder:
+#  WIN_SOURCE_SUBDIRS - list of spec files to build
+#  WIN_PREBUILD_CMD - commands to run before build process
+#  WIN_SIGN_CMD
+#  WIN_PACKAGE_CMD
+#
+#  For dummy *_CMD use "true"
+#
 
-win-pvdrivers core-windows:
-	@echo Automatic build of Windows packages is currently unsupported.
-	@echo Please follow the instructions in README.windows and build them manually.
-	@exit 0
+### Variables required Makefile.generic
+# Use directory list as PACKAGE_LIST
+PACKAGE_LIST = $(WIN_SOURCE_SUBDIRS)
+DIST_BUILD_DIR = .
 
+### Settings: defaults, to be overriden by Makefile.builder
+
+WIN_SIGN_CMD ?= call sign.bat
+WIN_PACKAGE_CMD ?= call wix.bat
+WIN_PREBUILD_CMD ?= true
+
+### Settings: defaults, to be overriden by builder.conf
+
+DDK_PATH ?= C:\\WinDDK\\7600.16385.1
+
+# Build type: fre (release), chk (debug)
+WIN_BUILD_TYPE ?= fre
+
+WIN_CERT_FILENAME ?=
+WIN_CERT_PASSWORD ?=
+# MS Cross Signing Certificate .cer (if you have a proper authenticode cert)
+WIN_CERT_CROSS_CERT_FILENAME ?=
+# public certificate .cer (if you _don't_ have a proper authenticode cert)
+WIN_CERT_PUBLIC_FILENAME ?=
+
+### Local variables
+
+# Build environment
+
+ifneq (,$(findstring x64,$(DIST)))
+DDK_ARCH = x64
+DIST_TMP = $(subst x64,,$(DIST))
+else ifneq (,$(findstring x86,$(DIST)))
+DDK_ARCH =
+DIST_TMP = $(subst x86,,$(DIST))
+else
+$(error unsupported architecture: $(DIST))
+endif
+
+ifeq ($(DIST_TMP),win7)
+DDK_DIST = WIN7
+else ifeq ($(DIST_TMP),winVista)
+DDK_DIST = WLH
+else ifeq ($(DIST_TMP),win2k)
+DDK_DIST = W2K
+$(error Windows 2000 not supported)
+else ifeq ($(DIST_TMP),winXP)
+DDK_DIST = WXP
+else
+$(error $(DIST_TMP) not supported)
+endif
+
+# Code signing certificate
+
+ifneq (,$(WIN_CERT_FILENAME))
+CERT_FILENAME = $(abspath $(WIN_CERT_FILENAME))
+export CERT_FILENAME
+endif
+CERT_PASSWORD = $(WIN_CERT_PASSWORD)
+export CERT_PASSWORD
+ifneq (,$(WIN_CERT_CROSS_CERT_FILENAME))
+CERT_CROSS_CERT_FILENAME = $(abspath $(WIN_CERT_CROSS_CERT_FILENAME))
+export CERT_CROSS_CERT_FILENAME
+endif
+ifneq (,$(WIN_CERT_PUBLIC_FILENAME))
+CERT_PUBLIC_FILENAME = $(abspath $(WIN_CERT_PUBLIC_FILENAME))
+export CERT_PUBLIC_FILENAME
+endif
+
+# Misc variables
+
+SETENV_ARGS = $(DDK_PATH) $(WIN_BUILD_TYPE) $(DDK_ARCH) $(DDK_DIST)
+SETENV_CMD = $(DDK_PATH)\\bin\\setenv.bat $(SETENV_ARGS)
+
+PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
+PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
+PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
+
+SIGNTOOL=$(DDK_PATH)/bin/x86/signtool.exe
+
+### Targets required by Makefile.generic to build packages
+dist-prepare-chroot:
+	@mkdir -p $(CHROOT_DIR)
+ifneq ($(CERT_FILENAME),)
+	@if [ ! -r "$(CERT_FILENAME)" ]; then \
+		"$(DDK_PATH)"/bin/x86/makecert -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
+		certutil -exportpfx -user -privatekey $(CERT_PASSWORD_FLAG) PrivateCertStore "Qubes Test Cert" "$(CERT_FILENAME)"; \
+	fi
+endif
+
+dist-prep:
+	# Running OACR will prevent removing old sources
+	@cmd //C "$(SETENV_CMD) && oacr stop"
+
+dist-build-dep:
+	@true
+
+dist-package:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+ifneq (,$(WIN_CERT_FILENAME))
+	@echo > chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
+else
+	@rm -f chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
+endif
+	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && \
+		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
+
+dist-copy-out:
+	@echo "--> Done:" >&3
+ifneq ($(WIN_PACKAGE_CMD),true)
+	@for pkg in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.msi; do\
+		echo "      `basename $$pkg`" >&3 ;\
+		mv -t $(ORIG_SRC)/$(PACKAGE) $$pkg;\
+	done
+endif
+
+### Additional targets

@@ -155,9 +155,6 @@ dom0-updates:
 	@MAKE_TARGET="stage3" ./build.sh $(DIST_DOM0) dom0-updates
 	@MAKE_TARGET="stage4" ./build.sh $(DIST_DOM0) dom0-updates
 
-# windows build targets
-include Makefile.windows
-
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
 	@echo "-> Signing packages..."

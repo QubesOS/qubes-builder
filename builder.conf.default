@@ -46,6 +46,7 @@
 
 # DISTS_VM - distributions for VM packages (can be list - separate with space)
 # Supported distros: fc15 fc17 fc18
+# Windows: win7x64 win7x86 winVistax64 winVistax86 winXPx64 winXPx86
 # Default: fc18
 
 # QUBES_RELEASE - set release version of result iso
@@ -75,6 +76,17 @@
 # 1 - print (almost) only warnings
 # 2 - full output
 # Default: 0
+
+### Windows specific settings
+# WIN_CERT_FILENAME - private key for signing files
+# WIN_CERT_PASSWORD - password for private key (if any)
+# # Only one of those:
+# WIN_CERT_CROSS_CERT_FILENAME - public certificate (if you have proper authenticode cert)
+# WIN_CERT_PUBLIC_FILENAME - public self-signed certificate (it will be
+#   generated if doesn't exists)
+#
+# Build type: fre (default) - release build, chk - debug build
+# WIN_BUILD_TYPE
 
 # Example for using local git dirs as repo:
 # GIT_BASEURL=/home/user/qubes-src

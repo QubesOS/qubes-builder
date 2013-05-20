@@ -11,6 +11,18 @@
 .EXPORT_ALL_VARIABLES:
 ifneq (,$(findstring fc,$(DIST)))
 DISTRIBUTION := fedora
+else ifneq (,$(findstring win,$(DIST)))
+ifeq ($(OS),Windows_NT)
+DISTRIBUTION := windows
+else
+# Some day here will be code to copy required files to some Windows VM and
+# compile there, but for now throw and error
+$(error Run this on Windows to build Windows components)
+# Skeleton for what should be here:
+#   qvm-copy-to-vm $(WIN_BUILD_VM) ...
+#   qvm-run $(WIN_BUILD_VM) 'cmd /c cd ... && make ... && qvm-copy-to-vm `hostname` ...
+#   mv ~/QubesIncoming/$(WIN_BUILD_VM)/...
+endif
 else
 DISTRIBUTION := $(DIST)
 endif
