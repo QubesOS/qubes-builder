@@ -74,8 +74,8 @@ help:
 
 get-sources:
 	@set -a; \
-	SCRIPT_DIR=$(PWD); \
-	SRC_ROOT=$(PWD)/$(SRC_DIR); \
+	SCRIPT_DIR=$(CURDIR); \
+	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
 	for REPO in $(GIT_REPOS); do \
 		$$SCRIPT_DIR/get-sources.sh || exit 1; \
 	done
@@ -115,7 +115,7 @@ template linux-template-builder:
 	@for DIST in $(DISTS_VM); do
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
-	    export GNUPGHOME="$(PWD)/keyrings/template-$$DIST"
+	    export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
 	    mkdir -p "$$GNUPGHOME"
 	    chmod 700 "$$GNUPGHOME"
 	    export DIST NO_SIGN
@@ -125,7 +125,7 @@ template linux-template-builder:
 				make --no-print-directory -f Makefile.generic \
 					PACKAGE_SET=vm \
 					COMPONENT=`basename $$repo` \
-					UPDATE_REPO=$(PWD)/$(SRC_DIR)/linux-template-builder/yum_repo_qubes/$$DIST \
+					UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/yum_repo_qubes/$$DIST \
 					update-repo || exit 1
 	        elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 	            make -s -C $$repo update-repo-template || exit 1
@@ -240,7 +240,7 @@ iso:
 				PACKAGE_SET=dom0 \
 				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(PWD)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 				update-repo || exit 1
 	    elif make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! make -s -C $$repo update-repo-installer ; then \
@@ -250,7 +250,7 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST UPDATE_REPO=$(PWD)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
@@ -368,12 +368,12 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 		if [ -r $$REPO/Makefile.builder ]; then \
 			echo "Updating $$REPO..."; \
 			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-				UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
+				UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
 				COMPONENT=`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
 				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
-					UPDATE_REPO=$(PWD)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
+					UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
 					update-repo; \
 			done; \
