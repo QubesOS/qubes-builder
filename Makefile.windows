@@ -7,6 +7,12 @@
 #  WIN_PREBUILD_CMD - commands to run before build process
 #  WIN_SIGN_CMD
 #  WIN_PACKAGE_CMD
+#  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
+#    relative to $(PACKAGE)
+#  WIN_OUTPUT_HEADERS - directory with includes for $(WIN_OUTPUT_LIBS),
+#    relative to $(PACKAGE)
+#  WIN_BUILD_DEPS - components needed to compile/link this one, headers will be
+#    available in $(QUBES_INCLUDES), libraries in $(QUBES_LIBS)
 #
 #  For dummy *_CMD use "true"
 #
@@ -89,6 +95,10 @@ PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
 PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
 
+# Set this way to have them converted to windows paths by msys
+QUBES_INCLUDES = $(shell cd $(CHROOT_DIR)/build-deps/include && pwd -W)
+QUBES_LIBS = $(shell cd $(CHROOT_DIR)/build-deps/libs && pwd -W)
+
 SIGNTOOL=$(DDK_PATH)/bin/x86/signtool.exe
 
 ### Targets required by Makefile.generic to build packages
@@ -106,7 +116,16 @@ dist-prep:
 	@cmd //C "$(SETENV_CMD) && oacr stop"
 
 dist-build-dep:
-	@true
+	@mkdir -p $(CHROOT_DIR)/build-deps/libs
+	@mkdir -p $(CHROOT_DIR)/build-deps/include
+	@for dep in $(WIN_BUILD_DEPS); do \
+		if [ -d $(BUILDER_REPO_DIR)/$$dep/libs ]; then \
+			cp -t $(CHROOT_DIR)/build-deps/libs $(BUILDER_REPO_DIR)/$$dep/libs/*; \
+		fi; \
+		if [ -d $(BUILDER_REPO_DIR)/$$dep/include ]; then \
+			cp -t $(CHROOT_DIR)/build-deps/include $(BUILDER_REPO_DIR)/$$dep/include/*; \
+		fi; \
+	done
 
 dist-package:
 ifndef PACKAGE
@@ -126,6 +145,20 @@ ifneq ($(WIN_PACKAGE_CMD),true)
 	@for pkg in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.msi; do\
 		echo "      `basename $$pkg`" >&3 ;\
 		mv -t $(ORIG_SRC)/$(PACKAGE) $$pkg;\
+	done
+endif
+ifneq (,$(WIN_OUTPUT_LIBS))
+	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/libs
+	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_LIBS)/*/*; do\
+		echo "      libs/`basename $$file`" >&3 ;\
+		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/libs/ $$file || exit 1;\
+	done
+endif
+ifneq (,$(WIN_OUTPUT_HEADERS))
+	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/include
+	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_HEADERS)/*; do\
+		echo "      include/`basename $$file`" >&3 ;\
+		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/include/ $$file || exit 1;\
 	done
 endif
 
