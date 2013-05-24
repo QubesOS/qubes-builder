@@ -131,6 +131,7 @@ dist-package:
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
+	@rm -f chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/*.msi
 ifneq (,$(WIN_CERT_FILENAME))
 	@echo > chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
 else
