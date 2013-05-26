@@ -14,15 +14,15 @@ OUTPUT=`sudo kpartx -a -v $IMG`
 # sample output: add map loop0p1 (253:1): 0 2095104 linear /dev/loop0 2048
 DEV=/dev/mapper/`echo $OUTPUT | cut -f 3 -d ' '`
 
-mkfs.ntfs -q --fast $DEV || exit 1
+sudo mkfs.ntfs -q --fast $DEV || exit 1
 mkdir -p $MNT
 sudo mount $DEV $MNT
 sudo mkdir $MNT/winpvdrivers
-sudo rsync --exclude-from win-sources.exclude -r $SRC/win-pvdrivers/* $MNT/winpvdrivers/
-if [ -d $SRC/core-windows ]; then
+sudo rsync --exclude-from win-sources.exclude -r $SRC/vmm-xen-windows-pvdrivers/* $MNT/winpvdrivers/
+if [ -d $SRC/core-agent-windows ]; then
     sudo mkdir $MNT/core
-    sudo rsync --exclude-from win-sources.exclude -r $SRC/core-windows/* $MNT/core/
-    sudo rsync --exclude-from win-sources.exclude -r $SRC/core/vchan $MNT/core/
+    sudo rsync --exclude-from win-sources.exclude -r $SRC/core-agent-windows/* $MNT/core/
+    sudo rsync --exclude-from win-sources.exclude -r $SRC/core-vchan-xen/vchan $MNT/core/
 fi
 sudo rsync win-srcimg-files/* $MNT/
 sudo umount  $MNT
