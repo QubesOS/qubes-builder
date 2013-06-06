@@ -338,7 +338,7 @@ show-unmerged:
 			if [ -n "`git rev-list FETCH_HEAD..HEAD`" ]; then \
 				MERGE_TYPE="`git config --get-color color.decorate.tag 'red bold'`"; \
 				MERGE_TYPE="$${MERGE_TYPE}merge"; \
-			else; \
+			else \
 				MERGE_TYPE="`git config --get-color color.decorate.tag 'green bold'`"; \
 				MERGE_TYPE="$${MERGE_TYPE}fast-forward"; \
 			fi; \
