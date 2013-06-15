@@ -54,6 +54,7 @@ ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
 	./update-local-repo.sh $(DIST)
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) yum --disablerepo=* --enablerepo=qubes-builder-pkgs clean all
 	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) sh -c 'cd $(DIST_SRC); yum-builddep -y $(PACKAGE)'
 
 dist-package:
