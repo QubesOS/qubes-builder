@@ -3,6 +3,7 @@
 # For "API" documentation check Makefile.generic
 #
 # Variables supposed to be in component's Makefile.builder:
+#  WIN_COMPILER - "WDK" (default) or "mingw"
 #  WIN_SOURCE_SUBDIRS - list of spec files to build
 #  WIN_PREBUILD_CMD - commands to run before build process
 #  WIN_SIGN_CMD
@@ -24,6 +25,7 @@ DIST_BUILD_DIR = .
 
 ### Settings: defaults, to be overriden by Makefile.builder
 
+WIN_COMPILER ?= WDK
 WIN_SIGN_CMD ?= call sign.bat
 WIN_PACKAGE_CMD ?= call wix.bat
 WIN_PREBUILD_CMD ?= true
@@ -88,12 +90,18 @@ endif
 
 # Misc variables
 
+ifeq ($(WIN_COMPILER),WDK)
 SETENV_ARGS = $(DDK_PATH) $(WIN_BUILD_TYPE) $(DDK_ARCH) $(DDK_DIST)
 SETENV_CMD = $(DDK_PATH)\\bin\\setenv.bat $(SETENV_ARGS)
 
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
 PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
+else
+PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
+PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
+endif
+
 
 # Set this way to have them converted to windows paths by msys
 QUBES_INCLUDES = $(shell cd $(CHROOT_DIR)/build-deps/include && pwd -W)
@@ -111,9 +119,15 @@ ifneq ($(CERT_FILENAME),)
 	fi
 endif
 
+ifeq ($(WIN_COMPILER),WDK)
 dist-prep:
 	# Running OACR will prevent removing old sources
 	@cmd //C "$(SETENV_CMD) && oacr stop"
+else
+dist-prep:
+	@true
+endif
+
 
 dist-build-dep:
 	@mkdir -p $(CHROOT_DIR)/build-deps/libs
@@ -137,8 +151,14 @@ ifneq (,$(WIN_CERT_FILENAME))
 else
 	@rm -f chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
 endif
+ifeq ($(WIN_COMPILER),WDK)
 	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && \
 		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
+else
+	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
+	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && make all
+	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && $(WIN_PACKAGE_CMD)
+endif
 
 dist-copy-out:
 	@echo "--> Done:" >&3
