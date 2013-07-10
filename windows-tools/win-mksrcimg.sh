@@ -24,6 +24,12 @@ if [ -d $SRC/core-agent-windows ]; then
     sudo rsync --exclude-from win-sources.exclude -r $SRC/core-agent-windows/* $MNT/core/
     sudo rsync --exclude-from win-sources.exclude -r $SRC/core-vchan-xen/vchan $MNT/core/
 fi
+if [ -d $SRC/gui-agent-windows ]; then
+    sudo mkdir $MNT/gui-agent
+    sudo rsync --exclude-from win-sources.exclude -r $SRC/gui-agent-windows/* $MNT/gui-agent/
+    sudo rsync --exclude-from win-sources.exclude -r $SRC/gui-common $MNT/gui-agent/
+fi
+
 sudo rsync win-srcimg-files/* $MNT/
 sudo umount  $MNT
 sudo kpartx -d $IMG
