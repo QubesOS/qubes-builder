@@ -58,20 +58,12 @@ Installation instruction:
    gendef c:\windows\system32\python27.dll
    dlltool -d python27.def -l libpython27.dll.a
 
-#. Fix c:/python27/include/modsupport.h: ::
-   sed -i 's/#if SIZEOF_SIZE_T != SIZEOF_INT/\0 || defined(_WIN64)/' c:/python27/include/modsupport.h
-
 #. Install python modules:
    1) setuptools (manually); copy python27/scripts/easy_install.py to level up (to be in $PATH)
-   2) Edit (create if not existing) distutils.cfg file located at C:\Python26\Lib\distutils\distutils.cfg to be:
-
-         [build]
-         compiler=mingw32
-
-   3) sed -e 's/ -mno-cygwin//' C:\Python27\Lib\distutils\cygwinccompiler.py
-   4) lxml (easy_install lxml)
-   5) lockfile
-   6) psutil (binaries from code.google.com. Sources fail to compile with mingw)
+   2) Apply patch from qubes-builder/windows-build-files/python-mingw32.patch
+   3) lxml (easy_install lxml)
+   4) lockfile
+   5) psutil (binaries from code.google.com. Sources fail to compile with mingw)
 #. 
    
 
