@@ -1,0 +1,53 @@
+This patch "fixes":
+* http://bugs.python.org/issue16472 "Distutils+mingw links agains msvcr90, while python27.dll is linked agains msvcrt"
+* http://bugs.python.org/issue12641 "Remove -mno-cygwin from distutils"
+
+It also sets default compiler to mingw (instead of cygwin) and fixes includes
+for 64bit mingw version.
+
+--- Lib/distutils/cygwinccompiler.py.orig	2013-07-30 23:38:49 +0000
++++ Lib/distutils/cygwinccompiler.py	2013-07-30 23:35:50 +0000
+@@ -319,11 +319,11 @@
+         else:
+             entry_point = ''
+ 
+-        self.set_executables(compiler='gcc -mno-cygwin -O -Wall',
+-                             compiler_so='gcc -mno-cygwin -mdll -O -Wall',
+-                             compiler_cxx='g++ -mno-cygwin -O -Wall',
+-                             linker_exe='gcc -mno-cygwin',
+-                             linker_so='%s -mno-cygwin %s %s'
++        self.set_executables(compiler='gcc -O -Wall',
++                             compiler_so='gcc -mdll -O -Wall',
++                             compiler_cxx='g++ -O -Wall',
++                             linker_exe='gcc',
++                             linker_so='%s %s %s'
+                                         % (self.linker_dll, shared_option,
+                                            entry_point))
+         # Maybe we should also append -mthreads, but then the finished
+@@ -333,10 +333,6 @@
+         # no additional libraries needed
+         self.dll_libraries=[]
+ 
+-        # Include the appropriate MSVC runtime library if Python was built
+-        # with MSVC 7.0 or later.
+-        self.dll_libraries = get_msvcr()
+-
+     # __init__ ()
+ 
+ # class Mingw32CCompiler
+--- /dev/null	2013-07-31 00:54:05 +0000
++++ Lib/distutils/distutils.cfg	2013-07-20 03:13:40 +0000
+@@ -0,0 +1,2 @@
++[build]
++compiler=mingw32
+--- include/modsupport.h.orig	2013-07-31 13:11:14.435598529 +0200
++++ include/modsupport.h	2013-07-31 13:11:44.589184364 +0200
+@@ -97,7 +97,7 @@
+    without actually needing a recompile.  */
+ #endif /* MS_WINDOWS */
+ 
+-#if SIZEOF_SIZE_T != SIZEOF_INT
++#if SIZEOF_SIZE_T != SIZEOF_INT || defined(_WIN64)
+ /* On a 64-bit system, rename the Py_InitModule4 so that 2.4
+    modules cannot get loaded into a 2.5 interpreter */
+ #define Py_InitModule4 Py_InitModule4_64
