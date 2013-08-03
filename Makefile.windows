@@ -145,19 +145,19 @@ dist-package:
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
-	@rm -f chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/*.msi
+	@rm -f $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.msi
 ifneq (,$(WIN_CERT_FILENAME))
-	@echo > chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
+	@echo > $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
 else
-	@rm -f chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
+	@rm -f $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/sign_config.bat
 endif
 ifeq ($(WIN_COMPILER),WDK)
-	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && \
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
 		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
 else
-	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
-	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && make all
-	@cd chroot-$(DIST)/$(DIST_SRC)/$(PACKAGE) && $(WIN_PACKAGE_CMD)
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && make all
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(WIN_PACKAGE_CMD)
 endif
 
 dist-copy-out:
