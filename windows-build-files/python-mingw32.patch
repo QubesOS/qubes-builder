@@ -1,9 +1,9 @@
 This patch "fixes":
 * http://bugs.python.org/issue16472 "Distutils+mingw links agains msvcr90, while python27.dll is linked agains msvcrt"
 * http://bugs.python.org/issue12641 "Remove -mno-cygwin from distutils"
+* http://bugs.python.org/issue4709 "Mingw-w64 and python on windows x64"
 
-It also sets default compiler to mingw (instead of cygwin) and fixes includes
-for 64bit mingw version.
+It also sets default compiler to mingw (instead of cygwin).
 
 --- Lib/distutils/cygwinccompiler.py.orig	2013-07-30 23:38:49 +0000
 +++ Lib/distutils/cygwinccompiler.py	2013-07-30 23:35:50 +0000
@@ -51,3 +51,16 @@ for 64bit mingw version.
  /* On a 64-bit system, rename the Py_InitModule4 so that 2.4
     modules cannot get loaded into a 2.5 interpreter */
  #define Py_InitModule4 Py_InitModule4_64
+--- include/pyconfig.h.orig	2013-08-01 02:49:35 +0000
++++ include/pyconfig.h	2013-08-01 02:49:58 +0000
+@@ -30,6 +30,10 @@
+ 
+ */
+ 
++#ifdef _WIN64
++#define MS_WIN64
++#endif
++
+ #ifdef _WIN32_WCE
+ #define MS_WINCE
+ #endif
