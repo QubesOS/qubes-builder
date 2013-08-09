@@ -1,0 +1,26 @@
+#!/bin/sh
+
+prefix="c:/python27"
+
+while [ "$1" ]; do 
+    case "$1" in
+        --libs|--ldflags)
+            echo "-L$prefix/libs -lpython27"
+            ;;
+        --includes|--cflags)
+            #if [ "$PROCESSOR_ARCHITEW6432" == "AMD64" ]; then
+            #    echo -n "-DMS_WIN64 "
+            #fi
+            echo "-I$prefix/include"
+            ;;
+        --prefix|--exec-prefix)
+            echo "$prefix"
+            ;;
+        *)
+            echo "Usage: $0 --libs|--ldflags|--includes|--cflags|--prefix|--exec-prefix"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
