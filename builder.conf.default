@@ -35,6 +35,11 @@
 #  - prepend: COMPONENTS=something $(COMPONENTS)
 # Default: see Makefile
 
+# INSTALLER_ALL_KERNELS - place all compiled linux kernels on installation media
+# For details see http://wiki.qubes-os.org/trac/ticket/581
+# Available values: "yes" or "no"
+# Default: "no"
+
 # REMOTE_COMPONENTS_<git-remote> - track only selected Qubes components for
 # given remote repository. Can be specified multiple times (for each remote).
 # Example:
