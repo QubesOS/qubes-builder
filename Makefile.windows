@@ -110,14 +110,24 @@ QUBES_LIBS = $(shell cd $(CHROOT_DIR)/build-deps/libs && pwd -W)
 SIGNTOOL=$(DDK_PATH)/bin/x86/signtool.exe
 
 ### Targets required by Makefile.generic to build packages
-dist-prepare-chroot:
+dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
 	@mkdir -p $(CHROOT_DIR)
+# script that prepares windows BE creates a file containing important variables:
+# mingw base path, python path and modified search PATH containing mingw/msys/other dependencies
+	$(eval BE_MARKER := $(CHROOT_DIR)/.be-prepared)
+	$(eval MINGW_DIR := $(shell sed -n '1p' $(BE_MARKER)))
+	$(eval PYTHON_DIR := $(shell sed -n '2p' $(BE_MARKER)))
+	$(eval WIN_PATH := $(shell sed -n '3p' $(BE_MARKER)))
 ifneq ($(CERT_FILENAME),)
 	@if [ ! -r "$(CERT_FILENAME)" ]; then \
 		"$(DDK_PATH)"/bin/x86/makecert -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
 		certutil -exportpfx -user -privatekey $(CERT_PASSWORD_FLAG) PrivateCertStore "Qubes Test Cert" "$(CERT_FILENAME)"; \
 	fi
 endif
+
+$(CHROOT_DIR)/.be-prepared:
+# Prepare windows BE
+	@export VERBOSE=$(VERBOSE); powershell windows-tools/prepare-be.ps1
 
 ifeq ($(WIN_COMPILER),WDK)
 dist-prep:
