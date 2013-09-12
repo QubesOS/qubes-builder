@@ -1,9 +1,9 @@
 # Qubes builder - preparing Windows build environment
-# This sctipt is called from Makefile.windows dist-prepare-chroot target.
+# This script is called from Makefile.windows dist-prepare-chroot target.
 # Make sure the msys shell is running `as administrator'.
 
-$chrootDir = $env:CHROOT_DIR # qubes-builder/chroot-win7x64
-$component = $env:COMPONENT # core-libvirt
+$chrootDir = $env:CHROOT_DIR
+$component = $env:COMPONENT
 Write-Host "`n[*] >>> Preparing windows build environment for $component..."
 
 # check if it's already done
@@ -16,7 +16,6 @@ if (Test-Path $markerPath)
 
 $verbose = $env:VERBOSE -ne 0
 
-$dist = $env:DIST # win7x64
 $builderDir = [System.IO.Path]::GetFullPath("$chrootDir\..") # normalize path
 $depsDir = [System.IO.Path]::GetFullPath("$chrootDir\build-deps")
 
@@ -29,7 +28,7 @@ $global:pkgConf = @{}
 # log everything from this script
 $Host.UI.RawUI.BufferSize.Width = 500
 Start-Transcript -Path "$logDir\win-prepare-be.log"
-
+<#
 # check if we have administrative rights
 $wid = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 $prp = New-Object System.Security.Principal.WindowsPrincipal($wid)
@@ -40,7 +39,7 @@ if (!($isAdmin))
     Write-Host "[!] We have no administrative rights -- make sure to run msys shell `as administrator'."
     Exit 1
 }
-
+#>
 # create dirs
 if (-not (Test-Path $logDir)) { New-Item $logDir -ItemType Directory | Out-Null }
 if (-not (Test-Path $prereqsDir)) { New-Item $prereqsDir -ItemType Directory | Out-Null }
@@ -276,10 +275,8 @@ Remove-Item $depsDir\* -Recurse -Force
 
 Write-Host "`n[*] Processing dependencies..."
 
-$pkgName = "7zip"
-$file = $global:pkgConf[$pkgName][1]
-UnpackZip $file $depsDir
-$7zip = "$depsDir\7za.exe"
+# 7zip should be prepared by get-be script
+$7zip = "$prereqsDir\7za.exe"
 
 $pkgName = "msys"
 $file = $global:pkgConf[$pkgName][1]
@@ -352,9 +349,9 @@ Pop-Location
 Write-Host "[*] Building $pkgName..."
 Push-Location
 Set-Location "$depsDir\portablexdr-4.9.1"
-& sh.exe "configure", "-C", "--prefix=$mingwUnix", "--build=x86_64-w64-mingw32" | Tee-Object -File "$logDir\build-$pkgName.log" | OutVerbose
-& make.exe | Tee-Object -File "$logDir\build-$pkgName.log" -Append | OutVerbose
-& make.exe "install" | Tee-Object -File "$logDir\build-$pkgName.log" -Append | OutVerbose
+& sh.exe "configure", "-C", "--prefix=$mingwUnix", "--build=x86_64-w64-mingw32" | Tee-Object -File "$logDir\build-configure-$pkgName.log" | OutVerbose
+& make.exe | Tee-Object -File "$logDir\build-make-$pkgName.log" | OutVerbose
+& make.exe "install" | Tee-Object -File "$logDir\build-install-$pkgName.log" | OutVerbose
 Copy-Item config.h "$mingw\include\rpc\"
 Pop-Location
 Copy-Item "$mingw\bin\portable-rpcgen.exe" "$mingw\bin\rpcgen.exe"
@@ -413,4 +410,4 @@ foreach ($dir in $pathDirs)
 $pythonUnix = PathToUnix $pythonDir
 Set-Content -Path $markerPath "$mingwUnix`n$pythonUnix`n$unixPath"
 
-Write-Host "[=] Windows build environment prepared"
+Write-Host "[=] Windows build environment prepared`n"
