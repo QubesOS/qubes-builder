@@ -1,8 +1,8 @@
 # Qubes builder - preparing Windows build environment for Qubes
 #
-# Bootstrap: downloads 7zip, msys, mingw64; prepares msys/mingw environment; fetches qubes-builder off the repository; starts msys shell.
-# Build environment is contained in 'msys' directory created in current directory.
-# qubes-builder is created directly inside msys directory.
+# If launched outside of existing qubes-builder, clones it to current directory.
+# Existing qubes-builder location may be specified via `-builder <path>' option.
+# Build environment is contained in 'msys' directory created in qubes-builder/windows-prereqs. It also contains mingw64.
 # This is intended as a base/clean environment. Component-specific scripts may copy it and modify according to their requirements.
 
 Param(
