@@ -2,3 +2,4 @@ mnt/
 windows-tools-sources.img
 iso_build_timestamp
 qubes-windows-tools-*.iso
+*.log

@@ -5,3 +5,4 @@ builder.conf
 rpm/
 keyrings/
 mnt_archlinux_dvd/
+windows-prereqs/
