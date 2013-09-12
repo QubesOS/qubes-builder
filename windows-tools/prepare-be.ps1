@@ -107,7 +107,7 @@ Function InstallMsi($msiPath, $installDirProperty, $targetDir)
 
     & $msiToolsDir\msi-patch.exe "$msiPath" "{$tmpMsiGuid}"
 
-    $log = "$logPath\install-$pkgName.log"
+    $log = "$logDir\install-$pkgName.log"
     #Write-Host "[*] Install log: $log"
 
     # install patched msi
@@ -135,7 +135,7 @@ Function InstallMsi($msiPath, $installDirProperty, $targetDir)
 Function UninstallMsi($msiPath)
 {
     Write-Host "[*] Uninstalling $pkgName, msi: $msiPath"
-    $log = "$logPath\uninstall-$pkgName.log"
+    $log = "$logDir\uninstall-$pkgName.log"
     $arg = @(
         "/qn",
         "/log `"$log`"",
