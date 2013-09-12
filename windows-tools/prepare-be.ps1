@@ -1,6 +1,9 @@
 # Qubes builder - preparing Windows build environment
+
 # This script is called from Makefile.windows dist-prepare-chroot target.
-# Make sure the msys shell is running `as administrator'.
+# Adminitrator rights shouldn't be required as long as installed MSIs support that (python msi does).
+
+# TODO: Most of this is only needed for libvirt. This script should be modularized and be component-specific.
 
 $chrootDir = $env:CHROOT_DIR
 $component = $env:COMPONENT
@@ -248,22 +251,27 @@ Function DownloadAll()
 
 # compile msi tools
 Write-Host "[*] Compiling msi tools..."
-$netDir = "$env:SystemRoot\Microsoft.NET\Framework\v2.0.50727"
 
-if (!(Test-Path $netDir))
+if (!(Test-Path "$msiToolsDir\msi-patch.exe") -or !(Test-Path "$msiToolsDir\msi-interop.dll"))
 {
-    Write-Host "[!] .NET Framework v2 not found!"
-    Exit 1
+    $netDir = "$env:SystemRoot\Microsoft.NET\Framework\v2.0.50727"
+
+    if (!(Test-Path $netDir))
+    {
+        Write-Host "[!] .NET Framework v2 not found!"
+        Exit 1
+    }
+
+    $csc = "$netDir\csc.exe"
+
+    Push-Location
+    Set-Location $msiToolsDir
+    & $csc /t:exe /out:tlb-convert.exe tlb-convert.cs | Out-Null
+    & $msiToolsDir\tlb-convert.exe msi.dll msi-interop.dll WindowsInstaller | Out-Null
+    & $csc /t:exe /out:msi-patch.exe /r:msi-interop.dll msi-patch.cs | Out-Null
+    Pop-Location
 }
-
-$csc = "$netDir\csc.exe"
-
-Push-Location
-Set-Location $msiToolsDir
-& $csc /t:exe /out:tlb-convert.exe tlb-convert.cs | Out-Null
-& $msiToolsDir\tlb-convert.exe msi.dll msi-interop.dll WindowsInstaller | Out-Null
-& $csc /t:exe /out:msi-patch.exe /r:msi-interop.dll msi-patch.cs | Out-Null
-Pop-Location
+Write-Host "[=] Done."
 
 # download all dependencies
 ReadPackages "$builderDir\windows-tools\win-be-deps.conf"
@@ -271,7 +279,7 @@ DownloadAll
 
 # delete existing stuff
 Write-Host "[*] Clearing $depsDir..."
-Remove-Item $depsDir\* -Recurse -Force
+Remove-Item $depsDir\* -Recurse -Force -Exclude ("include", "libs")
 
 Write-Host "`n[*] Processing dependencies..."
 
@@ -356,10 +364,14 @@ Copy-Item config.h "$mingw\include\rpc\"
 Pop-Location
 Copy-Item "$mingw\bin\portable-rpcgen.exe" "$mingw\bin\rpcgen.exe"
 
+Push-Location
+Set-Location $depsDir
+# setuptools install downloads archive to current dir, don't leave garbage outside of chroot
 $pkgName = "setuptools"
 Write-Host "[*] Installing $pkgName..."
 $file = $global:pkgConf[$pkgName][1]
 & $python $file | OutVerbose
+Pop-Location
 
 # prepare python dev files
 Write-Host "[*] Preparing python dev files..."
