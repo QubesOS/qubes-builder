@@ -98,7 +98,7 @@ if ($builder -and (Test-Path (Join-Path $builderDir "windows-prereqs\msys")))
 
 $tmpDir = Join-Path $scriptDir "tmp"
 # delete previous tmp is exists
-Remove-Item -Recurse -Force $tmpDir -ErrorAction Ignore | Out-Null
+Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue | Out-Null
 New-Item $tmpDir -ItemType Directory | Out-Null
 Write-Host "[*] Tmp dir: $tmpDir"
 
@@ -133,7 +133,7 @@ if (! $builder)
 
 $prereqsDir = (Join-Path $builderDir "windows-prereqs")
 Write-Host "[*] Moving msys to $prereqsDir..."
-New-Item -ItemType Directory $prereqsDir -ErrorAction Ignore | Out-Null
+New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
 # move msys/mingw to qubes-builder/windows-prereqs, this will be the default "clean" environment
 Move-Item $msysDir $prereqsDir
 Move-Item $7zip $prereqsDir
