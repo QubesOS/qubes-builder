@@ -1,7 +1,7 @@
 # Qubes builder - preparing Windows build environment
 
 # This script is called from Makefile.windows dist-prepare-chroot target.
-# Adminitrator rights shouldn't be required as long as installed MSIs support that (python msi does).
+# Administrator rights shouldn't be required as long as installed MSIs support that (python msi does).
 
 # TODO: Most of this is only needed for libvirt. This script should be modularized and be component-specific.
 
@@ -19,13 +19,15 @@ if (Test-Path $markerPath)
 
 $verbose = $env:VERBOSE -ne 0
 
-$builderDir = [System.IO.Path]::GetFullPath("$chrootDir\..") # normalize path
+$builderDir = Join-Path $chrootDir ".." -Resolve # normalize path
 $depsDir = [System.IO.Path]::GetFullPath("$chrootDir\build-deps")
 
+$scriptDir = "$builderDir\scripts-windows"
 $prereqsDir = "$builderDir\windows-prereqs"  # place for downloaded installers/packages, they'll get copied/installed to proper chroots during the build process
 $logDir = "$builderDir\build-logs"
-$msiToolsDir = "$builderDir\windows-tools\msi-tools"
-$global:installedMsis = @{}
+$msiToolsDir = "$scriptDir\msi-tools"
+$installedMsisFile = "$scriptDir\installed-msis" # guids/names of installed MSIs so we can easily uninstall them later (clean-be.ps1)
+
 $global:pkgConf = @{}
 
 # log everything from this script
@@ -62,16 +64,6 @@ Filter OutVerbose()
     if ($verbose) { $_ | Out-Host }
 }
 
-Function UninstallDeps()
-{
-    Write-Host "`n[*] Cleanup: uninstalling dependencies"
-    foreach ($name in $global:installedMsis.Keys)
-    {
-        $val = $global:installedMsis[$name]
-        UninstallMsi $name $val
-    }
-}
-
 # downloads to $prereqsDir (installers, zipped packages etc)
 Function DownloadFile($url, $fileName)
 {
@@ -101,16 +93,19 @@ Function DownloadFile($url, $fileName)
     return $fullPath
 }
 
-Function InstallMsi($msiPath, $installDirProperty, $targetDir)
+Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
 {
     Write-Host "[*] Installing $pkgName from $msiPath to $targetDir..."
 
     # patch the .msi with a temporary product/package GUID so it can be installed even if there is another copy in the system
-    $tmpMsiGuid = [guid]::NewGuid().Guid
+    $tmpMsiGuid = "{$([guid]::NewGuid().Guid)}"
 
-    & $msiToolsDir\msi-patch.exe "$msiPath" "{$tmpMsiGuid}"
+    # string that will be added to product name (so it's easier to see in 'add/remove programs' what was installed by us)
+    $nameSuffix = " [qubes-dep " + $component + " " + (Get-Date) + "]"
 
-    $log = "$logDir\install-$pkgName.log"
+    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" "$nameSuffix"
+
+    $log = "$logDir\install-$pkgName-$tmpMsiGuid.log"
     #Write-Host "[*] Install log: $log"
 
     # install patched msi
@@ -118,7 +113,7 @@ Function InstallMsi($msiPath, $installDirProperty, $targetDir)
         "/qn",
         "/log `"$log`"",
         "/i `"$msiPath`"",
-        "$installDirProperty=`"$targetDir`""
+        "$targetDirProperty=`"$targetDir`""
         )
 
     $ret = (Start-Process -FilePath "msiexec" -ArgumentList $arg -Wait -PassThru).ExitCode
@@ -128,31 +123,10 @@ Function InstallMsi($msiPath, $installDirProperty, $targetDir)
         Write-Host "[!] Install failed! Check the log at $log"
         FatalExit
     }
-    else # success - store the path for later uninstallation on cleanup
+    else # success - store info for later uninstallation on cleanup
     {
-        $global:installedMsis[$pkgName] = $msiPath
-        Write-Host "[=] Install successful. Temporary $pkgName .msi product/package GUID: $tmpMsiGuid"
-    }
-}
-
-Function UninstallMsi($msiPath)
-{
-    Write-Host "[*] Uninstalling $pkgName, msi: $msiPath"
-    $log = "$logDir\uninstall-$pkgName.log"
-    $arg = @(
-        "/qn",
-        "/log `"$log`"",
-        "/x `"$msiPath`""
-        )
-
-    $ret = (Start-Process -FilePath "msiexec" -ArgumentList $arg -Wait -PassThru).ExitCode
-    if ($ret -ne 0)
-    {
-        Write-Host "[!] Uninstall failed! Check the log at $log"
-    }
-    else
-    {
-        Write-Host "[=] $pkgName successfully uninstalled."
+        Add-Content $installedMsisFile "$tmpMsiGuid $pkgName"
+        Write-Host "[=] Install successful."
     }
 }
 
@@ -250,10 +224,9 @@ Function DownloadAll()
 }
 
 # compile msi tools
-Write-Host "[*] Compiling msi tools..."
-
 if (!(Test-Path "$msiToolsDir\msi-patch.exe") -or !(Test-Path "$msiToolsDir\msi-interop.dll"))
 {
+    Write-Host "[*] Compiling msi tools..."
     $netDir = "$env:SystemRoot\Microsoft.NET\Framework\v2.0.50727"
 
     if (!(Test-Path $netDir))
@@ -270,11 +243,12 @@ if (!(Test-Path "$msiToolsDir\msi-patch.exe") -or !(Test-Path "$msiToolsDir\msi-
     & $msiToolsDir\tlb-convert.exe msi.dll msi-interop.dll WindowsInstaller | Out-Null
     & $csc /t:exe /out:msi-patch.exe /r:msi-interop.dll msi-patch.cs | Out-Null
     Pop-Location
+    
+    Write-Host "[=] Done."
 }
-Write-Host "[=] Done."
 
 # download all dependencies
-ReadPackages "$builderDir\windows-tools\win-be-deps.conf"
+ReadPackages "$scriptDir\win-be-deps.conf"
 DownloadAll
 
 # delete existing stuff
