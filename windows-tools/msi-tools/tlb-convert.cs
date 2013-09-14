@@ -24,7 +24,7 @@ namespace Qubes.BuildTools
         {
             if (args.Length < 2)
             {
-                Console.WriteLine("Usage: TlbConvert <unmanaged COM DLL path> <managed wrapper path> [root namespace]");
+                Console.WriteLine("Usage: tlb-convert <unmanaged COM DLL path> <managed wrapper path> [root namespace]");
                 return 2;
             }
 
