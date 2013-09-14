@@ -127,7 +127,7 @@ endif
 
 $(CHROOT_DIR)/.be-prepared:
 # Prepare windows BE
-	@export VERBOSE=$(VERBOSE); powershell -executionpolicy bypass windows-tools/prepare-be.ps1
+	@export VERBOSE=$(VERBOSE); powershell -executionpolicy bypass scripts-windows/prepare-be.ps1
 
 ifeq ($(WIN_COMPILER),WDK)
 dist-prep:
