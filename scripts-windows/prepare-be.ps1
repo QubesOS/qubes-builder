@@ -101,7 +101,7 @@ Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
     $tmpMsiGuid = "{$([guid]::NewGuid().Guid)}"
 
     # change product name (so it's easier to see in 'add/remove programs' what was installed by us)
-    $productName = "qubes-dep " + $component + " " + (Get-Date)
+    $productName = "qubes-dep " + $pkgName + "/" + $component + " " + (Get-Date)
 
     & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" "$productName"
 
@@ -271,6 +271,10 @@ Unpack $file $depsDir
 $mingw = "$depsDir\mingw64"
 $mingwUnix = PathToUnix $mingw
 
+# some packages look for cc instead of gcc
+# need admin for mklink so just copy instead
+Copy-Item "$mingw\bin\gcc.exe" "$mingw\bin\cc.exe"
+
 $pkgName = "libiconv"
 $file = $global:pkgConf[$pkgName][1]
 Unpack $file $depsDir # unpacks to mingw64
@@ -306,7 +310,7 @@ Unpack $file $depsDir
 $src = "$depsDir\$pkgName"
 Copy-Item -Path "$src\*" -Destination $mingw -Recurse -Force
 Remove-Item $src -Recurse
-Move-Item "$mingw\bin\zlib1.dll" "$mingw\bin\libzlib1.dll"
+Copy-Item "$mingw\bin\zlib1.dll" "$mingw\bin\libzlib1.dll"
 
 $pkgName = "python27"
 $file = $global:pkgConf[$pkgName][1]
@@ -369,7 +373,17 @@ $file = $global:pkgConf[$pkgName][1]
 # this is an .exe installer that doesn't support silent installation 
 # but it's a self-extracting archive so we use 7zip to extract it and copy files ourselves
 Unpack $file $depsDir # extracted dir is PLATLIB
+
+# similar thing with pywin32
+$pkgName = "pywin32"
+$file = $global:pkgConf[$pkgName][1]
+Unpack $file $depsDir
+
 Copy-Item -Recurse "$depsDir\PLATLIB\*" "$pythonDir\Lib\site-packages"
+
+# run pywin32's post-install script
+Write-Host "[*] Running pywin32 postinstall script..."
+& $python "$depsDir\SCRIPTS\pywin32_postinstall.py", "-install" | OutVerbose
 
 # install lxml, lockfile
 Write-Host "[*] Installing lxml..."
