@@ -100,10 +100,10 @@ Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
     # patch the .msi with a temporary product/package GUID so it can be installed even if there is another copy in the system
     $tmpMsiGuid = "{$([guid]::NewGuid().Guid)}"
 
-    # string that will be added to product name (so it's easier to see in 'add/remove programs' what was installed by us)
-    $nameSuffix = " [qubes-dep " + $component + " " + (Get-Date) + "]"
+    # change product name (so it's easier to see in 'add/remove programs' what was installed by us)
+    $productName = "qubes-dep " + $component + " " + (Get-Date)
 
-    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" "$nameSuffix"
+    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" "$productName"
 
     $log = "$logDir\install-$pkgName-$tmpMsiGuid.log"
     #Write-Host "[*] Install log: $log"
