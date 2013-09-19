@@ -35,7 +35,8 @@
 #  - prepend: COMPONENTS=something $(COMPONENTS)
 # Default: see Makefile
 
-# INSTALLER_ALL_KERNELS - place all compiled linux kernels on installation media
+# LINUX_INSTALLER_MULTIPLE_KERNELS - place all compiled linux kernels
+# (components linux-kernel*) on installation media
 # For details see http://wiki.qubes-os.org/trac/ticket/581
 # Available values: "yes" or "no"
 # Default: "no"
