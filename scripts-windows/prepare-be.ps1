@@ -202,8 +202,13 @@ Function ReadPackages($confPath)
         $tokens = $line.Split(',')
         $key = $tokens[0].Trim()
         $url = $tokens[1].Trim()
+        $fileName = $null
+        if ($tokens.Count -eq 3) # there is a file name
+        {
+            $fileName = $tokens[2].Trim()
+        }
         # store entry in the dictionary
-        $global:pkgConf[$key] = @($url, $null) # second field is local file name, set when downloading
+        $global:pkgConf[$key] = @($url, $fileName) # second field is local file name, set when downloading
     }
     $count = $global:pkgConf.Count
     Write-Host "[*] $count entries"
@@ -217,7 +222,8 @@ Function DownloadAll()
     {
         $val = $global:pkgConf[$pkgName] # array
         $url = $val[0]
-        $path = DownloadFile $url
+        $path = $val[1] # may be null
+        $path = DownloadFile $url $path
         $val[1] = $path
         $global:pkgConf[$pkgName] = $val # update entry with local file path
     }
@@ -393,6 +399,33 @@ Write-Host "[*] Installing lockfile..."
 
 # copy python-config. it uses PYTHON_DIR variable to determine python install location
 Copy-Item "$builderDir\windows-build-files\python-config" $pythonDir
+
+# check if wix is installed
+$wixIntalled = (Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -eq "WiX Toolset v3.7 Native 2012 SDK"}) -ne $null
+
+if ($wixIntalled)
+{
+    Write-Host "[*] WiX Toolset already installed"
+}
+else
+{
+    Write-Host "[*] Installing WiX Toolset..."
+    $pkgName = "wix"
+    $file = $global:pkgConf[$pkgName][1]
+    $log = "$logDir\wix-install.log"
+    # install
+    $ret = (Start-Process -FilePath $file -ArgumentList @("-q", "-l $log", "InstallFolder=$depsDir\wix") -Wait -PassThru).ExitCode
+
+    if ($ret -ne 0)
+    {
+        Write-Host "[!] Install failed! Check the log at $log"
+        FatalExit
+    }
+    else
+    {
+        Write-Host "[=] Install successful."
+    }
+}
 
 # write PATH to be passed back to make
 # convert to unix form
