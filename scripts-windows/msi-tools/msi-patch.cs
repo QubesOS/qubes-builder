@@ -14,7 +14,7 @@ namespace Qubes.BuildTools
         {
             if (args.Length < 2)
             {
-                Console.WriteLine("Usage: msi-patch <msi path> <new GUID (braced form)> [string to append to product name]");
+                Console.WriteLine("Usage: msi-patch <msi path> <new GUID (braced form)> [product name]");
                 return 2;
             }
 
@@ -42,12 +42,12 @@ namespace Qubes.BuildTools
             try
             {
                 Type t = Type.GetTypeFromProgID("WindowsInstaller.Installer");
-                Installer msi = (Installer)Activator.CreateInstance(t);
-                Database db = msi.OpenDatabase(path, MsiOpenDatabaseMode.msiOpenDatabaseModeTransact);
+                Installer msi = (Installer)Activator.CreateInstance(t); // instantiate WI COM object
+                Database db = msi.OpenDatabase(path, MsiOpenDatabaseMode.msiOpenDatabaseModeTransact); // transact mode, we're making changes
 
                 // update summary info
                 SummaryInfo summary = db.get_SummaryInformation(1);
-                summary.set_Property(9, guid);
+                summary.set_Property(9, guid); // 9 is the product GUID
                 summary.Persist();
 
                 // update properties
@@ -63,17 +63,7 @@ namespace Qubes.BuildTools
 
                 if (args.Length == 3) // product name
                 {
-                    sql = "SELECT Value FROM Property WHERE Property='ProductName'";
-                    view = db.OpenView(sql);
-                    view.Execute(null);
-                    Record record = view.Fetch();
-                    string name = record.get_StringData(1);
-                    view.Close();
-
-                    name += args[2];
-                    Console.WriteLine("New product name: {0}", name);
-
-                    sql = string.Format("UPDATE Property SET Value='{0}' WHERE Property='ProductName'", name);
+                    sql = string.Format("UPDATE Property SET Value='{0}' WHERE Property='ProductName'", args[2]);
                     view = db.OpenView(sql);
                     view.Execute(null);
                     view.Close();
