@@ -173,7 +173,7 @@ endif
 dist-copy-out:
 	@echo "--> Done:" >&3
 ifneq ($(WIN_PACKAGE_CMD),true)
-	@for pkg in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.msi; do\
+	@for pkg in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.ms[im]; do\
 		echo "      `basename $$pkg`" >&3 ;\
 		mv -t $(ORIG_SRC)/$(PACKAGE) $$pkg;\
 	done
