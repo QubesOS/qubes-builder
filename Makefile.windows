@@ -166,8 +166,8 @@ ifeq ($(WIN_COMPILER),WDK)
 		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
 else
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
-	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && make all
-	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(WIN_PACKAGE_CMD)
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && PATH="$(WIN_PATH)" make all
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && PATH="$(WIN_PATH)" $(WIN_PACKAGE_CMD)
 endif
 
 dist-copy-out:
