@@ -325,7 +325,7 @@ InstallMsi $file "TARGETDIR" "$pythonDir"
 $python = "$pythonDir\python.exe"
 
 # add binaries to PATH
-$env:Path = "$msysBin;$mingw\bin;$pythonDir;$env:Path"
+$env:Path = "$msysBin;$mingw\bin;$pythonDir;$depsDir\wix;$env:Path"
 
 $pkgName = "portablexdr"
 $file = $global:pkgConf[$pkgName][1]
