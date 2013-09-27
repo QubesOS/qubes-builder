@@ -325,7 +325,7 @@ InstallMsi $file "TARGETDIR" "$pythonDir"
 $python = "$pythonDir\python.exe"
 
 # add binaries to PATH
-$env:Path = "$msysBin;$mingw\bin;$pythonDir;$depsDir\wix;$env:Path"
+$env:Path = "$msysBin;$mingw\bin;$pythonDir;$depsDir\wix\bin;$env:Path"
 
 $pkgName = "portablexdr"
 $file = $global:pkgConf[$pkgName][1]
@@ -401,6 +401,7 @@ Write-Host "[*] Installing lockfile..."
 Copy-Item "$builderDir\windows-build-files\python-config" $pythonDir
 
 # check if wix is installed
+# todo: this is REALLY slow, check registry entries manually?
 $wixIntalled = (Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -eq "WiX Toolset v3.7 Native 2012 SDK"}) -ne $null
 
 if ($wixIntalled)
