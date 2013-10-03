@@ -314,7 +314,7 @@ InstallMsi $file "TARGETDIR" "$pythonDir"
 $python = "$pythonDir\python.exe"
 
 # add binaries to PATH
-$env:Path = "$msysBin;$mingw\bin;$pythonDir;$depsDir\wix\bin;$env:Path"
+$env:Path = "$msysBin;$mingw\bin;$pythonDir;$prereqsDir\wix\bin;$env:Path"
 
 $pkgName = "portablexdr"
 $file = $global:pkgConf[$pkgName][1]
@@ -352,6 +352,8 @@ Push-Location
 Set-Location $pythonDir
 & gendef.exe "python27.dll" | OutVerbose
 & dlltool.exe "-d", "python27.def", "-l", "libpython27.dll.a" | OutVerbose
+# copy lib to libs/
+Copy-Item "libpython27.dll.a" "libs/"
 # apply patch
 $patchPath = PathToUnix ([System.IO.Path]::GetFullPath("$builderDir\windows-build-files\python-mingw32.patch"))
 & patch.exe "-p0", "-i", "$patchPath" | OutVerbose
@@ -376,9 +378,16 @@ Unpack $file $depsDir
 
 Copy-Item -Recurse "$depsDir\PLATLIB\*" "$pythonDir\Lib\site-packages"
 
+# copy scripts
+Copy-Item -Recurse "$depsDir\SCRIPTS\*" "$pythonDir\Scripts"
+
 # run pywin32's post-install script
 Write-Host "[*] Running pywin32 postinstall script..."
-& $python "$depsDir\SCRIPTS\pywin32_postinstall.py", "-install" | OutVerbose
+& $python "$pythonDir\Scripts\pywin32_postinstall.py", "-install" | OutVerbose
+
+# compile
+& $python "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
+& $python "-O", "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
 
 # install lxml, lockfile
 Write-Host "[*] Installing lxml..."
