@@ -33,18 +33,7 @@ $global:pkgConf = @{}
 # log everything from this script
 $Host.UI.RawUI.BufferSize.Width = 500
 Start-Transcript -Path "$logDir\win-prepare-be.log"
-<#
-# check if we have administrative rights
-$wid = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-$prp = New-Object System.Security.Principal.WindowsPrincipal($wid)
-$adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
-$isAdmin = $prp.IsInRole($adm)
-if (!($isAdmin))
-{
-    Write-Host "[!] We have no administrative rights -- make sure to run msys shell `as administrator'."
-    Exit 1
-}
-#>
+
 # create dirs
 if (-not (Test-Path $logDir)) { New-Item $logDir -ItemType Directory | Out-Null }
 if (-not (Test-Path $prereqsDir)) { New-Item $prereqsDir -ItemType Directory | Out-Null }
@@ -414,8 +403,8 @@ else
     $pkgName = "wix"
     $file = $global:pkgConf[$pkgName][1]
     $log = "$logDir\wix-install.log"
-    # install
-    $ret = (Start-Process -FilePath $file -ArgumentList @("-q", "-l $log", "InstallFolder=$depsDir\wix") -Wait -PassThru).ExitCode
+    # install wix to windows-prereqs instead of deps in chroot so it won't be deleted on clean
+    $ret = (Start-Process -FilePath $file -ArgumentList @("-q", "-l $log", "InstallFolder=$prereqsDir\wix") -Wait -PassThru).ExitCode
 
     if ($ret -ne 0)
     {
