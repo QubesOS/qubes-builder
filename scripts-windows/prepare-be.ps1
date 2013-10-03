@@ -389,6 +389,11 @@ Write-Host "[*] Running pywin32 postinstall script..."
 & $python "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
 & $python "-O", "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
 
+# add dummy files required by installers
+New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat" | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py" | Out-Null
+
 # install lxml, lockfile
 Write-Host "[*] Installing lxml..."
 & "$pythonDir\Scripts\easy_install.exe" lxml | OutVerbose
