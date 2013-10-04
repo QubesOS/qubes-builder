@@ -90,9 +90,9 @@ Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
     $tmpMsiGuid = "{$([guid]::NewGuid().Guid)}"
 
     # change product name (so it's easier to see in 'add/remove programs' what was installed by us)
-    $productName = "qubes-dep " + $pkgName + "/" + $component + " " + (Get-Date)
+    #$productName = "qubes-dep " + $pkgName + "/" + $component + " " + (Get-Date)
 
-    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" "$productName"
+    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" #"$productName"
 
     $log = "$logDir\install-$pkgName-$tmpMsiGuid.log"
     #Write-Host "[*] Install log: $log"
