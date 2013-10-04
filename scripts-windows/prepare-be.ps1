@@ -105,7 +105,12 @@ function VerifyFile($filePath, $hash)
 
 Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
 {
-    Write-Host "[*] Installing $pkgName from $msiPath to $targetDir..."
+    # copy msi to chroot
+    $fileName = Split-Path -Leaf $msiPath
+    $tmpMsiPath = Join-Path $chrootDir $fileName
+    Copy-Item -Force $msiPath $tmpMsiPath
+
+    Write-Host "[*] Installing $pkgName from $tmpMsiPath to $targetDir..."
 
     # patch the .msi with a temporary product/package GUID so it can be installed even if there is another copy in the system
     $tmpMsiGuid = "{$([guid]::NewGuid().Guid)}"
@@ -113,7 +118,7 @@ Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
     # change product name (so it's easier to see in 'add/remove programs' what was installed by us)
     #$productName = "qubes-dep " + $pkgName + "/" + $component + " " + (Get-Date)
 
-    & $msiToolsDir\msi-patch.exe "$msiPath" "$tmpMsiGuid" #"$productName"
+    & $msiToolsDir\msi-patch.exe "$tmpMsiPath" "$tmpMsiGuid" #"$productName"
 
     $log = "$logDir\install-$pkgName-$tmpMsiGuid.log"
     #Write-Host "[*] Install log: $log"
@@ -122,7 +127,7 @@ Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
     $arg = @(
         "/qn",
         "/log `"$log`"",
-        "/i `"$msiPath`"",
+        "/i `"$tmpMsiPath`"",
         "$targetDirProperty=`"$targetDir`""
         )
 
@@ -280,12 +285,12 @@ Write-Host "`n[*] Processing dependencies..."
 $7zip = "$prereqsDir\7za.exe"
 
 $pkgName = "msys"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 $msysBin = "$depsDir\msys\bin"
 
 $pkgName = "mingw64"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 $mingw = "$depsDir\mingw64"
 $mingwUnix = PathToUnix $mingw
@@ -303,7 +308,7 @@ Set-Location $chrootDir
 Pop-Location
 
 $pkgName = "libiconv"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir # unpacks to mingw64
 
 # fix path in libiconv.la
@@ -312,7 +317,7 @@ Get-Content $file | Foreach-Object {$_ -replace "libdir='/mingw64/lib'", "libdir
 Move-Item -Force "$file.new" $file
 
 $pkgName = "libxml"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 # move contents to mingw64 dir
 $src = "$depsDir\$pkgName"
@@ -331,7 +336,7 @@ New-Item -ItemType Directory "$depsDir\msys\lib\pkgconfig" | Out-Null
 Copy-Item $file "$depsDir\msys\lib\pkgconfig"
 
 $pkgName = "zlib"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 # move contents to mingw64 dir
 $src = "$depsDir\$pkgName"
@@ -340,7 +345,7 @@ Remove-Item $src -Recurse
 Copy-Item "$mingw\bin\zlib1.dll" "$mingw\bin\libzlib1.dll"
 
 $pkgName = "python27"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 $pythonDir = "$depsDir\python27"
 InstallMsi $file "TARGETDIR" "$pythonDir"
 $python = "$pythonDir\python.exe"
@@ -349,7 +354,7 @@ $python = "$pythonDir\python.exe"
 $env:Path = "$msysBin;$mingw\bin;$pythonDir;$prereqsDir\wix\bin;$env:Path"
 
 $pkgName = "portablexdr"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 
 # apply 64bit xdr patch
@@ -374,7 +379,7 @@ Set-Location $depsDir
 # setuptools install downloads archive to current dir, don't leave garbage outside of chroot
 $pkgName = "setuptools"
 Write-Host "[*] Installing $pkgName..."
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 & $python $file | OutVerbose
 Pop-Location
 
@@ -396,7 +401,7 @@ New-Item -ItemType Directory "$depsDir\mingw64\include\python2.7" | Out-Null
 Copy-Item "$pythonDir\include\*" "$depsDir\mingw64\include\python2.7\" -Recurse
 
 $pkgName = "psutil"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 # to install automatically we need a trick
 # sources don't build with mingw
 # this is an .exe installer that doesn't support silent installation 
@@ -405,7 +410,7 @@ Unpack $file $depsDir # extracted dir is PLATLIB
 
 # similar thing with pywin32
 $pkgName = "pywin32"
-$file = $global:pkgConf[$pkgName][1]
+$file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 
 Copy-Item -Recurse "$depsDir\PLATLIB\*" "$pythonDir\Lib\site-packages"
@@ -449,7 +454,7 @@ else
 {
     Write-Host "[*] Installing WiX Toolset..."
     $pkgName = "wix"
-    $file = $global:pkgConf[$pkgName][1]
+    $file = $global:pkgConf[$pkgName][2]
     $log = "$logDir\wix-install.log"
     # install wix to windows-prereqs instead of deps in chroot so it won't be deleted on clean
     $ret = (Start-Process -FilePath $file -ArgumentList @("-q", "-l $log", "InstallFolder=$prereqsDir\wix") -Wait -PassThru).ExitCode
