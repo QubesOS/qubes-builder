@@ -71,6 +71,7 @@ Function DownloadFile($url, $fileName)
     {
 	    $client = New-Object System.Net.WebClient
 	    $client.DownloadFile($url, $fullPath)
+        $client.Dispose()
     }
     catch [Exception]
     {
@@ -80,6 +81,26 @@ Function DownloadFile($url, $fileName)
     
     Write-Host "[=] Downloaded: $fullPath"
     return $fullPath
+}
+
+function GetHash($filePath)
+{
+    $fs = New-Object System.IO.FileStream $filePath, "Open"
+	$sha1 = [System.Security.Cryptography.SHA1]::Create()
+    $hash = [BitConverter]::ToString($sha1.ComputeHash($fs)).Replace("-", "")
+    $fs.Close()
+    return $hash.ToLowerInvariant()
+}
+
+function VerifyFile($filePath, $hash)
+{
+    $fileHash = GetHash $filePath
+    if ($fileHash -ne $hash)
+    {
+        Write-Host "[!] Failed to verify SHA-1 checksum of $filePath!"
+        Write-Host "[!] Expected: $hash, actual: $fileHash"
+        Exit 1
+    }
 }
 
 Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
@@ -190,14 +211,15 @@ Function ReadPackages($confPath)
         if ([string]::IsNullOrEmpty($line)) { continue }
         $tokens = $line.Split(',')
         $key = $tokens[0].Trim()
-        $url = $tokens[1].Trim()
+        $hash = $tokens[1].Trim()
+        $url = $tokens[2].Trim()
         $fileName = $null
-        if ($tokens.Count -eq 3) # there is a file name
+        if ($tokens.Count -eq 4) # there is a file name
         {
-            $fileName = $tokens[2].Trim()
+            $fileName = $tokens[3].Trim()
         }
         # store entry in the dictionary
-        $global:pkgConf[$key] = @($url, $fileName) # second field is local file name, set when downloading
+        $global:pkgConf[$key] = @($url, $hash, $fileName) # third field is local file name, set when downloading
     }
     $count = $global:pkgConf.Count
     Write-Host "[*] $count entries"
@@ -211,10 +233,12 @@ Function DownloadAll()
     {
         $val = $global:pkgConf[$pkgName] # array
         $url = $val[0]
-        $path = $val[1] # may be null
+        $hash = $val[1]
+        $path = $val[2] # may be null
         $path = DownloadFile $url $path
-        $val[1] = $path
+        $val[2] = $path
         $global:pkgConf[$pkgName] = $val # update entry with local file path
+        VerifyFile $path $hash
     }
 }
 

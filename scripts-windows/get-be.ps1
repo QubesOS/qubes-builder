@@ -21,6 +21,7 @@ Function DownloadFile($url, $fileName)
     {
 	    $client = New-Object System.Net.WebClient
 	    $client.DownloadFile($url, $fullPath)
+        $client.Dispose()
     }
     catch [Exception]
     {
@@ -56,6 +57,30 @@ Function PathToUnix($path)
     $path = $path.Replace('\', '/')
     $path = $path -replace '^([a-zA-Z]):', '/$1'
     return $path
+}
+
+function GetHash($filePath)
+{
+    $fs = New-Object System.IO.FileStream $filePath, "Open"
+	$sha1 = [System.Security.Cryptography.SHA1]::Create()
+    $hash = [BitConverter]::ToString($sha1.ComputeHash($fs)).Replace("-", "")
+    $fs.Close()
+    return $hash.ToLowerInvariant()
+}
+
+function VerifyFile($filePath, $hash)
+{
+    $fileHash = GetHash $filePath
+    if ($fileHash -ne $hash)
+    {
+        Write-Host "[!] Failed to verify SHA-1 checksum of $filePath!"
+        Write-Host "[!] Expected: $hash, actual: $fileHash"
+        Exit 1
+    }
+    else
+    {
+        Write-Host "[=] File successfully verified."
+    }
 }
 
 ### start
@@ -102,21 +127,25 @@ Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue | Out-Null
 New-Item $tmpDir -ItemType Directory | Out-Null
 Write-Host "[*] Tmp dir: $tmpDir"
 
+# verification hashes are embedded here to keep the script self-contained
 $pkgName = "7zip"
 $url = "http://downloads.sourceforge.net/sevenzip/7za920.zip"
 $file = DownloadFile $url
+VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0"
 UnpackZip $file $tmpDir
 $7zip = Join-Path $tmpDir "7za.exe"
 
 $pkgName = "msys"
 $url = "http://downloads.sourceforge.net/project/mingwbuilds/external-binary-packages/msys%2B7za%2Bwget%2Bsvn%2Bgit%2Bmercurial%2Bcvs-rev13.7z"
 $file = DownloadFile $url
+VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9"
 Unpack7z $file $tmpDir
 $msysDir = (Join-Path $tmpDir "msys")
 
 $pkgName = "mingw64"
 $url = "http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/64-bit/threads-win32/seh/x64-4.8.1-release-win32-seh-rev5.7z"
 $file = DownloadFile $url
+VerifyFile $file "53886dd1646aded889e6b9b507cf5877259342f2"
 $mingwArchive = $file
 Unpack7z $file $msysDir
 
