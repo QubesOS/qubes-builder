@@ -270,6 +270,14 @@ $mingwUnix = PathToUnix $mingw
 # need admin for mklink so just copy instead
 Copy-Item "$mingw\bin\gcc.exe" "$mingw\bin\cc.exe"
 
+# apply patch for bugged strsafe.h
+$patchPath = "$builderDir\windows-build-files\mingw-strsafe.patch"
+Copy-Item $patchPath $chrootDir
+Push-Location
+Set-Location $chrootDir
+& patch.exe "-p0", "-i", "$patchPath" | OutVerbose
+Pop-Location
+
 $pkgName = "libiconv"
 $file = $global:pkgConf[$pkgName][1]
 Unpack $file $depsDir # unpacks to mingw64
@@ -388,11 +396,8 @@ Write-Host "[*] Running pywin32 postinstall script..."
 # compile
 & $python "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
 & $python "-O", "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
-
-# add dummy files required by installers
-New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" | Out-Null
-New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat" | Out-Null
-New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py" | Out-Null
+& $python "-m", "compileall", "$pythonDir\Scripts" | OutVerbose
+& $python "-O", "-m", "compileall", "$pythonDir\Scripts" | OutVerbose
 
 # install lxml, lockfile
 Write-Host "[*] Installing lxml..."
@@ -402,6 +407,11 @@ Write-Host "[*] Installing lockfile..."
 
 # copy python-config. it uses PYTHON_DIR variable to determine python install location
 Copy-Item "$builderDir\windows-build-files\python-config" $pythonDir
+
+# add dummy files required by installers
+New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat" | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py" | Out-Null
 
 # check if wix is installed
 # todo: this is REALLY slow, check registry entries manually?
