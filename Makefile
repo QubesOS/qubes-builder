@@ -386,3 +386,6 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 		fi; \
 	done; \
 	(cd $(LINUX_REPO_BASEDIR)/.. && ./update_repo-$*.sh)
+
+windows-image:
+	./win-mksrcimg.sh
