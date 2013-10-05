@@ -102,8 +102,8 @@ if ($builder)
 else # check if we're invoked from existing qubes-builder
 {
     $curDir = Split-Path $scriptDir -Leaf
-    $upDir = Split-Path (Join-Path $scriptDir ".." -Resolve) -Leaf
-    if (($curDir -eq "windows-tools") -and ($upDir -eq "qubes-builder"))
+    $makefilePath = Join-Path (Join-Path $scriptDir "..") "Makefile.windows" -Resolve
+    if (($curDir -eq "scripts-windows") -and (Test-Path -Path $makefilePath))
     {
         Write-Host "[*] Running from existing qubes-builder."
         $builder = $true # don't clone builder later
