@@ -10,6 +10,13 @@ Param(
     $GIT_SUBDIR = "omeg" # [optional] Same as in builder.conf
 )
 
+Function IsAdministrator()
+{
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object System.Security.Principal.WindowsPrincipal($identity)
+    $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
 Function DownloadFile($url, $fileName)
 {
     $uri = [System.Uri] $url
@@ -60,7 +67,7 @@ Function PathToUnix($path)
 }
 
 $sha1 = [System.Security.Cryptography.SHA1]::Create()
-function GetHash($filePath)
+Function GetHash($filePath)
 {
     $fs = New-Object System.IO.FileStream $filePath, "Open"
     $hash = [BitConverter]::ToString($sha1.ComputeHash($fs)).Replace("-", "")
@@ -68,7 +75,7 @@ function GetHash($filePath)
     return $hash.ToLowerInvariant()
 }
 
-function VerifyFile($filePath, $hash)
+Function VerifyFile($filePath, $hash)
 {
     $fileHash = GetHash $filePath
     if ($fileHash -ne $hash)
@@ -84,6 +91,16 @@ function VerifyFile($filePath, $hash)
 }
 
 ### start
+
+# relaunch elevated if not running as administrator
+if (! (IsAdministrator))
+{
+    [string[]]$argList = @("-NoProfile", "-NoExit", "-File", $MyInvocation.MyCommand.Path)
+    if ($builder) { $argList += "-builder $builder" }
+    if ($GIT_SUBDIR) { $argList += "-GIT_SUBDIR $GIT_SUBDIR" }
+    Start-Process PowerShell.exe -Verb RunAs -WorkingDirectory $pwd -ArgumentList $argList
+    return
+}
 
 $scriptDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 Set-Location $scriptDir
@@ -104,7 +121,7 @@ if ($builder)
 else # check if we're invoked from existing qubes-builder
 {
     $curDir = Split-Path $scriptDir -Leaf
-    $makefilePath = Join-Path (Join-Path $scriptDir "..") "Makefile.windows" -Resolve
+    $makefilePath = Join-Path (Join-Path $scriptDir "..") "Makefile.windows" -Resolve -ErrorAction SilentlyContinue
     if (($curDir -eq "scripts-windows") -and (Test-Path -Path $makefilePath))
     {
         $builder = $true # don't clone builder later
@@ -158,6 +175,12 @@ Unpack7z $file $msysDir
 
 Move-Item (Join-Path $msysDir "mingw64") (Join-Path $msysDir "mingw")
 
+$pkgName = "GnuPG"
+$url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
+$file = DownloadFile $url
+VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
+$gpgSetup = $file
+
 if (! $builder)
 {
     # fetch qubes-builder off the repo
@@ -165,16 +188,51 @@ if (! $builder)
     $builderDir = Join-Path $scriptDir "qubes-builder"
     Write-Host "[*] Cloning qubes-builder to $builderDir"
     & (Join-Path $msysDir "bin\git.exe") "clone", $repo, $builderDir | Out-Host
-    # todo: verify tags
 }
 
-$prereqsDir = (Join-Path $builderDir "windows-prereqs")
+$prereqsDir = Join-Path $builderDir "windows-prereqs"
 Write-Host "[*] Moving msys to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
 # move msys/mingw to qubes-builder/windows-prereqs, this will be the default "clean" environment
 Move-Item $msysDir $prereqsDir
 Move-Item $7zip $prereqsDir
-$msysDir = (Join-Path $prereqsDir "msys") # update
+$msysDir = Join-Path $prereqsDir "msys" # update
+
+# install gpg
+Write-Host "[*] Installing GnuPG..."
+$gpgDir = Join-Path $prereqsDir "gpg"
+Start-Process -FilePath $gpgSetup -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
+$gpg = Join-Path $gpgDir "pub\gpg.exe"
+
+Set-Location $builderDir
+
+Write-Host "[*] Importing Qubes OS signing keys..."
+# import master qubes signing key
+& $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x36879494
+
+# import other dev keys
+$pkgName = "qubes dev keys"
+$url = "http://keys.qubes-os.org/keys/qubes-developers-keys.asc"
+$file = DownloadFile $url
+VerifyFile $file "bfaa2864605218a2737f0dc39d4dfe08720d436a"
+
+& $gpg --import $file
+
+# add gpg and msys to PATH
+$env:Path = "$env:Path;$msysDir\bin;$gpgDir\pub"
+
+# verify qubes-builder tags
+$tag = & git tag --points-at=HEAD | head -n 1
+$ret = & git tag -v $tag
+if ($?)
+{
+    Write-Host "[*] qubes-builder successfully verified."
+}
+else
+{
+    Write-Host "[!] Failed to verify qubes-builder! Output:`n$ret"
+    Exit 1
+}
 
 # set msys to start in qubes-builder directory
 $builderUnix = PathToUnix $builderDir
@@ -187,5 +245,7 @@ Write-Host "[*] Cleanup"
 Remove-Item $tmpDir -Recurse -Force | Out-Null
 
 Write-Host "[=] Done"
-# start msys shell as administrator
+# start msys shell
 Start-Process -FilePath (Join-Path $msysDir "msys.bat")
+
+Stop-Transcript
