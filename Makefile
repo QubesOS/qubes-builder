@@ -185,7 +185,7 @@ sign-all:
 		fi \
 	done
 
-qubes: get-sources $(COMPONENTS) sign-all
+qubes: $(COMPONENTS) sign-all
 
 clean-installer-rpms:
 	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh)
