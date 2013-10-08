@@ -90,13 +90,15 @@ Set-Location $scriptDir
 
 # log everything from this script
 $Host.UI.RawUI.BufferSize.Width = 500
-Start-Transcript -Path win-prepare-be.log
-
 
 if ($builder)
 {
     # use pased value for already existing qubes-builder directory
     $builderDir = $builder
+
+    $logFilePath = Join-Path (Join-Path $builderDir "build-logs") "win-initialize-be.log"
+    Start-Transcript -Path $logFilePath
+
     Write-Host "[*] Using '$builderDir' as qubes-builder directory."
 }
 else # check if we're invoked from existing qubes-builder
@@ -105,19 +107,24 @@ else # check if we're invoked from existing qubes-builder
     $makefilePath = Join-Path (Join-Path $scriptDir "..") "Makefile.windows" -Resolve
     if (($curDir -eq "scripts-windows") -and (Test-Path -Path $makefilePath))
     {
-        Write-Host "[*] Running from existing qubes-builder."
         $builder = $true # don't clone builder later
         $builderDir = Join-Path $scriptDir ".." -Resolve
+
+        $logFilePath = Join-Path (Join-Path $builderDir "build-logs") "win-initialize-be.log"
+        Start-Transcript -Path $logFilePath
+
+        Write-Host "[*] Running from existing qubes-builder ($builderDir)."
     }
     else
     {
+        Start-Transcript -Path "win-initialize-be.log"
         Write-Host "[*] Running from clean state, need to clone qubes-builder."
     }
 }
 
 if ($builder -and (Test-Path (Join-Path $builderDir "windows-prereqs\msys")))
 {
-    Write-Host "[=] BE seems already prepared, delete windows-prereqs if you want to rerun this script."
+    Write-Host "[=] BE seems already initialized, delete windows-prereqs if you want to rerun this script (uninstall WiX toolset first)."
     Exit 0
 }
 

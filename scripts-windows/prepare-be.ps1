@@ -101,6 +101,10 @@ function VerifyFile($filePath, $hash)
         Write-Host "[!] Expected: $hash, actual: $fileHash"
         Exit 1
     }
+    else
+    {
+        Write-Host "[=] File '$(Split-Path -Leaf $filePath)' successfully verified."
+    }
 }
 
 Function InstallMsi($msiPath, $targetDirProperty, $targetDir)
@@ -284,6 +288,14 @@ Write-Host "`n[*] Processing dependencies..."
 # 7zip should be prepared by get-be script
 $7zip = "$prereqsDir\7za.exe"
 
+# if not, get it
+if (!(Test-Path $7zip))
+{
+    $pkgName = "7zip"
+    $file = $global:pkgConf[$pkgName][2]
+    UnpackZip $file $prereqsDir
+}
+
 $pkgName = "msys"
 $file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
@@ -437,25 +449,34 @@ Write-Host "[*] Installing lockfile..."
 # copy python-config. it uses PYTHON_DIR variable to determine python install location
 Copy-Item "$builderDir\windows-build-files\python-config" $pythonDir
 
-# add dummy files required by installers
-New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" | Out-Null
-New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat" | Out-Null
-New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py" | Out-Null
+# add dummy files required by installers if not already existing
+New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" -ErrorAction SilentlyContinue | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat"  -ErrorAction SilentlyContinue | Out-Null
+New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py"  -ErrorAction SilentlyContinue | Out-Null
 
 # check if wix is installed
-# todo: this is REALLY slow, check registry entries manually?
-$wixIntalled = (Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -eq "WiX Toolset v3.7 Native 2012 SDK"}) -ne $null
+$wixGuid = "{975AEB44-64A0-4D52-9BBA-63C9C0342462}"
+$wixInstalled = Test-Path "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$wixGuid"
+$pkgName = "wix"
 
-if ($wixIntalled)
+if ($wixInstalled)
 {
-    Write-Host "[*] WiX Toolset already installed"
+    # additional sanity check in case files were deleted without uninstalling
+    if (!(Test-Path "$prereqsDir\wix\bin\candle.exe"))
+    {
+        Write-Host "[?] WiX Toolset appears installed but its files are missing, reinstalling..."
+        Start-Process "msiexec" -ArgumentList @("/qn", "/log $logDir\reinstall-wix.log", "/fa $wixGuid") -Wait -PassThru | Out-Null
+    }
+    else
+    {
+        Write-Host "[*] WiX Toolset is already installed."
+    }
 }
 else
 {
     Write-Host "[*] Installing WiX Toolset..."
-    $pkgName = "wix"
     $file = $global:pkgConf[$pkgName][2]
-    $log = "$logDir\wix-install.log"
+    $log = "$logDir\install-wix.log"
     # install wix to windows-prereqs instead of deps in chroot so it won't be deleted on clean
     $ret = (Start-Process -FilePath $file -ArgumentList @("-q", "-l $log", "InstallFolder=$prereqsDir\wix") -Wait -PassThru).ExitCode
 
