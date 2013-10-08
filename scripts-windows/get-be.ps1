@@ -59,10 +59,10 @@ Function PathToUnix($path)
     return $path
 }
 
+$sha1 = [System.Security.Cryptography.SHA1]::Create()
 function GetHash($filePath)
 {
     $fs = New-Object System.IO.FileStream $filePath, "Open"
-	$sha1 = [System.Security.Cryptography.SHA1]::Create()
     $hash = [BitConverter]::ToString($sha1.ComputeHash($fs)).Replace("-", "")
     $fs.Close()
     return $hash.ToLowerInvariant()
@@ -165,6 +165,7 @@ if (! $builder)
     $builderDir = Join-Path $scriptDir "qubes-builder"
     Write-Host "[*] Cloning qubes-builder to $builderDir"
     & (Join-Path $msysDir "bin\git.exe") "clone", $repo, $builderDir | Out-Host
+    # todo: verify tags
 }
 
 $prereqsDir = (Join-Path $builderDir "windows-prereqs")
