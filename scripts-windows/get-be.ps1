@@ -47,7 +47,7 @@ Function UnpackZip($filePath, $destination)
     $zip = $shell.Namespace($filePath)
     foreach($item in $zip.Items())
     {
-        $shell.Namespace($destination).CopyHere($item)
+        $shell.Namespace($destination).CopyHere($item, 4+16) # flags: 4=no ui, 16=yes to all
     }
 }
 
