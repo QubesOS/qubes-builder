@@ -154,7 +154,7 @@ else # check if we're invoked from existing qubes-builder
 
 if ($builder -and (Test-Path (Join-Path $builderDir "windows-prereqs\msys")))
 {
-    Write-Host "[=] BE seems already initialized, delete windows-prereqs if you want to rerun this script (uninstall WiX toolset first)."
+    Write-Host "[=] BE seems already initialized, delete windows-prereqs\msys if you want to rerun this script."
     Exit 0
 }
 
@@ -188,12 +188,6 @@ Unpack7z $file $msysDir
 
 Move-Item (Join-Path $msysDir "mingw64") (Join-Path $msysDir "mingw")
 
-$pkgName = "GnuPG"
-$url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
-$file = DownloadFile $url
-VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
-$gpgSetup = $file
-
 if (! $builder)
 {
     # fetch qubes-builder off the repo
@@ -208,13 +202,37 @@ Write-Host "[*] Moving msys to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
 # move msys/mingw to qubes-builder/windows-prereqs, this will be the default "clean" environment
 Move-Item $msysDir $prereqsDir
-Move-Item $7zip $prereqsDir
+Move-Item $7zip $prereqsDir -Force
 $msysDir = Join-Path $prereqsDir "msys" # update
 
-# install gpg
-Write-Host "[*] Installing GnuPG..."
-$gpgDir = Join-Path $prereqsDir "gpg"
-Start-Process -FilePath $gpgSetup -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
+# install gpg if needed
+$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GPG4Win"
+$gpgInstalled = Test-Path $gpgRegistryPath
+if ($gpgInstalled)
+{
+    $gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
+    # additional sanity check
+    if (!(Test-Path "$gpgDir\pub\gpg.exe"))
+    {
+        $gpgInstalled = $false
+    }
+}
+
+if ($gpgInstalled)
+{
+    Write-Host "[*] GnuPG is already installed."
+}
+else
+{
+    $pkgName = "GnuPG"
+    $url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
+    $file = DownloadFile $url
+    VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
+
+    Write-Host "[*] Installing GnuPG..."
+    $gpgDir = Join-Path $prereqsDir "gpg"
+    Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
+}
 $gpg = Join-Path $gpgDir "pub\gpg.exe"
 
 Set-Location $builderDir
@@ -254,6 +272,7 @@ Add-Content (Join-Path $msysDir "etc\profile") "`n$cmd"
 # mingw/bin is in default msys' PATH
 
 # add msys shortcuts to desktop/start menu
+Write-Host "[*] Adding shortcuts to msys..."
 CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
 
 # cleanup
