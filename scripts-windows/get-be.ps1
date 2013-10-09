@@ -90,6 +90,19 @@ Function VerifyFile($filePath, $hash)
     }
 }
 
+Function CreateShortcuts($linkName, $targetPath)
+{
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    $startMenu = [Environment]::GetFolderPath("StartMenu")
+    $wsh = New-Object -ComObject WScript.Shell
+    $shortcut = $wsh.CreateShortcut("$desktop\$linkName")
+    $shortcut.TargetPath = $targetPath
+    $shortcut.Save()
+    $shortcut = $wsh.CreateShortcut("$startMenu\Programs\$linkName")
+    $shortcut.TargetPath = $targetPath
+    $shortcut.Save()
+}
+
 ### start
 
 # relaunch elevated if not running as administrator
@@ -239,6 +252,9 @@ $builderUnix = PathToUnix $builderDir
 $cmd = "cd $builderUnix"
 Add-Content (Join-Path $msysDir "etc\profile") "`n$cmd"
 # mingw/bin is in default msys' PATH
+
+# add msys shortcuts to desktop/start menu
+CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
 
 # cleanup
 Write-Host "[*] Cleanup"
