@@ -26,6 +26,8 @@ if [ ! -r "$IMG" ]; then
     parted -s $IMG mklabel msdos
     parted -s $IMG mkpart primary ntfs 1 $IMG_MAXSZ
     NEW_IMAGE=yes
+else
+    echo "Using existing image file with Windows sources..."
 fi
 
 OUTPUT=`sudo kpartx -a -v $IMG`

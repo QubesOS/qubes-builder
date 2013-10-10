@@ -391,3 +391,8 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 
 windows-image:
 	./win-mksrcimg.sh
+
+windows-image-extract:
+	./win-mountsrc.sh mount
+	( shopt -s nullglob; cd mnt; cp --parents -rft .. qubes-src/*/*.{msi,exe} )
+	./win-mountsrc.sh umount
