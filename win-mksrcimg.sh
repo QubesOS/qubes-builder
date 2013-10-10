@@ -1,7 +1,7 @@
 #!/bin/sh
 
 IMG=$PWD/windows-sources.img
-IMG_MAXSZ=3g
+IMG_MAXSZ=4g
 MNT=mnt
 SRC=qubes-src
 
