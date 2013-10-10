@@ -189,7 +189,7 @@ ifneq (,$(WIN_OUTPUT_LIBS))
 endif
 ifneq (,$(WIN_OUTPUT_HEADERS))
 	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/include
-	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_HEADERS)/*; do\
+	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_HEADERS)/*.h; do\
 		echo "      include/`basename $$file`" >&3 ;\
 		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/include/ $$file || exit 1;\
 	done
