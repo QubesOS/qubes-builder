@@ -41,12 +41,10 @@ mkdir -p $MNT || exit 1
 sudo mount $DEV $MNT -o uid=`id -u` || exit 1
 rsync -r $WINDOWS_BUILDER_CONTENT $MNT/ || exit 1
 cp $BUILDERCONF $MNT/builder.conf || exit 1
-# clean qubes-src
-rm -rf $MNT/qubes-src
 mkdir -p $MNT/qubes-src
 
 for C in $COMPONENTS; do
-    rsync -r $SRC/$C $MNT/qubes-src/ || exit 1
+    rsync --delete --exclude-from windows-build-files/win-src.exclude -r $SRC/$C $MNT/qubes-src/ || exit 1
 done
 
 sudo umount  $MNT
