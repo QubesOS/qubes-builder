@@ -484,6 +484,6 @@ foreach ($dir in $pathDirs)
 # mark chroot as prepared to not repeat everything on next build
 # save mingw path, python path and modified search path
 $pythonUnix = PathToUnix $pythonDir
-Set-Content -Path $markerPath "$mingwUnix`n$pythonUnix`n$unixPath"
+Set-Content -Path $markerPath "$mingwUnix`n$pythonUnix`n$unixPath`n$prereqsDir\wix"
 
 Write-Host "[=] Windows build environment prepared`n"

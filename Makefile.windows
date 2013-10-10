@@ -119,6 +119,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
 	$(eval MINGW_DIR := $(shell sed -n '1p' $(BE_MARKER)))
 	$(eval PYTHON_DIR := $(shell sed -n '2p' $(BE_MARKER)))
 	$(eval WIN_PATH := $(shell sed -n '3p' $(BE_MARKER)))
+	$(eval WIX := $(shell sed -n '4p' $(BE_MARKER)))
 ifneq ($(CERT_FILENAME),)
 	@if [ ! -r "$(CERT_FILENAME)" ]; then \
 		"$(DDK_PATH)"/bin/x86/makecert -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
