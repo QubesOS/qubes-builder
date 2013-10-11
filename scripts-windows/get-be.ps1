@@ -7,6 +7,7 @@
 
 Param(
     $builder,            # [optional] If specified, path to existing qubes-builder.
+    $verify = $false     # [optional] Verify qubes-builder tags.
     $GIT_SUBDIR = "omeg" # [optional] Same as in builder.conf
 )
 
@@ -110,6 +111,7 @@ if (! (IsAdministrator))
 {
     [string[]]$argList = @("-NoProfile", "-NoExit", "-File", $MyInvocation.MyCommand.Path)
     if ($builder) { $argList += "-builder $builder" }
+    if ($verify) { $argList += "-verify $verify" }
     if ($GIT_SUBDIR) { $argList += "-GIT_SUBDIR $GIT_SUBDIR" }
     Start-Process PowerShell.exe -Verb RunAs -WorkingDirectory $pwd -ArgumentList $argList
     return
@@ -205,66 +207,68 @@ Move-Item $msysDir $prereqsDir
 Move-Item $7zip $prereqsDir -Force
 $msysDir = Join-Path $prereqsDir "msys" # update
 
-# install gpg if needed
-$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GPG4Win"
-$gpgInstalled = Test-Path $gpgRegistryPath
-if ($gpgInstalled)
+if ($verify)
 {
-    $gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
-    # additional sanity check
-    if (!(Test-Path "$gpgDir\pub\gpg.exe"))
-    {
-        $gpgInstalled = $false
-    }
+	# install gpg if needed
+	$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GPG4Win"
+	$gpgInstalled = Test-Path $gpgRegistryPath
+	if ($gpgInstalled)
+	{
+		$gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
+		# additional sanity check
+		if (!(Test-Path "$gpgDir\pub\gpg.exe"))
+		{
+			$gpgInstalled = $false
+		}
+	}
+
+	if ($gpgInstalled)
+	{
+		Write-Host "[*] GnuPG is already installed."
+	}
+	else
+	{
+		$pkgName = "GnuPG"
+		$url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
+		$file = DownloadFile $url
+		VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
+
+		Write-Host "[*] Installing GnuPG..."
+		$gpgDir = Join-Path $prereqsDir "gpg"
+		Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
+	}
+	$gpg = Join-Path $gpgDir "pub\gpg.exe"
+
+	Set-Location $builderDir
+
+	Write-Host "[*] Importing Qubes OS signing keys..."
+	# import master qubes signing key
+	& $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x36879494
+
+	# import other dev keys
+	$pkgName = "qubes dev keys"
+	$url = "http://keys.qubes-os.org/keys/qubes-developers-keys.asc"
+	$file = DownloadFile $url
+	VerifyFile $file "bfaa2864605218a2737f0dc39d4dfe08720d436a"
+
+	& $gpg --import $file
+
+	# add gpg and msys to PATH
+	$env:Path = "$env:Path;$msysDir\bin;$gpgDir\pub"
+
+	# verify qubes-builder tags
+	$tag = & git tag --points-at=HEAD | head -n 1
+	$ret = & git tag -v $tag
+	if ($?)
+	{
+		Write-Host "[*] qubes-builder successfully verified."
+	}
+	else
+	{
+		Write-Host "[!] Failed to verify qubes-builder! Output:`n$ret"
+		Exit 1
+	}
 }
-
-if ($gpgInstalled)
-{
-    Write-Host "[*] GnuPG is already installed."
-}
-else
-{
-    $pkgName = "GnuPG"
-    $url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
-    $file = DownloadFile $url
-    VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
-
-    Write-Host "[*] Installing GnuPG..."
-    $gpgDir = Join-Path $prereqsDir "gpg"
-    Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
-}
-$gpg = Join-Path $gpgDir "pub\gpg.exe"
-
-Set-Location $builderDir
-
-Write-Host "[*] Importing Qubes OS signing keys..."
-# import master qubes signing key
-& $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x36879494
-
-# import other dev keys
-$pkgName = "qubes dev keys"
-$url = "http://keys.qubes-os.org/keys/qubes-developers-keys.asc"
-$file = DownloadFile $url
-VerifyFile $file "bfaa2864605218a2737f0dc39d4dfe08720d436a"
-
-& $gpg --import $file
-
-# add gpg and msys to PATH
-$env:Path = "$env:Path;$msysDir\bin;$gpgDir\pub"
-
-# verify qubes-builder tags
-$tag = & git tag --points-at=HEAD | head -n 1
-$ret = & git tag -v $tag
-if ($?)
-{
-    Write-Host "[*] qubes-builder successfully verified."
-}
-else
-{
-    Write-Host "[!] Failed to verify qubes-builder! Output:`n$ret"
-    Exit 1
-}
-
 # set msys to start in qubes-builder directory
 $builderUnix = PathToUnix $builderDir
 $cmd = "cd $builderUnix"
@@ -277,7 +281,7 @@ CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
 
 # cleanup
 Write-Host "[*] Cleanup"
-Remove-Item $tmpDir -Recurse -Force | Out-Null
+Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 
 Write-Host "[=] Done"
 # start msys shell
