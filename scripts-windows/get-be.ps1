@@ -7,7 +7,7 @@
 
 Param(
     $builder,            # [optional] If specified, path to existing qubes-builder.
-    $verify = $false     # [optional] Verify qubes-builder tags.
+    $verify = $false,     # [optional] Verify qubes-builder tags.
     $GIT_SUBDIR = "omeg" # [optional] Same as in builder.conf
 )
 
