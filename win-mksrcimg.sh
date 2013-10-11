@@ -1,7 +1,7 @@
 #!/bin/sh
 
 IMG=$PWD/windows-sources.img
-IMG_MAXSZ=3g
+IMG_MAXSZ=4g
 MNT=mnt
 SRC=qubes-src
 
@@ -26,6 +26,8 @@ if [ ! -r "$IMG" ]; then
     parted -s $IMG mklabel msdos
     parted -s $IMG mkpart primary ntfs 1 $IMG_MAXSZ
     NEW_IMAGE=yes
+else
+    echo "Using existing image file with Windows sources..."
 fi
 
 OUTPUT=`sudo kpartx -a -v $IMG`
@@ -39,12 +41,10 @@ mkdir -p $MNT || exit 1
 sudo mount $DEV $MNT -o uid=`id -u` || exit 1
 rsync -r $WINDOWS_BUILDER_CONTENT $MNT/ || exit 1
 cp $BUILDERCONF $MNT/builder.conf || exit 1
-# clean qubes-src
-rm -rf $MNT/qubes-src
 mkdir -p $MNT/qubes-src
 
 for C in $COMPONENTS; do
-    rsync -r $SRC/$C $MNT/qubes-src/ || exit 1
+    rsync --delete --exclude-from windows-build-files/win-src.exclude -r $SRC/$C $MNT/qubes-src/ || exit 1
 done
 
 sudo umount  $MNT

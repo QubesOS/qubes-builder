@@ -185,7 +185,9 @@ sign-all:
 		fi \
 	done
 
-qubes: $(COMPONENTS) sign-all
+qubes: $(COMPONENTS)
+
+qubes-os-iso: get-sources qubes sign-all iso
 
 clean-installer-rpms:
 	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh)
@@ -389,3 +391,8 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 
 windows-image:
 	./win-mksrcimg.sh
+
+windows-image-extract:
+	./win-mountsrc.sh mount
+	( shopt -s nullglob; cd mnt; cp --parents -rft .. qubes-src/*/*.{msi,exe} )
+	./win-mountsrc.sh umount
