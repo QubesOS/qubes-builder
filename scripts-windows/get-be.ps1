@@ -7,7 +7,7 @@
 
 Param(
     $builder,            # [optional] If specified, path to existing qubes-builder.
-    $verify = $false,     # [optional] Verify qubes-builder tags.
+    [switch] $verify,    # [optional] Verify qubes-builder tags.
     $GIT_SUBDIR = "omeg" # [optional] Same as in builder.conf
 )
 
@@ -111,7 +111,7 @@ if (! (IsAdministrator))
 {
     [string[]]$argList = @("-NoProfile", "-NoExit", "-File", $MyInvocation.MyCommand.Path)
     if ($builder) { $argList += "-builder $builder" }
-    if ($verify) { $argList += "-verify $verify" }
+    if ($verify) { $argList += "-verify" }
     if ($GIT_SUBDIR) { $argList += "-GIT_SUBDIR $GIT_SUBDIR" }
     Start-Process PowerShell.exe -Verb RunAs -WorkingDirectory $pwd -ArgumentList $argList
     return
