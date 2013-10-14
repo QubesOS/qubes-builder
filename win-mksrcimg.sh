@@ -44,7 +44,7 @@ cp $BUILDERCONF $MNT/builder.conf || exit 1
 mkdir -p $MNT/qubes-src
 
 for C in $COMPONENTS; do
-    rsync --delete --exclude-from windows-build-files/win-src.exclude -r $SRC/$C $MNT/qubes-src/ || exit 1
+    rsync --delete --exclude-from windows-build-files/win-src.exclude -rlt $SRC/$C $MNT/qubes-src/ || exit 1
 done
 
 sudo umount  $MNT
