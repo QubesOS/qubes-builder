@@ -302,17 +302,20 @@ show-vtags:
 push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
-		PUSH_REMOTE=`git config branch.$(BRANCH).remote`; \
+		BRANCH=$(BRANCH); \
+		branch_var="BRANCH_`basename $${REPO//-/_}`"; \
+		[ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
+		PUSH_REMOTE=`git config branch.$$BRANCH.remote`; \
 		[ -n "$(GIT_REMOTE)" ] && PUSH_REMOTE="$(GIT_REMOTE)"; \
 		if [ -z "$$PUSH_REMOTE" ]; then \
-			echo "No remote repository set for $$REPO, branch $(BRANCH),"; \
-			echo "set it with 'git config branch.$(BRANCH).remote <remote-name>'"; \
+			echo "No remote repository set for $$REPO, branch $$BRANCH,"; \
+			echo "set it with 'git config branch.$$BRANCH.remote <remote-name>'"; \
 			echo "Not pushing anything!"; \
 		else \
-			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $(BRANCH)..."; \
-			TAGS_FROM_BRANCH=`git log --oneline --decorate $(BRANCH)| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`; \
+			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $$BRANCH..."; \
+			TAGS_FROM_BRANCH=`git log --oneline --decorate $$BRANCH| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`; \
 			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q; \
-			git push $$GIT_OPTS $$PUSH_REMOTE $(BRANCH) $$TAGS_FROM_BRANCH; \
+			git push $$GIT_OPTS $$PUSH_REMOTE $$BRANCH $$TAGS_FROM_BRANCH; \
 			if [ $$? -ne 0 ]; then exit 1; fi; \
 		fi; \
 		popd > /dev/null; \
