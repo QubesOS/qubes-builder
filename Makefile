@@ -398,4 +398,14 @@ windows-image:
 windows-image-extract:
 	./win-mountsrc.sh mount
 	( shopt -s nullglob; cd mnt; cp --parents -rft .. qubes-src/*/*.{msi,exe} )
+	for REPO in $(GIT_REPOS); do \
+		[ $$REPO == '.' ] && break; \
+		if [ -r $$REPO/Makefile.builder ]; then \
+			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
+				WINDOWS_IMAGE_DIR=$(CURDIR)/mnt \
+				COMPONENT=`basename $$REPO` \
+				DIST=dummy \
+				windows-image-extract; \
+		fi; \
+	done; \
 	./win-mountsrc.sh umount

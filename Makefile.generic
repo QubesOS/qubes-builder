@@ -95,6 +95,13 @@ generic-copy-in:
 	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
 	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
 
+.PHONY: windows-image-extract
+windows-image-extract:
+ifneq (,$(WINDOWS_IMAGE_EXTRACT_EXTRA))
+	@rm -rf $(addprefix $(ORIG_SRC)/,$(WINDOWS_IMAGE_EXTRACT_EXTRA))
+	@cp -r $(addprefix $(WINDOWS_IMAGE_DIR)/$(ORIG_SRC)/,$(WINDOWS_IMAGE_EXTRACT_EXTRA)) $(ORIG_SRC)/
+endif
+
 .PHONY: prep
 prep: generic-prep dist-prep $(SOURCE_PREP)
 
