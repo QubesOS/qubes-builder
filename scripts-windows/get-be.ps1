@@ -109,7 +109,7 @@ Function CreateShortcuts($linkName, $targetPath)
 # relaunch elevated if not running as administrator
 if (! (IsAdministrator))
 {
-    [string[]]$argList = @("-NoProfile", "-NoExit", "-File", $MyInvocation.MyCommand.Path)
+    [string[]]$argList = @("-ExecutionPolicy", "bypass", "-NoProfile", "-NoExit", "-File", $MyInvocation.MyCommand.Path)
     if ($builder) { $argList += "-builder $builder" }
     if ($verify) { $argList += "-verify" }
     if ($GIT_SUBDIR) { $argList += "-GIT_SUBDIR $GIT_SUBDIR" }
