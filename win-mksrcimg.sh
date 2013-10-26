@@ -8,7 +8,8 @@ SRC=qubes-src
 NEW_IMAGE=no
 WINDOWS_BUILDER_CONTENT="Makefile Makefile.generic Makefile.windows builder.conf.default
                         get-sources.sh verify-git-tag.sh
-                        scripts-windows windows-build-files"
+                        scripts-windows windows-build-files
+                        windows-prepare.bat"
 
 if [ -z "$COMPONENTS" ]; then
     echo "Empty COMPONENTS setting, nothing to copy"
@@ -51,4 +52,5 @@ sudo umount  $MNT
 sudo kpartx -d $IMG
 echo "Image file at: $IMG"
 echo "Connect it to some Windows (on Qubes use qvm-block) and enjoy using qubes-builder there"
+echo "For the first time start with windows-prepare.bat"
 echo "When you finish, unmount it from Windows and execute \"make windows-image-extract\" here"
