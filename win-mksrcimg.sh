@@ -21,7 +21,7 @@ if [ ! -r "$BUILDERCONF" ]; then
     exit 1
 fi
 
-if [ ! -r "$IMG" ]; then
+if [ ! -s "$IMG" ]; then
     echo "Creating image file with Windows sources..."
     truncate -s $IMG_MAXSZ $IMG
     parted -s $IMG mklabel msdos
