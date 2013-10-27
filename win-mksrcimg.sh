@@ -39,7 +39,7 @@ if [ "$NEW_IMAGE" = "yes" ]; then
     sudo mkfs.ntfs -q --fast $DEV || exit 1
 fi
 mkdir -p $MNT || exit 1
-sudo mount $DEV $MNT -o uid=`id -u` || exit 1
+sudo mount $DEV $MNT -o norecover,uid=`id -u` || exit 1
 rsync -r $WINDOWS_BUILDER_CONTENT $MNT/ || exit 1
 cp $BUILDERCONF $MNT/builder.conf || exit 1
 mkdir -p $MNT/qubes-src

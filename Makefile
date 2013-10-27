@@ -396,7 +396,7 @@ windows-image:
 	./win-mksrcimg.sh
 
 windows-image-extract:
-	./win-mountsrc.sh mount
+	./win-mountsrc.sh mount || exit 1
 	( shopt -s nullglob; cd mnt; cp --parents -rft .. qubes-src/*/*.{msi,exe} )
 	for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
