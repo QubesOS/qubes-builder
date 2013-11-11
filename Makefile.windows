@@ -107,6 +107,9 @@ endif
 # Set this way to have them converted to windows paths by msys
 QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W)
 QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/libs && cd $(CHROOT_DIR)/build-deps/libs && pwd -W)
+# Workaround for msys path conversion
+TMP := $(shell cd $(TMP) && pwd -W | sed 's:/:\\\\:g')
+TEMP := $(TMP)
 
 SIGNTOOL=$(DDK_PATH)/bin/x86/signtool.exe
 
