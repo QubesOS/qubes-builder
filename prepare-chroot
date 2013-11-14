@@ -8,8 +8,6 @@ else
     PKGLISTFILE="build-pkgs-base.list"
 fi
 
-YUM_OPTS="$YUM_OPTS -x kernel"
-
 set -e
 if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
     set -x
