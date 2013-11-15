@@ -57,8 +57,10 @@ else
     VERIFY_REF=HEAD
 fi
 
-echo "--> Verifying tags..."
-$SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
+if ! [ "$NO_CHECK" == "1" ]; then
+    echo "--> Verifying tags..."
+    $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
+fi
 
 if [ "$FETCH_ONLY" != "1" ]; then
 
