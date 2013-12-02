@@ -45,7 +45,7 @@ fi
 
 echo "-> Updateing sources for $COMPONENT..."
 echo "--> Fetching from $GIT_URL $BRANCH..."
-if [ -d $REPO -a "$CLEAN" != '1' ]; then
+if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
     pushd $REPO > /dev/null
     git fetch -q $GIT_URL --tags || exit 1
     git fetch -q $GIT_URL $BRANCH || exit 1
