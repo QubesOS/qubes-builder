@@ -1,7 +1,7 @@
 fc??
 chroot-*
 qubes-src
-builder.conf
+builder*.conf
 rpm/
 keyrings/
 mnt_archlinux_dvd/
