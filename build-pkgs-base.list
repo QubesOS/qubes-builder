@@ -4,3 +4,5 @@ MAKEDEV
 yum
 yum-utils
 tar
+rpm-build
+redhat-rpm-config
