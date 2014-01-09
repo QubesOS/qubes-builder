@@ -59,6 +59,7 @@ help:
 	@echo "make clean-rpms       -- remove any builded packages"
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make check            -- check for any uncommited changes and unsiged tags"
+	@echo "make diff             -- show diffs for any uncommitted changes
 	@echo "make push             -- do git push for all repos, including tags"
 	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
 	@echo "make prepare-merge    -- fetch the sources from git, but only show new commits instead of merging"
@@ -281,6 +282,16 @@ check:
 		if [ $$? -ne 0 ]; then \
 			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi; \
 			echo "> $$REPO"; fi; \
+	    popd > /dev/null; \
+	done
+
+diff:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git status | grep "^nothing to commit" > /dev/null; \
+		if [ $$? -ne 0 ]; then \
+			(echo -e "Uncommited changes in $$REPO:\n\n"; git diff) | less; \
+		fi; \
 	    popd > /dev/null; \
 	done
 
