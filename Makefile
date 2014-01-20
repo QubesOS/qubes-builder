@@ -62,6 +62,7 @@ help:
 	@echo "make diff             -- show diffs for any uncommitted changes"
 	@echo "make push             -- do git push for all repos, including tags"
 	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
+	@echo "make show-authors     -- list authors of Qubes code based on commit log of each component"
 	@echo "make prepare-merge    -- fetch the sources from git, but only show new commits instead of merging"
 	@echo "make show-unmerged    -- list fetched but unmerged commits (see make prepare-merge)"
 	@echo "make do-merge         -- merge fetched commits"
@@ -309,6 +310,15 @@ show-vtags:
 		echo ')'; \
 	    popd > /dev/null; \
 	done
+
+show-authors:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		COMPONENT=`basename $$REPO`; \
+		[ "$$COMPONENT" == "." ] && COMPONENT=qubes-builder; \
+		git shortlog -sn | tr -s "\t" ":" | sed "s/^ */$$COMPONENT:/"; \
+	    popd > /dev/null; \
+	done | awk -F: '{ comps[$$3]=comps[$$3] "\n  " $$1 " (" $$2 ")" } END { for (a in comps) { system("tput bold"); printf a ":"; system("tput sgr0"); print comps[a]; } }'
 
 push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
