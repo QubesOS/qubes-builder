@@ -43,7 +43,7 @@ if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
 fi
 
-echo "-> Updateing sources for $COMPONENT..."
+echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_URL $BRANCH..."
 if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
     pushd $REPO > /dev/null
