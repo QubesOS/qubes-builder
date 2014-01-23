@@ -30,7 +30,8 @@ COMPONENTS ?= vmm-xen \
 			  installer-qubes-os \
 			  linux-yum \
 			  vmm-xen-windows-pvdrivers \
-			  antievilmaid
+			  antievilmaid \
+			  qubes-builder
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
@@ -47,7 +48,11 @@ DISTS_VM := $(shell echo $(DISTS_VM))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
-GIT_REPOS := $(addprefix $(SRC_DIR)/,$(COMPONENTS)) .
+GIT_REPOS := $(addprefix $(SRC_DIR)/,$(filter-out qubes-builder,$(COMPONENTS)))
+
+ifneq (,$(findstring qubes-builder,$(COMPONENTS)))
+GIT_REPOS += .
+endif
 
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:
@@ -83,7 +88,7 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh || exit 1; \
 	done
 
-$(filter-out template template-builder kde-dom0 dom0-updates, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
 
 %-vm:
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
@@ -187,7 +192,7 @@ sign-all:
 		fi \
 	done
 
-qubes: $(COMPONENTS)
+qubes: $(filter-out qubes-builder,$(COMPONENTS))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
