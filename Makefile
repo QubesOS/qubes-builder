@@ -65,6 +65,7 @@ help:
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make check            -- check for any uncommited changes and unsigned tags"
 	@echo "make diff             -- show diffs for any uncommitted changes"
+	@echo "make grep RE=regexp   -- grep for regexp in all components
 	@echo "make push             -- do git push for all repos, including tags"
 	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
 	@echo "make show-authors     -- list authors of Qubes code based on commit log of each component"
@@ -298,6 +299,13 @@ diff:
 		if [ $$? -ne 0 ]; then \
 			(echo -e "Uncommited changes in $$REPO:\n\n"; git diff) | less; \
 		fi; \
+	    popd > /dev/null; \
+	done
+
+grep:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		git grep "$$RE" | sed -e "s,^,$$REPO/,"; \
 	    popd > /dev/null; \
 	done
 
