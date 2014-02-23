@@ -377,7 +377,7 @@ show-unmerged:
 	echo "Changes to be merged:"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
-		if [ -n "`git log ..FETCH_HEAD`" ]; then \
+		if [ -n "`git log ..FETCH_HEAD 2>/dev/null`" ]; then \
 			if [ -n "`git rev-list FETCH_HEAD..HEAD`" ]; then \
 				MERGE_TYPE="`git config --get-color color.decorate.tag 'red bold'`"; \
 				MERGE_TYPE="$${MERGE_TYPE}merge"; \
