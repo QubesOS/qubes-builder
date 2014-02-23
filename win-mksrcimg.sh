@@ -31,7 +31,7 @@ else
     echo "Using existing image file with Windows sources..."
 fi
 
-OUTPUT=`sudo kpartx -a -v $IMG`
+OUTPUT=`sudo kpartx -s -a -v $IMG`
 # sample output: add map loop0p1 (253:1): 0 2095104 linear /dev/loop0 2048
 DEV=/dev/mapper/`echo $OUTPUT | cut -f 3 -d ' '`
 
@@ -48,7 +48,7 @@ for C in $COMPONENTS; do
     rsync --delete --exclude-from windows-build-files/win-src.exclude -rlt $SRC/$C $MNT/qubes-src/ || exit 1
 done
 
-sudo umount  $MNT
+sudo umount -d $MNT
 sudo kpartx -d $IMG
 echo "Image file at: $IMG"
 echo "Connect it to some Windows (on Qubes use qvm-block) and enjoy using qubes-builder there"
