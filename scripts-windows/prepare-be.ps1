@@ -330,9 +330,10 @@ Move-Item -Force "$file.new" $file
 
 $pkgName = "libxml"
 $file = $global:pkgConf[$pkgName][2]
-Unpack $file $depsDir
-# move contents to mingw64 dir
 $src = "$depsDir\$pkgName"
+if (-not (Test-Path $src)) { New-Item $src -ItemType Directory | Out-Null }
+Unpack $file $src
+# move contents to mingw64 dir
 Copy-Item -Path "$src\*" -Destination $mingw -Recurse -Force
 Remove-Item $src -Recurse
 # fix path in libxml2.la
