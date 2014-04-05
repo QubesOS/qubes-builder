@@ -91,7 +91,7 @@ get-sources:
 
 $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
 
-%-vm:
+$(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm :
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM); do \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
@@ -196,6 +196,8 @@ sign-all:
 qubes: $(filter-out qubes-builder,$(COMPONENTS))
 
 qubes-dom0: $(addsuffix -dom0,$(filter-out qubes-builder linux-template-builder,$(COMPONENTS)))
+
+qubes-vm: $(addsuffix -vm,$(filter-out qubes-builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
