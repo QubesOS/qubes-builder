@@ -408,7 +408,7 @@ update-repo-current update-repo-current-testing update-repo-unstable: update-rep
 		if [ -r $$REPO/Makefile.builder ]; then \
 			echo "Updating $$REPO..."; \
 			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-				UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/dom0 \
+				UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/dom0/$(DIST_DOM0) \
 				COMPONENT=`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
