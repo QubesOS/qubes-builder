@@ -102,7 +102,7 @@ $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(CO
 	    done; \
 	fi
 
-%-dom0:
+$(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 :
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
@@ -194,6 +194,8 @@ sign-all:
 	done
 
 qubes: $(filter-out qubes-builder,$(COMPONENTS))
+
+qubes-dom0: $(addsuffix -dom0,$(filter-out qubes-builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
