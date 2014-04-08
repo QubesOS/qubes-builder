@@ -41,7 +41,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	fi
 	@sudo cp yum.conf $(CHROOT_DIR)/etc/yum.conf
 
-$(CHROOT_DIR)/home/user/.prepared_base:
+$(CHROOT_DIR)/home/user/.prepared_base: ./prepare-chroot-fedora
 	@echo "-> Preparing $(DIST) build environment"
 	@sudo -E ./prepare-chroot-fedora $(CHROOT_DIR) $(DIST) || exit 1
 	@touch $(CHROOT_DIR)/home/user/.prepared_base

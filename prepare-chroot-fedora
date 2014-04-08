@@ -45,6 +45,10 @@ if ! [ -d $DIR/home/user ]; then
     chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic loop;useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
     # Just to be sure that RPMDB has right format (eg when building host is newer than FC13)
     chroot $DIR rpm --rebuilddb 2> /dev/null
+else
+    # update chroot
+    chroot $DIR groupadd -rf uucp 2>/dev/null || :
+    chroot $DIR sh -c "cd dev; /sbin/MAKEDEV generic loop"
 fi
 ./update-local-repo.sh $DISTRO
 cp repos_$DISTRO/*.repo $DIR/etc/yum.repos.d/
