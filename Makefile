@@ -362,7 +362,7 @@ push:
 	
 # Force bash for some advanced substitution (eg ${!...})
 SHELL = /bin/bash
-prepare-merge:
+-prepare-merge:
 	@set -a; \
 	SCRIPT_DIR=$(CURDIR); \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
@@ -372,8 +372,9 @@ prepare-merge:
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
 		$$SCRIPT_DIR/get-sources.sh || exit 1; \
-	done; \
-	$(MAKE) --no-print-directory show-unmerged
+	done;
+
+prepare-merge: -prepare-merge show-unmerged
 
 show-unmerged:
 	@set -a; \
