@@ -407,7 +407,7 @@ do-merge:
 		popd > /dev/null; \
 	done
 
-update-repo-current update-repo-current-testing update-repo-unstable: update-repo-%:
+update-repo-current-testing update-repo-unstable: update-repo-%:
 	@for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
