@@ -37,6 +37,7 @@ LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
 BUILDERCONF ?= builder.conf
+KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
 #Include config file
 -include $(BUILDERCONF)

@@ -62,8 +62,9 @@
 # Default: no value
 
 # KEYRING_DIR_GIT - use separate keyring dir for git tags verification
-# This can be used to verify git tags with limited set of keys
-# Default: use default user keyring
+# This can be used to verify git tags with limited set of keys. If you want to
+# use your default keyring, set this to empty string.
+# Default: keyrings/git
 
 # CLEAN - remove previous sources before getting new (use git up vs git clone) - set "1" to use it
 # Default: no value
