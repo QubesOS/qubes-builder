@@ -39,7 +39,7 @@ for tag in `git tag --points-at=$REF`; do
 		VALID_TAG_FOUND=1
 	else
 		if [ "0$VERBOSE" -ge 1 ]; then
-			echo "---> Invalid signature:"
+			echo "---> One of signed tag cannot be verified:"
 			git tag -v $tag
 		fi
 	fi
@@ -47,6 +47,10 @@ done
 
 if [ "$VALID_TAG_FOUND" -eq 0 ]; then
 	echo "No valid signed tag found!"
+    if [ "0$VERBOSE" -eq 0 -a -n "`git describe $REF`" ]; then
+        echo "---> One of invalid tag:"
+        git tag -v `git describe $REF`
+    fi
 	exit 1
 fi
 
