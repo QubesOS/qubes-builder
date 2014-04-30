@@ -13,7 +13,20 @@ fi
 
 if [ -n "$KEYRING_DIR_GIT" ]; then
     export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
+    if [ ! -d "$GNUPGHOME" ]; then
+        mkdir -p $GNUPGHOME
+        chmod 700 $GNUPGHOME
+        gpg --import qubes-developers-keys.asc
+        # Trust Qubes Master Signing Key
+        echo '427F11FD0FAA4B080123F01CDDFA1A3E36879494:6:' | gpg --import-ownertrust
+    fi
+    if [ qubes-developers-keys.asc -nt "$GNUPGHOME/pubring.gpg" ]; then
+        gpg --import qubes-developers-keys.asc
+        touch "$GNUPGHOME/pubring.gpg"
+    fi
 fi
+
+
 pushd $1 > /dev/null
 
 if [ -n "$2" ]; then
