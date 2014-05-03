@@ -3,8 +3,8 @@ GIT_SUBDIR ?= mainstream
 BRANCH ?= master
 GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
-DIST_DOM0 ?= fc18
-DISTS_VM ?= fc18
+DIST_DOM0 ?= fc20
+DISTS_VM ?= fc20
 VERBOSE ?= 0
 # Beware of build order
 COMPONENTS ?= vmm-xen \
@@ -59,6 +59,8 @@ endif
 .ONESHELL:
 help:
 	@echo "make qubes            -- download and build all components"
+	@echo "make qubes-dom0       -- download and build all dom0 components"
+	@echo "make qubes-vm         -- download and build all VM components"
 	@echo "make get-sources      -- download/update all sources"
 	@echo "make sign-all         -- sign all packages"
 	@echo "make clean-all        -- remove any downloaded sources and built packages"

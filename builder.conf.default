@@ -48,12 +48,12 @@
 # Default: no value
 
 # DIST_DOM0 - distribution for dom0 packages
-# Default: fc18
+# Default: fc20
 
 # DISTS_VM - distributions for VM packages (can be list - separate with space)
 # Supported distros: fc15 fc17 fc18 fc19 fc20
 # Windows: win7x64 win7x86 winVistax64 winVistax86 winXPx64 winXPx86
-# Default: fc18
+# Default: fc20
 
 # QUBES_RELEASE - set release version of result iso
 # Default: test-build
