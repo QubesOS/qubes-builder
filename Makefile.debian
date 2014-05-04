@@ -1,0 +1,101 @@
+# Makefile for debian package build
+# Davíð Steinn Geirsson <david@dsg.is>
+
+PACKAGE_LIST = $(DEBIAN_BUILD_DIRS)
+DIST_BUILD_DIR=/home/user
+RUN_AS_USER=user
+
+include $(ORIG_SRC)/Makefile.builder
+
+DIST_SRC_ROOT=$(DIST_BUILD_DIR)/qubes-src
+DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
+
+DEBIANVERSION=jessie
+export DEBIANVERSION
+
+ifneq (,$(DEBIAN_BUILD_DIRS))
+packagefile = $(shell head -n 1 $(ORIG_SRC)/debian/changelog  | awk '{print $$1, $$2}' | sed 's/\([a-zA-Z\-]*\) (\(.*\))/\1_\2/')
+endif
+
+define aptdistributions
+Origin: Qubes Debian
+Label: Qubes Debian
+Codename: wheezy
+Architectures: amd64 source
+Components: main
+Description: Apt repository with qubes domU support tools for debian wheezy
+
+Origin: Qubes Debian
+Label: Qubes Debian
+Codename: jessie
+Architectures: amd64 source
+Components: main
+Description: Apt repository with qubes domU support tools for debian jessie
+endef
+export aptdistributions
+
+dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
+	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
+		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
+	fi
+	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/rpm ]; then\
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;\
+	fi
+
+
+$(CHROOT_DIR)/home/user/.prepared_base: ./prepare-chroot-debian
+	@echo "-> Preparing $(DIST) build environment"
+	@sudo -E ./prepare-chroot-debian $(CHROOT_DIR) $(DIST)
+	@touch $(CHROOT_DIR)/home/user/.prepared_base
+
+dist-prep:
+	@true
+
+dist-build-dep:
+	@true
+
+dist-package:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
+	echo "Building package in $(DIST_SRC)"
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); dpkg-buildpackage -sa -k${SIGN_KEY}'
+	# Continue on error because deps are not installed yet.
+	-sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) dpkg -i $(DIST_SRC)/../$(packagefile)_amd64.deb
+	# Install dependencies of the previously installed package, since we are
+	# not using a repository.
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) apt-get -fy install
+
+dist-copy-out:
+	mkdir -p $(BUILDER_REPO_DIR)/deb
+	cp -t $(BUILDER_REPO_DIR)/deb $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
+	mkdir -p $(ORIG_SRC)/deb
+	mv -t $(ORIG_SRC)/deb $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
+
+
+
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+ifeq (,$(DEBIAN_BUILD_DIRS))
+	@true
+else
+	@mkdir -p $(UPDATE_REPO)/apt/conf
+	echo "$$aptdistributions" > $(UPDATE_REPO)/apt/conf/distributions
+	if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/rpm ]; then \
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb ;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb ;\
+	fi
+	if ! [ -d $(CHROOT_DIR)/tmp/qubes-apt-repo/apt ]; then \
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
+		sudo mount --bind $(UPDATE_REPO) $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
+	fi
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo/apt include $(DEBIANVERSION) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes"
+	sudo umount $(CHROOT_DIR)/tmp/qubes-apt-repo
+	sudo umount $(CHROOT_DIR)/tmp/qubes-deb
+endif
+
+

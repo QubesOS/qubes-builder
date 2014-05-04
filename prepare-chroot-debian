@@ -1,0 +1,55 @@
+#!/bin/sh
+# vim: set ts=4 sw=4 sts=4 et :
+
+
+DIR=$1
+DISTRO=$2
+
+set -e
+if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
+    set -x
+fi
+
+BUILDPACKAGES="reprepro build-essential devscripts git git-buildpackage pbuilder debhelper quilt libxen-dev python libpulse-dev libtool automake xorg-dev xutils-dev libxdamage-dev libxcomposite-dev libxt-dev libx11-dev"
+
+INITIAL=
+
+if ! [ -d $DIR/home/user ]; then
+    INITIAL=1
+    mkdir -p $DIR
+
+    echo "-> Installing debian build chroot..."
+    COMPONENTS="" debootstrap --arch=amd64 \
+    --include=ncurses-term,debian-keyring \
+    --keyring=keys_${DISTRO}/debian-archive-keyring.gpg $DEBIANVERSION $DIR \
+    || { echo "Error in debootstrap"; exit 1; }
+
+    # Set up a temporary policy-rc.d to prevent apt from starting services
+    # on package installation
+    cat > $DIR/usr/sbin/policy-rc.d <<EOF
+#!/bin/sh
+return 101 # Action forbidden by policy
+EOF
+    chmod 755 $DIR/usr/sbin/policy-rc.d
+
+    [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
+    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+    if [ -n "$USER_GID" ]; then
+        chroot $DIR groupadd -g $USER_GID user
+    elif [ -n "$SUDO_GID" ]; then
+        chroot $DIR groupadd -g $SUDO_GID user
+    else
+        chroot $DIR groupadd user
+    fi
+    chroot $DIR sh -c "useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+else
+    # update chroot
+    chroot $DIR apt-get update
+    chroot $DIR apt-get -y upgrade
+fi
+if ! [ -r $DIR/proc/cpuinfo ]; then
+    mount -t proc proc $DIR/proc
+fi
+
+chroot $DIR apt-get -y install $BUILDPACKAGES
+
