@@ -83,6 +83,7 @@ dist-copy-out:
 
 # Copies requested packages (based on PACKAGE_SET, COMPONENT, DIST) to
 # requested repository (UPDATE_REPO)
+# Optionally saves list of copied packages in $(SNAPSHOT_FILE)
 update-repo:
 ifndef UPDATE_REPO
 	$(error "You need to specify destination repo in UPDATE_REPO variable")
@@ -92,4 +93,6 @@ ifeq (,$(RPM_SPEC_FILES))
 else
 	@cd $(ORIG_SRC) && ln -f $(foreach SPEC,$(RPM_SPEC_FILES),$(call spec_packages,$(SPEC))) $(UPDATE_REPO)/rpm/
 endif
-
+ifdef SNAPSHOT_FILE
+	@cd $(ORIG_SRC) && echo $(foreach SPEC,$(RPM_SPEC_FILES),$(call spec_packages,$(SPEC))) > $(SNAPSHOT_FILE)
+endif

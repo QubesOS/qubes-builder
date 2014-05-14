@@ -418,11 +418,13 @@ update-repo-current-testing update-repo-unstable: update-repo-%:
 			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
 				UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/dom0/$(DIST_DOM0) \
 				COMPONENT=`basename $$REPO` \
+				SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
 				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
 					UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
+					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-vm-$$DIST-`basename $$REPO` \
 					update-repo; \
 			done; \
 		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then \
@@ -433,6 +435,9 @@ update-repo-current-testing update-repo-unstable: update-repo-%:
 		fi; \
 	done; \
 	(cd $(LINUX_REPO_BASEDIR)/.. && ./update_repo-$*.sh)
+
+update-repo-current:
+	(cd $(LINUX_REPO_BASEDIR)/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)")
 
 windows-image:
 	./win-mksrcimg.sh
