@@ -26,7 +26,6 @@ COMPONENTS ?= vmm-xen \
 			  desktop-linux-kde \
 			  desktop-linux-xfce4 \
 			  qubes-manager \
-			  linux-dom0-updates \
 			  installer-qubes-os \
 			  linux-yum \
 			  vmm-xen-windows-pvdrivers \
