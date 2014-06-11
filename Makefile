@@ -15,6 +15,7 @@ COMPONENTS ?= vmm-xen \
 			  core-admin-linux \
 			  core-agent-linux \
 			  linux-kernel \
+			  artwork \
 			  gui-common \
 			  gui-daemon \
 			  gui-agent-linux \
