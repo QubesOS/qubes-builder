@@ -40,8 +40,16 @@ BACKEND_VMM ?= xen
 BUILDERCONF ?= builder.conf
 KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
+
 #Include config file
 -include $(BUILDERCONF)
+
+# checking for make from Makefile is pointless
+DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
+
+ifneq (1,$(NO_SIGN))
+DEPENDENCIES += rpm-sign
+endif
 
 SRC_DIR := qubes-src
 
@@ -68,6 +76,7 @@ help:
 	@echo "make clean-rpms       -- remove any built packages"
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make check            -- check for any uncommited changes and unsigned tags"
+	@echo "make check-depend     -- check for build dependencies ($(DEPENDENCIES))"
 	@echo "make diff             -- show diffs for any uncommitted changes"
 	@echo "make grep RE=regexp   -- grep for regexp in all components"
 	@echo "make push             -- do git push for all repos, including tags"
@@ -93,9 +102,18 @@ get-sources:
 		$$SCRIPT_DIR/get-sources.sh || exit 1; \
 	done
 
+.PHONY: check-depend
+check-depend:
+	@if [ $(VERBOSE) -gt 0 ]; then \
+		echo "currently installed dependencies:"; \
+		rpm -q $(DEPENDENCIES) || exit 1; \
+	else \
+		rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || exit 1; \
+	fi
+
 $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
 
-$(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm :
+$(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM); do \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
@@ -106,7 +124,7 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm :
 	    done; \
 	fi
 
-$(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 :
+$(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depend
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
