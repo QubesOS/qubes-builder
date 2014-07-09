@@ -104,7 +104,9 @@ get-sources:
 
 .PHONY: check-depend
 check-depend:
-	@if [ $(VERBOSE) -gt 0 ]; then \
+	@if ! which rpm >/dev/null 2>&1; then
+		echo "WARNING: rpm executable not found (are you on cygwin?)"; \
+	elif [ $(VERBOSE) -gt 0 ]; then \
 		echo "currently installed dependencies:"; \
 		rpm -q $(DEPENDENCIES) || exit 1; \
 	else \
