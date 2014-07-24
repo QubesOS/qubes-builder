@@ -53,6 +53,22 @@ fi
 
 chroot $DIR apt-get -y install $BUILDPACKAGES
 
+if ! [ -f keys_debian/$DIST-secring.gpg ]; then
+    gpg --gen-key --batch <<EOF
+Key-Type: RSA
+Key-Length: 1024
+Key-Usage: sign
+Name-Real: Qubes builder
+Expire-Date: 0
+%pubring keys_debian/$DIST-pubring.gpg
+%secring keys_debian/$DIST-secring.gpg
+%commit
+EOF
+    chown --reference=keys_debian/ keys_debian/$DIST-*ring.gpg
+fi
+
+
 cat > $DIR/etc/apt/sources.list.d/qubes-builder.list <<EOF
 deb file:/tmp/qubes-deb $DEBIANVERSION main
 EOF
+cp keys_debian/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
