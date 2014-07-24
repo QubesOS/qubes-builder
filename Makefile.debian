@@ -60,7 +60,7 @@ endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
 	echo "Building package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); dpkg-buildpackage -sa -k${SIGN_KEY}'
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY}'
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
