@@ -21,7 +21,7 @@ if ! [ -d $DIR/home/user ]; then
     echo "-> Installing debian build chroot..."
     COMPONENTS="" debootstrap --arch=amd64 \
     --include=ncurses-term,debian-keyring \
-    --keyring=keys_${DISTRO}/debian-archive-keyring.gpg $DEBIANVERSION $DIR \
+    --keyring=keys_debian/$(DIST)-debian-archive-keyring.gpg $DEBIANVERSION $DIR \
     || { echo "Error in debootstrap"; exit 1; }
 
     # Set up a temporary policy-rc.d to prevent apt from starting services
@@ -53,3 +53,6 @@ fi
 
 chroot $DIR apt-get -y install $BUILDPACKAGES
 
+cat > $DIR/etc/apt/sources.list.d/qubes-builder.list <<EOF
+deb file:/tmp/qubes-deb $DEBIANVERSION main
+EOF

@@ -5,12 +5,7 @@ PACKAGE_LIST = $(DEBIAN_BUILD_DIRS)
 DIST_BUILD_DIR=/home/user
 RUN_AS_USER=user
 
-include $(ORIG_SRC)/Makefile.builder
-
-DIST_SRC_ROOT=$(DIST_BUILD_DIR)/qubes-src
-DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
-
-DEBIANVERSION=jessie
+DEBIANVERSION=$(DIST)
 export DEBIANVERSION
 
 ifneq (,$(DEBIAN_BUILD_DIRS))
@@ -38,7 +33,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
 		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
 	fi
-	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/rpm ]; then\
+	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/deb ]; then\
 		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb;\
 		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;\
 	fi
@@ -53,7 +48,10 @@ dist-prep:
 	@true
 
 dist-build-dep:
-	@true
+	./update-local-repo.sh $(DIST)
+	sudo chroot $(CHROOT_DIR) apt-get update
+	grep Build-Depends: $(CHROOT_DIR)$(DIST_SRC)/debian/control | cut -d: -f 2- |\
+		sed -e 's/ *, */\n/g'| cut -d'(' -f 1 |xargs sudo chroot $(CHROOT_DIR) apt-get install -y
 
 dist-package:
 ifndef PACKAGE
@@ -62,11 +60,6 @@ endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
 	echo "Building package in $(DIST_SRC)"
 	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); dpkg-buildpackage -sa -k${SIGN_KEY}'
-	# Continue on error because deps are not installed yet.
-	-sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) dpkg -i $(DIST_SRC)/../$(packagefile)_amd64.deb
-	# Install dependencies of the previously installed package, since we are
-	# not using a repository.
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) apt-get -fy install
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb

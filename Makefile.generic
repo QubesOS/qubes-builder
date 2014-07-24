@@ -11,6 +11,10 @@
 .EXPORT_ALL_VARIABLES:
 ifneq (,$(findstring fc,$(DIST)))
 DISTRIBUTION := fedora
+else ifeq (wheezy,$(DIST))
+DISTRIBUTION := debian
+else ifeq (jessie,$(DIST))
+DISTRIBUTION := debian
 else ifneq (,$(findstring win,$(DIST)))
 ifeq ($(OS),Windows_NT)
 DISTRIBUTION := windows
