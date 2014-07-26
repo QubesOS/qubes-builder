@@ -20,9 +20,10 @@ if ! [ -d $DIR/home/user ]; then
 
     echo "-> Installing debian build chroot..."
     COMPONENTS="" debootstrap --arch=amd64 \
-    --include=ncurses-term,debian-keyring \
-    --keyring=keys_debian/$DIST-debian-archive-keyring.gpg $DEBIANVERSION $DIR \
-    || { echo "Error in debootstrap"; exit 1; }
+                --include=ncurses-term,debian-keyring \
+                --keyring=keys_debian/$DIST-debian-archive-keyring.gpg \
+                $DEBIANVERSION $DIR http://http.debian.net/debian \
+                || { echo "Error in debootstrap"; exit 1; }
 
     # Set up a temporary policy-rc.d to prevent apt from starting services
     # on package installation
