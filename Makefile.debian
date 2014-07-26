@@ -12,6 +12,8 @@ ifneq (,$(DEBIAN_BUILD_DIRS))
 packagefile = $(shell head -n 1 $(ORIG_SRC)/debian/changelog  | awk '{print $$1, $$2}' | sed 's/\([a-zA-Z\-]*\) (\(.*\))/\1_\2/')
 endif
 
+listfiles = awk 'section == "Files:" { print $$5 } /^[A-Z].*:$$/ { section=$$1 }'
+
 define aptdistributions
 Origin: Qubes Debian
 Label: Qubes Debian
@@ -64,11 +66,13 @@ endif
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
-	cp -t $(BUILDER_REPO_DIR)/deb $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
 	mkdir -p $(ORIG_SRC)/deb
-	mv -t $(ORIG_SRC)/deb $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
-
-
+	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
+		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(packagefile)*.changes`
+	cp -t $(BUILDER_REPO_DIR)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
+	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
+		mv -t $(PWD)/$(ORIG_SRC)/deb  `$(listfiles) $(packagefile)*.changes`
+	mv -t $(PWD)/$(ORIG_SRC)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
 
 update-repo:
 ifndef UPDATE_REPO
