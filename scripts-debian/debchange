@@ -1484,7 +1484,7 @@ if ($warnings) {
     } else {
 	warn "$progname: Did you see that warning?  Press RETURN to continue...\n";
     }
-    my $garbage = <STDIN>;
+    #my $garbage = <STDIN>;
 }
 
 # Now Run the Editor; always run if doing "closes" to give a chance to check

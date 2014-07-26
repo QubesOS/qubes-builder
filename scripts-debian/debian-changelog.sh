@@ -11,6 +11,7 @@ if [[ "$v" == `cat version`?(devel*) ]]; then
     export DEBFULLNAME=`git config user.name`
     export DEBEMAIL=`git config user.email`
     $debchange --nomultimaint-merge --multimaint -ldevel -- 'Test build'
+    $debchange --distribution=$DIST -r -- ''
     exit 0
 else
     release=1
@@ -27,5 +28,5 @@ git log --no-merges --topo-order --reverse --pretty=format:%an%%%ae%%%ad%%%s v$v
 if [ -n "$release" ]; then
     export DEBFULLNAME="`git log -n 1 --pretty=format:%an`"
     export DEBEMAIL="`git log -n 1 --pretty=format:%ae`"
-    $debchange --mainttrailer -r -- ''
+    $debchange --distribution=$DIST -r -- ''
 fi
