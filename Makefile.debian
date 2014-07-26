@@ -92,7 +92,7 @@ ifeq (,$(DEBIAN_BUILD_DIRS))
 else
 	@mkdir -p $(UPDATE_REPO)/apt/conf
 	echo "$$aptdistributions" > $(UPDATE_REPO)/apt/conf/distributions
-	if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/rpm ]; then \
+	if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
 		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb ;\
 		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb ;\
 	fi
