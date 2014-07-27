@@ -16,6 +16,14 @@ endif
 
 listfiles = awk 'section == "Files:" { print $$5 } /^[A-Z].*:$$/ { section=$$1 }'
 
+ifdef UPDATE_REPO
+ifneq (,$(findstring current-testing,$(UPDATE_REPO)))
+REPO_SUFFIX = -testing
+else ifneq (,$(findstring unstable,$(UPDATE_REPO)))
+REPO_SUFFIX = -unstable
+endif
+endif
+
 define aptdistributions
 Origin: Qubes Debian
 Label: Qubes Debian
