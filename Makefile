@@ -432,18 +432,24 @@ do-merge:
 	done
 
 update-repo-current-testing update-repo-unstable: update-repo-%:
-	@for REPO in $(GIT_REPOS); do \
+	@dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
+	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
+	repos_to_update="$$repo_dom0_basedir"; \
+	for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
 			echo "Updating $$REPO..."; \
 			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-				UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/dom0/$(DIST_DOM0) \
+				UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
 				COMPONENT=`basename $$REPO` \
 				SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
+				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
+				[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
+				repos_to_update+=" $$repo_vm_basedir"; \
 				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
-					UPDATE_REPO=$(CURDIR)/$(LINUX_REPO_BASEDIR)/$*/vm/$$DIST \
+					UPDATE_REPO=$(CURDIR)/$$repo_vm_basedir/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
 					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-vm-$$DIST-`basename $$REPO` \
 					update-repo; \
@@ -455,10 +461,24 @@ update-repo-current-testing update-repo-unstable: update-repo-%:
 			echo "Updating $$REPO... skipping."; \
 		fi; \
 	done; \
-	(cd $(LINUX_REPO_BASEDIR)/.. && ./update_repo-$*.sh)
+	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
+		[ -z "$$repo" ] && continue; \
+		(cd $$repo/.. && ./update_repo-$*.sh); \
+	done
 
 update-repo-current:
-	(cd $(LINUX_REPO_BASEDIR)/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)")
+	dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
+	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
+	repos_to_update="$$repo_dom0_basedir"; \
+	for DIST in $(DISTS_VM); do \
+		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
+		[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
+		repos_to_update+=" $$repo_vm_basedir"; \
+	done; \
+	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
+		[ -z "$$repo" ] && continue; \
+		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)"); \
+	done
 
 windows-image:
 	./win-mksrcimg.sh
