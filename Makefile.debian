@@ -90,17 +90,17 @@ endif
 ifeq (,$(DEBIAN_BUILD_DIRS))
 	@true
 else
-	@mkdir -p $(UPDATE_REPO)/apt/conf
-	echo "$$aptdistributions" > $(UPDATE_REPO)/apt/conf/distributions
+	@mkdir -p $(UPDATE_REPO)/conf
+	[ ! -e $(UPDATE_REPO)/conf/distributions ] && echo "$$aptdistributions" > $(UPDATE_REPO)/conf/distributions || :
 	if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
 		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb ;\
 		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb ;\
 	fi
-	if ! [ -d $(CHROOT_DIR)/tmp/qubes-apt-repo/apt ]; then \
+	if ! [ -d $(CHROOT_DIR)/tmp/qubes-apt-repo/dists ]; then \
 		mkdir -p $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
 		sudo mount --bind $(UPDATE_REPO) $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
 	fi
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo/apt include $(DEBIANVERSION) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes"
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes"
 	sudo umount $(CHROOT_DIR)/tmp/qubes-apt-repo
 	sudo umount $(CHROOT_DIR)/tmp/qubes-deb
 endif

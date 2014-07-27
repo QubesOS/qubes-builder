@@ -44,6 +44,8 @@ EOF
     fi
     chroot $DIR sh -c "useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
 else
+    # temporary remove builder repo, it will be recreated at the end of this script
+    rm -f $DIR/etc/apt/sources.list.d/qubes-builder.list
     # update chroot
     chroot $DIR apt-get update
     chroot $DIR apt-get -y upgrade

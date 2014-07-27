@@ -11,7 +11,7 @@ DIST=$1
 if [ -d $REPO_DIR/dists ]; then
     pushd $REPO_DIR
     mkdir -p dists/$DIST/main/binary-amd64
-    dpkg-scanpackages . > dists/$DIST/main/binary-amd64/Packages
+    dpkg-scanpackages --multiversion . > dists/$DIST/main/binary-amd64/Packages
     gzip -9c dists/$DIST/main/binary-amd64/Packages > dists/$DIST/main/binary-amd64/Packages.gz
     cat > dists/$DIST/Release <<EOF
 Label: Qubes builder repo
