@@ -226,7 +226,7 @@ qubes-vm: $(addsuffix -vm,$(filter-out qubes-builder linux-template-builder,$(CO
 qubes-os-iso: get-sources qubes sign-all iso
 
 clean-installer-rpms:
-	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh)
+	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
 clean-rpms: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
