@@ -98,7 +98,6 @@ generic-copy-in:
 	@cp Makefile.$(DISTRIBUTION) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
 	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
 	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
-	@cd $(CHROOT_DIR)/$(DIST_SRC); git clean -f -X -d >/dev/null
 
 .PHONY: windows-image-extract
 windows-image-extract:
