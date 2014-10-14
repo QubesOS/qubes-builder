@@ -15,10 +15,7 @@ fi
 echo "BASE set to: $BASE"
 
 # Get absolute path of directory
-if ! [[ "$DIR" = /* ]]; then
-    DIR="${PWD}/${DIR}"
-    DIR=${DIR::-1}
-fi
+DIR="$(readlink -m .)"
 
 if [ -z "$BUILDERCONF" ]; then
     export BUILDERCONF="config-debian/builder-${BASE}.conf"
@@ -143,7 +140,7 @@ fi
 # Clean - Basic clean removes all source and compiled images
 # ------------------------------------------------------------------------------
 if [ "$1" == "clean" ] ; then
-    # Make sure notthing is mounted within this (the qubes-builder directory)
+    # Make sure nothing is mounted within this (the qubes-builder directory)
     # since this could prevent updates.  Note all processes within
     # this directory are also killed off (terminal sessions maybe?)
     umount_image "$DIR/" || true
@@ -217,7 +214,7 @@ if [ "$1" == "sources" ] ; then
     git clone https://github.com/nrgaway/gui-agent-linux.git
     pushd linux-template-builder
     git fetch
-    git checkout whonix  # (branch)
+    git checkout wheezy  # (branch)
     popd
     popd
 

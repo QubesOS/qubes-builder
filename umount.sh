@@ -33,6 +33,10 @@ umount_image() {
         MOUNTDIR="${PWD}/${MOUNTDIR}"
     fi
 
+    # Strip any extra trailing slashes ('/') from path if they exist
+    # since we are doing an exact string match on the path
+    MOUNTDIR=$(echo "$MOUNTDIR" | sed s#//*#/#g)
+
     echo "-> Attempting to kill any processes still running in '$MOUNTDIR' before un-mounting"
     for dir in $(sudo grep "$MOUNTDIR" /proc/mounts | cut -f2 -d" " | sort -r | grep "^$MOUNTDIR")
     do
