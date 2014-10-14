@@ -1,9 +1,9 @@
-#!/bin/bash -e
+``#!/bin/bash -e
 
 #
 # Written by Jason Mehring (nrgaway@gmail.com) 
 # 
-
+INSTALLDIR="$(readlink -m mnt)"
 # Kills any processes within the mounted location and 
 # unmounts any mounts active within.
 # 
@@ -15,17 +15,17 @@
 # To kill all processes and mounts within 'chroot-jessie' but keep
 # 'chroot-jessie' mounted:
 #
-# ./umount.sh chroot-jessie/ 
+# ./umount_kill.sh chroot-jessie/ 
 #
 # To kill all processes and mounts within 'chroot-jessie' AND also
 # umount 'chroot-jessie' mount:
 #
-# ./umount.sh chroot-jessie
+# ./umount_kill.sh chroot-jessie
 # 
 
 # $1 = full path to mount; 
 # $2 = if set will not umount; only kill processes in mount
-umount_image() {
+umount_kill() {
     MOUNTDIR="$1"
 
     # We need absolute paths here so we don't kill everything
@@ -56,9 +56,9 @@ umount_image() {
 }
 
 kill_processes_in_mount() {
-    umount_image $1 "false" || :
+    umount_kill $1 "false" || :
 }
 
-if [ $(basename "$0") == "umount.sh" -a "$1" ]; then
-    umount_image "$1"
+if [ $(basename "$0") == "umount_kill.sh" -a "$1" ]; then
+    umount_kill "$1"
 fi

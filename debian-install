@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 set -e
 
-. umount.sh
+. umount_kill.sh
 
 # Default Distribution
 if [ -z "$BASE" ]; then
@@ -60,7 +60,7 @@ function get-whonix() {
     # Make sure notthing is mounted within the qubes-src directory
     # since this could prevent updates.  Note all processes within
     # this directory are also killed off (terminal sessions maybe?)
-    umount_image "$DIR/qubes-src" || true
+    umount_kill "$DIR/qubes-src" || true
 
     KEYRING_DIR_GIT="$PWD/keyrings/git"
     export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
@@ -124,7 +124,7 @@ if [ "$1" == "clean-all" ] ; then
     # Make sure notthing is mounted within this (the qubes-builder directory)
     # since this could prevent updates.  Note all processes within
     # this directory are also killed off (terminal sessions maybe?)
-    umount_image "$DIR/" || true
+    umount_kill "$DIR/" || true
 
     clean_extras || true
     sudo rm -rf "$DIR/qubes" || true
@@ -143,7 +143,7 @@ if [ "$1" == "clean" ] ; then
     # Make sure nothing is mounted within this (the qubes-builder directory)
     # since this could prevent updates.  Note all processes within
     # this directory are also killed off (terminal sessions maybe?)
-    umount_image "$DIR/" || true
+    umount_kill "$DIR/" || true
 
     clean_extras 
     make clean
@@ -198,7 +198,7 @@ if [ "$1" == "sources" ] ; then
     # Make sure notthing is mounted within the qubes-src directory
     # since this could prevent updates.  Note all processes within
     # this directory are also killed off (terminal sessions maybe?)
-    umount_image "$DIR/qubes-src" || true
+    umount_kill "$DIR/qubes-src" || true
 
     # qbues-builder deps
     sudo yum install rpmdevtools rpm-build createrepo rpm-sign
@@ -235,7 +235,7 @@ fi
 if [ "$1" == "build" ] ; then
     # Make sure no processes are still running in chroot-<DIST>
     # an umount any existing mounts
-    umount_image "$DIR/chroot-$BASE" || true
+    umount_kill "$DIR/chroot-$BASE" || true
 
     # Ensure all files are owned by $USER since some .git/index
     # files seem to get changed to 'root' and results in a
