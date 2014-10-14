@@ -1,4 +1,4 @@
-``#!/bin/bash -e
+#!/bin/bash -e
 
 #
 # Written by Jason Mehring (nrgaway@gmail.com) 
