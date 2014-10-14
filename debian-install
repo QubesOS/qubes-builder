@@ -18,7 +18,7 @@ echo "BASE set to: $BASE"
 DIR="$(readlink -m .)"
 
 if [ -z "$BUILDERCONF" ]; then
-    export BUILDERCONF="config-debian/builder-${BASE}.conf"
+    export BUILDERCONF="example-configs/${BASE}.conf"
 fi
 echo "BUILDERCONF set to: ${BUILDERCONF}"
 
@@ -27,7 +27,7 @@ if ! [ -f "$BUILDERCONF" ]; then
     exit 1
 fi
 BUILDERCONF_ORIGINAL="$BUILDERCONF"
-BUILDERCONF_WHONIX="config-whonix/builder-whonix.conf"
+BUILDERCONF_WHONIX="example-configs/whonix.conf"
 
 
 # ==============================================================================
@@ -65,7 +65,7 @@ function get-whonix() {
     KEYRING_DIR_GIT="$PWD/keyrings/git"
     export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
     echo '916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:6:' | gpg --import-ownertrust
-    gpg --import config-whonix/whonix-developer-patrick.asc
+    gpg --import keys_debian/whonix-developer-patrick.asc
     gpg --list-keys
     touch "$GNUPGHOME/pubring.gpg"
     BUILDERCONF="$BUILDERCONF_WHONIX" make get-sources

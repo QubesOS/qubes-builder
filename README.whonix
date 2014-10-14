@@ -1,1 +1,105 @@
-config-whonix/NOTES
+=================================================================================
+               D E B I A N  /  W H O N I X   N O T E S
+=================================================================================
+
+---------------------------------------------------------------------------------
+Debian build issues:
+---------------------------------------------------------------------------------
+- depends broken for jessie:
+  change qubes-src/core-vchan-xen/debian/control to include libxen-4.4,
+  ** added hack to debian-install **
+
+
+---------------------------------------------------------------------------------
+Whonix Manual Configurations (using terminal once installed).
+[will end up in build scripts once proven to work]
+---------------------------------------------------------------------------------
+- /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
+  udev rule gets applied after qubes also run setup-ip when eth* goes online
+  - append to /etc/udev/rules.d/99-qubes-whonix.rules
+  SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
+- Tor is disable by default until whonixsetup is run, so instead of running
+  whonixsetup:
+  - append to /etc/tor/torrc
+  DisableNetwork 0
+- Since we are not running whonixsetup we need to indicate that it really was run
+  mkdir -p /var/lib/whonix/do_once
+  touch /var/lib/whonix/do_once/whonixsetup.done
+  #install -o root -g root -m 0755 -d /var/lib/whonix/do_once
+  #chown --recursive root:root /var/lib/whonix/do_once
+- /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
+  seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
+    if [ "$TEMP_DIR" = "" ]; then
+       error "Variable TEMP_DIR is empty."
+    fi
+
+
+
+---------------------------------------------------------------------------------
+Whonix Checks and Issues:
+---------------------------------------------------------------------------------
+After boot; check in terminal:
+  - confirm umask set properly for user and root
+  - Check eth1 interface exists
+  - Check tor status; make sure its binding to netvm IP address
+  - iptables; confirm whonix firewall loaded
+  - routes
+  - run whonixcheck as 'user'
+  - Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
+
+Current issues:
+  - Need to manually run 'sudo whonixsetup' in terminal the first time
+
+  - The next 2 issues may be addressed by completing research as indicated in
+    https://www.whonix.org/forum/index.php/topic,537.msg4770.html#msg4770
+    - swdate fails on start and after start.
+    - initial whonixcheck fails on start, but works.  Might not be waiting for
+      tor to bootstrap 
+
+  - Unable to launch some of the Whonix apps.  Actually will creash VM
+  - Currently the Whonix Proxy must be created as a standalone VM until it is 
+    modified to store configurations on /rw
+
+  - whonix-workstation not yet implemented
+
+Build issues:
+  - grub-pc is being installed as a recommended package and causes an error
+    during whonix installation.  Need to manually intervene at this point
+    when the error shows.  I added a script than can be executed as follows:
+      - press s and enter to open a chroot interactive shell
+      - ../whonix_fix
+      - exit 0
+  - one of the whonix install scripts also expect to have grub-pc installed
+    and will issue an error near the end of the installation.  Just use the
+    same example as above to fix it (it will already be removed and marked
+    so you could just press c to continue anyway, but I suggest using the 
+    whonix_fix just to make sure its implemented in the proper spot)
+
+---------------------------------------------------------------------------------
+Whonix Verification
+(https://www.whonix.org/forum/index.php/topic,538.0.html)
+---------------------------------------------------------------------------------
+- Need to get input if the submudules should have better verification
+- There has been some interesting conversation withing the thread link provided
+  above with quotes from Linus Torvalds and a detailed response from 
+  Mike Gerwitz, GNU Maintainer
+
+---------------------------------------------------------------------------------
+Configuration Issues:
+---------------------------------------------------------------------------------
+- Not sure if debian distributions starting XServer correctly since no themes are
+  being used, even when kde is installed
+- Debian templates are going the way of systemd, but wheezy seems to have no way for
+  sysvinit not to be re-installed on a dist-upgrade even if it is marked held or
+  pinned with a value of -1.  Need to find a solution for this
+- Is there a way to include external repos within the main configuration file.
+  Currently I am using a seperate builder.conf configuration file for Whonix
+  repos and individually cloning my repos (within the debian-install script)
+
+
+---------------------------------------------------------------------------------
+Marmarek Repo Issues:
+---------------------------------------------------------------------------------
+- marmarek repo build broken since core-agent-linux has been moved to systemd and it
+  seems something is not starting since the VM will boot but can not open a terminal
+  app and network seems to be unreachable as well
