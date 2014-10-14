@@ -1,0 +1,298 @@
+#!/bin/bash
+
+
+# ------------------------------------------------------------------------------
+# Intial Configurations
+# ------------------------------------------------------------------------------
+set -e
+
+. umount.sh
+
+# Default Distribution
+if [ -z "$BASE" ]; then
+    BASE=wheezy
+fi
+echo "BASE set to: $BASE"
+
+# Get absolute path of directory
+if ! [[ "$DIR" = /* ]]; then
+    DIR="${PWD}/${DIR}"
+    DIR=${DIR::-1}
+fi
+
+if [ -z "$BUILDERCONF" ]; then
+    export BUILDERCONF="config-debian/builder-${BASE}.conf"
+fi
+echo "BUILDERCONF set to: ${BUILDERCONF}"
+
+if ! [ -f "$BUILDERCONF" ]; then
+    echo "Can not find ${BUILDERCONF}. Exiting..."
+    exit 1
+fi
+BUILDERCONF_ORIGINAL="$BUILDERCONF"
+BUILDERCONF_WHONIX="config-whonix/builder-whonix.conf"
+
+
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
+
+
+# ------------------------------------------------------------------------------
+# Clean up more than what 'make clean' provides
+# ------------------------------------------------------------------------------
+clean_extras() {
+    PKGDIR=`pwd`qubes-src/linux-template-builder
+    if [ -d "$PKGDIR" ] ; then
+    	pushd "$PKGDIR"
+    	sudo rm -f prepared_images/* || true
+    	sudo rm -f qubeized_images/* || true
+    	sudo rm -f rpm/noarch/* || true
+	popd
+    fi
+    sudo rm -rf chroot-* || true
+}
+
+
+# ------------------------------------------------------------------------------
+# Whonix Sources
+#
+# Get Whonix repo function
+# ------------------------------------------------------------------------------
+function get-whonix() {
+    # Make sure notthing is mounted within the qubes-src directory
+    # since this could prevent updates.  Note all processes within
+    # this directory are also killed off (terminal sessions maybe?)
+    umount_image "$DIR/qubes-src" || true
+
+    KEYRING_DIR_GIT="$PWD/keyrings/git"
+    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
+    echo '916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:6:' | gpg --import-ownertrust
+    gpg --import config-whonix/whonix-developer-patrick.asc
+    gpg --list-keys
+    touch "$GNUPGHOME/pubring.gpg"
+    BUILDERCONF="$BUILDERCONF_WHONIX" make get-sources
+
+    # Reset BUILDERCONF back to original value
+    BUILDERCONF="$BUILDERCONF_ORIGINAL"
+
+    #rm -rf qubes-src/Whonix
+    #mv qubes-src/nothing-to-see qubes-src/Whonix
+
+    # Init submodules
+    # TODO: verify them; they are not yet verified
+    pushd qubes-src/Whonix
+    git submodule update --init --recursive
+    popd
+
+    # Patch anon-meta-packages to not depend on grub-pc
+    # XXX: Seems like the error disappears, but then whonix updates to original code?
+    pushd qubes-src/Whonix/packages/anon-meta-packages/debian/
+    sed -i 's/ grub-pc,//g' control
+    #git commit -am 'removed grub-pc depend'
+    popd
+
+    pushd qubes-src/Whonix/build-steps.d
+    sed -i 's/   check_for_uncommited_changes/   #check_for_uncommited_changes/g' 1200_create-debian-packages
+    popd
+
+    #pushd qubes-src/Whonix/packages/anon-shared-build-fix-grub/usr/lib/anon-dist/chroot-scripts-post.d
+    #sed -i 's/   update-grub/   : #update-grub/g' 85_update_grub
+    #popd
+}
+
+
+# ------------------------------------------------------------------------------
+# Set Whonix TEMPALTE_FLAVOR
+# ------------------------------------------------------------------------------
+set_whonix_version() {
+    # If whonix version is not passed; only a debian package will be built
+    [ "$1" ] && WHONIX_VERSION=$1 || WHONIX_VERSION=
+    echo "TEMPLATE_FLAVOR is: $WHONIX_VERSION"
+}
+
+
+# ==============================================================================
+# debian-install execution options
+# ==============================================================================
+
+
+# ------------------------------------------------------------------------------
+# debian-install clean-all
+#
+# Clean All (deletes everything in qubes-src as well; USE WITH CAUTION)
+# *** commit and push any gits you worked on ***
+# ------------------------------------------------------------------------------
+if [ "$1" == "clean-all" ] ; then
+    # Make sure notthing is mounted within this (the qubes-builder directory)
+    # since this could prevent updates.  Note all processes within
+    # this directory are also killed off (terminal sessions maybe?)
+    umount_image "$DIR/" || true
+
+    clean_extras || true
+    sudo rm -rf "$DIR/qubes" || true
+    sudo rm -rf "$DIR/qubes-rpms-mirror-repo/repodata" || true
+    make clean-all
+    make clean-all rpms
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install clean
+#
+# Clean - Basic clean removes all source and compiled images
+# ------------------------------------------------------------------------------
+if [ "$1" == "clean" ] ; then
+    # Make sure notthing is mounted within this (the qubes-builder directory)
+    # since this could prevent updates.  Note all processes within
+    # this directory are also killed off (terminal sessions maybe?)
+    umount_image "$DIR/" || true
+
+    clean_extras 
+    make clean
+    make clean rpms
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install verify-whonix
+#
+# Verify Whonix Submodules
+# (Not yet working)
+#
+# XXX:  
+#      Not really sure what to do about the submodules since they are not
+#      guaranteed to have tags or be signed
+#      (https://www.whonix.org/forum/index.php/topic,538.0.html)
+# ------------------------------------------------------------------------------
+if [ "$1" == "verify-whonix" ] ; then
+    KEYRING_DIR_GIT="$PWD/keyrings/git"
+    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
+
+    VERIFY="$PWD/verify-git-tag.sh"
+    pushd qubes-src/Whonix
+    git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
+        while read path_key path
+        do
+            #url_key=$(echo $path_key | sed 's/\.path/.url/')
+            #url=$(git config -f .gitmodules --get "$url_key")
+            #git submodule add $url $path
+            echo $path
+            exec $VERIFY "$path" "HEAD"
+        done
+    popd
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install get-whonix
+# ------------------------------------------------------------------------------
+if [ "$1" == "get-whonix" ] ; then
+    get-whonix
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install sources
+#
+# Get all sources to build project, including Whonix sources and my test repos
+# ------------------------------------------------------------------------------
+if [ "$1" == "sources" ] ; then
+    # Make sure notthing is mounted within the qubes-src directory
+    # since this could prevent updates.  Note all processes within
+    # this directory are also killed off (terminal sessions maybe?)
+    umount_image "$DIR/qubes-src" || true
+
+    # qbues-builder deps
+    sudo yum install rpmdevtools rpm-build createrepo rpm-sign
+
+    # Additional for debian template
+    sudo yum install debootstrap dpkg-dev
+
+    make get-sources
+    pushd qubes-src
+    mv linux-template-builder linux-template-builder.dist
+    mv gui-agent-linux gui-agent-linux.dist
+    git clone https://github.com/nrgaway/linux-template-builder.git
+    git clone https://github.com/nrgaway/gui-agent-linux.git
+    pushd linux-template-builder
+    git fetch
+    git checkout whonix  # (branch)
+    popd
+    popd
+
+    get-whonix
+
+    # XXX: debian jessie depends hack
+    grep "libxen-4.4" qubes-src/core-vchan-xen/debian/control || \
+        sed -i 's/libxen-4.3/libxen-4.3 | libxen-4.4/g' qubes-src/core-vchan-xen/debian/control
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install build
+#
+# Build all quebes packages for chosen distribution
+# Templates are built within a seperate step
+# ------------------------------------------------------------------------------
+if [ "$1" == "build" ] ; then
+    # Make sure no processes are still running in chroot-<DIST>
+    # an umount any existing mounts
+    umount_image "$DIR/chroot-$BASE" || true
+
+    # Ensure all files are owned by $USER since some .git/index
+    # files seem to get changed to 'root' and results in a
+    # build error when trying to hardlink to them
+    sudo chown -R $USER "$DIR/qubes-src"
+
+    # Set up WHONIX_VERSION for TEMPLATE_FLAVOR if $2 was passed
+    set_whonix_version $2
+
+    # XXX:  Not sure if this is a bug or if the local user keyring
+    # needs to have keys for building.  If so they are created by
+    # root in the build scripts and permissions need ot be reset
+    # to user.user or a build error will occur
+    if [ -d ~/.gnupg ]; then
+        sudo chown -R user.user ~/.gnupg
+    fi
+    make vmm-xen-vm
+    if [ -d ~/.gnupg ]; then
+        sudo chown -R user.user ~/.gnupg
+    fi
+
+    make core-vchan-xen-vm
+    make linux-utils-vm
+    make core-agent-linux-vm
+    make gui-common-vm
+    make gui-agent-linux-vm
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install template
+# debian-install template whonix-gateway
+# debian-install template whonix-workstation
+#
+# Builds an installable rpm package for distribution or distribution +
+# TEMPLATE_FLAVOR (whonix-gateway, whonix-workstation)
+#
+# Should continue building tempalte where it left off in case of build errors
+# ------------------------------------------------------------------------------
+if [ "$1" == "template" ] ; then
+    set_whonix_version $2
+    TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=false make linux-template-builder
+fi
+
+
+# ------------------------------------------------------------------------------
+# debian-install template-update
+# debian-install template-update whonix-gateway
+# debian-install template-update whonix-workstation
+#
+# Updates the tempate (will re-run all qubize steps)
+# XXX: May attempt to re-install Whonix again as well
+# ------------------------------------------------------------------------------
+if [ "$1" == "template-update" ] ; then
+    set_whonix_version $2
+    TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=true make linux-template-builder
+fi

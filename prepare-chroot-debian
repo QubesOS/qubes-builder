@@ -1,7 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 # vim: set ts=4 sw=4 sts=4 et :
 
+# XXX: Changed shebang from /bin/sh to /bin/bash for building on wheezy since
+#      /bin/sh links to /bin/dash and VERBOSE compare will fail
+#      *NOTE* its a good idea to manually link /bin/sh to /bin/bash incase we
+#      run into this sort of issue somewhere else
 
+# ------------------------------------------------------------------------------
+# Configuration
+# $1: chroot directory [chroot-wheezy, chroot-jessie]
+# $2: distribution [wheezy, jessie]
+# ------------------------------------------------------------------------------
 DIR=$1
 DISTRO=$2
 
@@ -10,14 +19,19 @@ if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
     set -x
 fi
 
+# ------------------------------------------------------------------------------
+# Build packages to be installed to allow building of Qubes modules
+# ------------------------------------------------------------------------------
 BUILDPACKAGES="reprepro build-essential devscripts git git-buildpackage pbuilder debhelper quilt libxen-dev python libpulse-dev libtool automake xorg-dev xutils-dev libxdamage-dev libxcomposite-dev libxt-dev libx11-dev"
 
 INITIAL=
 
 if ! [ -d $DIR/home/user ]; then
+    # --------------------------------------------------------------------------
+    # Install debian choot if /home/user does not exist (initial run)
+    # --------------------------------------------------------------------------
     INITIAL=1
     mkdir -p $DIR
-
     echo "-> Installing debian build chroot..."
     COMPONENTS="" debootstrap --arch=amd64 \
                 --include=ncurses-term,debian-keyring \
@@ -25,37 +39,72 @@ if ! [ -d $DIR/home/user ]; then
                 $DEBIANVERSION $DIR http://http.debian.net/debian \
                 || { echo "Error in debootstrap"; exit 1; }
 
+    # --------------------------------------------------------------------------
     # Set up a temporary policy-rc.d to prevent apt from starting services
     # on package installation
+    # --------------------------------------------------------------------------
     cat > $DIR/usr/sbin/policy-rc.d <<EOF
 #!/bin/sh
 return 101 # Action forbidden by policy
 EOF
     chmod 755 $DIR/usr/sbin/policy-rc.d
 
+    # --------------------------------------------------------------------------
+    # Add some groups and users
+    # --------------------------------------------------------------------------
     [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
     [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+
+    # Added -f to ignore if group already exists
     if [ -n "$USER_GID" ]; then
-        chroot $DIR groupadd -g $USER_GID user
+        chroot $DIR groupadd -f -g $USER_GID user
     elif [ -n "$SUDO_GID" ]; then
-        chroot $DIR groupadd -g $SUDO_GID user
+        chroot $DIR groupadd -f -g $SUDO_GID user
     else
         chroot $DIR groupadd user
     fi
     chroot $DIR sh -c "useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+
+    # --------------------------------------------------------------------------
+    # /dev/null should be 0666
+    # --------------------------------------------------------------------------
+    chroot $DIR sh -c "chmod 0666 /dev/null"
 else
-    # temporary remove builder repo, it will be recreated at the end of this script
+    # --------------------------------------------------------------------------
+    # /home/user directory already exists, so above stage already complete so
+    # temporary remove builder repo, it will be recreated at the end of this 
+    # script
+    # --------------------------------------------------------------------------
     rm -f $DIR/etc/apt/sources.list.d/qubes-builder.list
+
     # update chroot
     chroot $DIR apt-get update
     chroot $DIR apt-get -y upgrade
 fi
+
+# ------------------------------------------------------------------------------
+# Mount /proc within chroot environment
+# ------------------------------------------------------------------------------
 if ! [ -r $DIR/proc/cpuinfo ]; then
     mount -t proc proc $DIR/proc
 fi
 
+# ------------------------------------------------------------------------------
+# Install all build packages specified
+# ------------------------------------------------------------------------------
 chroot $DIR apt-get -y install $BUILDPACKAGES
 
+if [ "$DIST" == "wheezy" ]; then
+    # Looks like a SID only package is being used to build packages
+    # there is a backport available for wheezy
+    echo "deb http://http.debian.net/debian wheezy-backports main" >> $DIR/etc/apt/sources.list
+    chroot $DIR apt-get update
+    chroot $DIR apt-get -t wheezy-backports install dh-systemd
+fi
+
+# ------------------------------------------------------------------------------
+# Install keyring
+# ------------------------------------------------------------------------------
 if ! [ -f keys_debian/$DIST-secring.gpg ]; then
     gpg --gen-key --batch <<EOF
 Key-Type: RSA
@@ -70,8 +119,12 @@ EOF
     chown --reference=keys_debian/ keys_debian/$DIST-*ring.gpg
 fi
 
+cp keys_debian/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
 
+# ------------------------------------------------------------------------------
+# Update debian apt sources list to use local qubes repo
+# ------------------------------------------------------------------------------
 cat > $DIR/etc/apt/sources.list.d/qubes-builder.list <<EOF
 deb file:/tmp/qubes-deb $DEBIANVERSION main
 EOF
-cp keys_debian/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+
