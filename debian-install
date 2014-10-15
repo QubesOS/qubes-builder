@@ -17,6 +17,9 @@ echo "BASE set to: $BASE"
 # Get absolute path of directory
 DIR="$(readlink -m .)"
 
+# Whonix Directory
+export WHONIX_DIR="$(readlink -m ./qubes-src/Whonix)"
+
 if [ -z "$BUILDERCONF" ]; then
     export BUILDERCONF="example-configs/${BASE}.conf"
 fi
@@ -39,63 +42,15 @@ BUILDERCONF_WHONIX="example-configs/whonix.conf"
 # Clean up more than what 'make clean' provides
 # ------------------------------------------------------------------------------
 clean_extras() {
-    PKGDIR=`pwd`qubes-src/linux-template-builder
+    PKGDIR="${DIR}/qubes-src/linux-template-builder"
     if [ -d "$PKGDIR" ] ; then
     	pushd "$PKGDIR"
-    	sudo rm -f prepared_images/* || true
-    	sudo rm -f qubeized_images/* || true
-    	sudo rm -f rpm/noarch/* || true
+    	sudo rm -rf prepared_images/*  || true
+    	sudo rm -rf qubeized_images/*  || true
+    	sudo rm -rf rpm/noarch/*  || true
 	popd
     fi
-    sudo rm -rf chroot-* || true
-}
-
-
-# ------------------------------------------------------------------------------
-# Whonix Sources
-#
-# Get Whonix repo function
-# ------------------------------------------------------------------------------
-function get-whonix() {
-    # Make sure notthing is mounted within the qubes-src directory
-    # since this could prevent updates.  Note all processes within
-    # this directory are also killed off (terminal sessions maybe?)
-    umount_kill "$DIR/qubes-src" || true
-
-    KEYRING_DIR_GIT="$PWD/keyrings/git"
-    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
-    echo '916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:6:' | gpg --import-ownertrust
-    gpg --import keys_debian/whonix-developer-patrick.asc
-    gpg --list-keys
-    touch "$GNUPGHOME/pubring.gpg"
-    BUILDERCONF="$BUILDERCONF_WHONIX" make get-sources
-
-    # Reset BUILDERCONF back to original value
-    BUILDERCONF="$BUILDERCONF_ORIGINAL"
-
-    #rm -rf qubes-src/Whonix
-    #mv qubes-src/nothing-to-see qubes-src/Whonix
-
-    # Init submodules
-    # TODO: verify them; they are not yet verified
-    pushd qubes-src/Whonix
-    git submodule update --init --recursive
-    popd
-
-    # Patch anon-meta-packages to not depend on grub-pc
-    # XXX: Seems like the error disappears, but then whonix updates to original code?
-    pushd qubes-src/Whonix/packages/anon-meta-packages/debian/
-    sed -i 's/ grub-pc,//g' control
-    #git commit -am 'removed grub-pc depend'
-    popd
-
-    pushd qubes-src/Whonix/build-steps.d
-    sed -i 's/   check_for_uncommited_changes/   #check_for_uncommited_changes/g' 1200_create-debian-packages
-    popd
-
-    #pushd qubes-src/Whonix/packages/anon-shared-build-fix-grub/usr/lib/anon-dist/chroot-scripts-post.d
-    #sed -i 's/   update-grub/   : #update-grub/g' 85_update_grub
-    #popd
+    sudo rm -rf chroot-*  || true
 }
 
 
@@ -127,10 +82,10 @@ if [ "$1" == "clean-all" ] ; then
     umount_kill "$DIR/" || true
 
     clean_extras || true
-    sudo rm -rf "$DIR/qubes" || true
+    sudo rm -rf "$DIR/qubes-src" || true
     sudo rm -rf "$DIR/qubes-rpms-mirror-repo/repodata" || true
-    make clean-all
-    make clean-all rpms
+    make clean-all || true
+    make clean-all rpms || true
 fi
 
 
@@ -145,9 +100,9 @@ if [ "$1" == "clean" ] ; then
     # this directory are also killed off (terminal sessions maybe?)
     umount_kill "$DIR/" || true
 
-    clean_extras 
-    make clean
-    make clean rpms
+    clean_extras  || true
+    make clean || true
+    make clean rpms || true
 fi
 
 
@@ -182,14 +137,6 @@ fi
 
 
 # ------------------------------------------------------------------------------
-# debian-install get-whonix
-# ------------------------------------------------------------------------------
-if [ "$1" == "get-whonix" ] ; then
-    get-whonix
-fi
-
-
-# ------------------------------------------------------------------------------
 # debian-install sources
 #
 # Get all sources to build project, including Whonix sources and my test repos
@@ -206,19 +153,17 @@ if [ "$1" == "sources" ] ; then
     # Additional for debian template
     sudo yum install debootstrap dpkg-dev
 
-    make get-sources
-    pushd qubes-src
-    mv linux-template-builder linux-template-builder.dist
-    mv gui-agent-linux gui-agent-linux.dist
-    git clone https://github.com/nrgaway/linux-template-builder.git
-    git clone https://github.com/nrgaway/gui-agent-linux.git
-    pushd linux-template-builder
-    git fetch
-    git checkout wheezy  # (branch)
-    popd
-    popd
+    # Whonix Keyring
+    # XXX: Check where this is being stored... Keyrings make sense
+    KEYRING_DIR_GIT="$PWD/keyrings/git"
+    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
+    echo '916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:6:' | gpg --import-ownertrust
+    gpg --import keys_debian/whonix-developer-patrick.asc
+    gpg --list-keys
+    touch "$GNUPGHOME/pubring.gpg"
 
-    get-whonix
+    # Get sources
+    make get-sources
 
     # XXX: debian jessie depends hack
     grep "libxen-4.4" qubes-src/core-vchan-xen/debian/control || \
