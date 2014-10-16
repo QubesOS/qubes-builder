@@ -20,13 +20,13 @@ export BASE=wheezy
 # Installation steps.  Skip clean on new installation
 # ------------------------------------------------------------------------------
 # Clean up and delete most everything that was not part of package
-./debian-install clean
+.scripts-debian/debian-install clean
 
 # Get build deps and sources
-./debian-install sources
+.scripts-debian/debian-install sources
 
 # Build Modules
-./debian-install build
+.scripts-debian/debian-install build
 
 # ------------------------------------------------------------------------------
 # Build Template (Pick One)
@@ -38,7 +38,7 @@ export BASE=wheezy
 # ./debian-install template whonix-gateway
 # ./debian-install template whonix-workstation
 # ------------------------------------------------------------------------------
-./debian-install template whonix-gateway
+.scripts-debian/debian-install template whonix-gateway
 
 
 

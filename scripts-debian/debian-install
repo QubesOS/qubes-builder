@@ -6,7 +6,11 @@
 # ------------------------------------------------------------------------------
 set -e
 
-. umount_kill.sh
+# Use qubes-builder directory as base
+if [ "$(basename $PWD)" == "scripts-debian" ]; then
+    pushd ..
+    trap "popd" EXIT
+fi
 
 # Default Distribution
 if [ -z "$BASE" ]; then
@@ -21,7 +25,7 @@ DIR="$(readlink -m .)"
 export WHONIX_DIR="$(readlink -m ./qubes-src/Whonix)"
 
 if [ -z "$BUILDERCONF" ]; then
-    export BUILDERCONF="example-configs/${BASE}.conf"
+    export BUILDERCONF="example-configs/debian.conf"
 fi
 echo "BUILDERCONF set to: ${BUILDERCONF}"
 
@@ -29,9 +33,9 @@ if ! [ -f "$BUILDERCONF" ]; then
     echo "Can not find ${BUILDERCONF}. Exiting..."
     exit 1
 fi
-BUILDERCONF_ORIGINAL="$BUILDERCONF"
-BUILDERCONF_WHONIX="example-configs/whonix.conf"
 
+# Source umount function
+. ./scripts-debian/umount_kill.sh
 
 # ==============================================================================
 # FUNCTIONS
@@ -103,36 +107,6 @@ if [ "$1" == "clean" ] ; then
     clean_extras  || true
     make clean || true
     make clean rpms || true
-fi
-
-
-# ------------------------------------------------------------------------------
-# debian-install verify-whonix
-#
-# Verify Whonix Submodules
-# (Not yet working)
-#
-# XXX:  
-#      Not really sure what to do about the submodules since they are not
-#      guaranteed to have tags or be signed
-#      (https://www.whonix.org/forum/index.php/topic,538.0.html)
-# ------------------------------------------------------------------------------
-if [ "$1" == "verify-whonix" ] ; then
-    KEYRING_DIR_GIT="$PWD/keyrings/git"
-    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
-
-    VERIFY="$PWD/verify-git-tag.sh"
-    pushd qubes-src/Whonix
-    git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
-        while read path_key path
-        do
-            #url_key=$(echo $path_key | sed 's/\.path/.url/')
-            #url=$(git config -f .gitmodules --get "$url_key")
-            #git submodule add $url $path
-            echo $path
-            exec $VERIFY "$path" "HEAD"
-        done
-    popd
 fi
 
 
