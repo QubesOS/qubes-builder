@@ -69,6 +69,10 @@ Current issues:
 
 
 Build issues:
+  - qubes-src/Whonix/.git/modules* owned by root giving permission errors
+    and build exit.  Track down at what point are these permissions
+    changing to root and see if any other packages are also affected
+
   - grub-pc is being installed as a recommended package and causes an error
     during whonix installation.  Need to manually intervene at this point
     when the error shows.  I added a script than can be executed as follows:

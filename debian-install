@@ -197,6 +197,7 @@ if [ "$1" == "build" ] ; then
     if [ -d ~/.gnupg ]; then
         sudo chown -R user.user ~/.gnupg
     fi
+
     make vmm-xen-vm
     if [ -d ~/.gnupg ]; then
         sudo chown -R user.user ~/.gnupg
