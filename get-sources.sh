@@ -57,7 +57,22 @@ else
     VERIFY_REF=HEAD
 fi
 
-if ! [ "$NO_CHECK" == "1" ]; then
+elementIn () {
+  # $1: element to check for
+  # $2: array to check for element in
+  local element
+  for element in "${@:2}"; do [[ "$element" == "$1" ]] && return 0; done
+  return 1
+}
+
+verify=true
+if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" ${NO_CHECK[@]}; then
+    echo "--> $COMPONENT has NO_CHECK enabled"
+    echo "--> NOT Verifying tags..."
+    verify=false
+fi
+
+if [ "$verify" == "true" ]; then
     echo "--> Verifying tags..."
     $SCRIPT_DIR/verify-git-tag.sh $REPO $VERIFY_REF || exit 1
 fi
