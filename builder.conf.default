@@ -58,7 +58,10 @@
 # QUBES_RELEASE - set release version of result iso
 # Default: test-build
 
-# NO_CHECK - disable signed tag checking - set "1" to use it
+# NO_CHECK - disable signed tag checking - set "1" to disable verify for everything or
+# can be a list of package names separated with spaces
+# Example:
+# NO_CHECK=gui-agent-linux linux-template-builder
 # Default: no value
 
 # KEYRING_DIR_GIT - use separate keyring dir for git tags verification

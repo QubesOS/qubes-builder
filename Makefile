@@ -55,6 +55,7 @@ SRC_DIR := qubes-src
 
 # Get rid of quotes
 DISTS_VM := $(shell echo $(DISTS_VM))
+NO_CHECK := $(shell echo $(NO_CHECK))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
