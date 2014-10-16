@@ -46,10 +46,20 @@ umount_kill() {
             awk '{print $2}' | \
             xargs --no-run-if-empty sudo kill -9
 
-        echo "un-mounting $dir"
         if ! [ "$2" ] && $(mountpoint -q "$dir"); then
+            echo "un-mounting $dir"
             sudo umount -n "$dir" 2> /dev/null || \
                 sudo umount -n -l "$dir" 2> /dev/null || \
+                echo "umount $dir unsuccessful!"
+        elif ! [ "$2" ]; then
+            # Look for (deleted) mountpoints
+            echo "not a regular mount point: $dir"
+            base=$(basename "$dir") 
+            dir=$(dirname "$dir") 
+            base=$(echo "$base" | sed 's/[\].*$//')
+            dir="$dir/$base"
+            sudo umount -v -f -n "$dir" 2> /dev/null || \
+                sudo umount -v -f -n -l "$dir" 2> /dev/null || \
                 echo "umount $dir unsuccessful!"
         fi
     done
