@@ -13,10 +13,10 @@ if [ "$(basename $PWD)" == "scripts-debian" ]; then
 fi
 
 # Default Distribution
-if [ -z "$BASE" ]; then
-    BASE=wheezy
+if [ -z "$DISTS_VM" ]; then
+    DISTS_VM=wheezy
 fi
-echo "BASE set to: $BASE"
+echo "DISTS_VM set to: $BASE"
 
 # Get absolute path of directory
 DIR="$(readlink -m .)"
@@ -41,23 +41,6 @@ fi
 # FUNCTIONS
 # ==============================================================================
 
-
-# ------------------------------------------------------------------------------
-# Clean up more than what 'make clean' provides
-# ------------------------------------------------------------------------------
-clean_extras() {
-    PKGDIR="${DIR}/qubes-src/linux-template-builder"
-    if [ -d "$PKGDIR" ] ; then
-    	pushd "$PKGDIR"
-    	sudo rm -rf prepared_images/*  || true
-    	sudo rm -rf qubeized_images/*  || true
-    	sudo rm -rf rpm/noarch/*  || true
-	popd
-    fi
-    sudo rm -rf chroot-*  || true
-}
-
-
 # ------------------------------------------------------------------------------
 # Set Whonix TEMPALTE_FLAVOR
 # ------------------------------------------------------------------------------
@@ -80,16 +63,7 @@ set_whonix_version() {
 # *** commit and push any gits you worked on ***
 # ------------------------------------------------------------------------------
 if [ "$1" == "clean-all" ] ; then
-    # Make sure notthing is mounted within this (the qubes-builder directory)
-    # since this could prevent updates.  Note all processes within
-    # this directory are also killed off (terminal sessions maybe?)
-    umount_kill "$DIR/" || true
-
-    clean_extras || true
-    sudo rm -rf "$DIR/qubes-src" || true
-    sudo rm -rf "$DIR/qubes-rpms-mirror-repo/repodata" || true
     make clean-all || true
-    make clean-all rpms || true
 fi
 
 
@@ -99,14 +73,7 @@ fi
 # Clean - Basic clean removes all source and compiled images
 # ------------------------------------------------------------------------------
 if [ "$1" == "clean" ] ; then
-    # Make sure nothing is mounted within this (the qubes-builder directory)
-    # since this could prevent updates.  Note all processes within
-    # this directory are also killed off (terminal sessions maybe?)
-    umount_kill "$DIR/" || true
-
-    clean_extras  || true
-    make clean || true
-    make clean rpms || true
+    make clean-most || true
 fi
 
 
@@ -116,32 +83,7 @@ fi
 # Get all sources to build project, including Whonix sources and my test repos
 # ------------------------------------------------------------------------------
 if [ "$1" == "sources" ] ; then
-    # Make sure notthing is mounted within the qubes-src directory
-    # since this could prevent updates.  Note all processes within
-    # this directory are also killed off (terminal sessions maybe?)
-    umount_kill "$DIR/qubes-src" || true
-
-    # qbues-builder deps
-    sudo yum install rpmdevtools rpm-build createrepo rpm-sign
-
-    # Additional for debian template
-    sudo yum install debootstrap dpkg-dev
-
-    # Whonix Keyring
-    # XXX: Check where this is being stored... Keyrings make sense
-    KEYRING_DIR_GIT="$PWD/keyrings/git"
-    export GNUPGHOME="`readlink -m $KEYRING_DIR_GIT`"
-    echo '916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:6:' | gpg --import-ownertrust
-    gpg --import keys_debian/whonix-developer-patrick.asc
-    gpg --list-keys
-    touch "$GNUPGHOME/pubring.gpg"
-
-    # Get sources
     make get-sources
-
-    # XXX: debian jessie depends hack
-    grep "libxen-4.4" qubes-src/core-vchan-xen/debian/control || \
-        sed -i 's/libxen-4.3/libxen-4.3 | libxen-4.4/g' qubes-src/core-vchan-xen/debian/control
 fi
 
 
@@ -152,36 +94,7 @@ fi
 # Templates are built within a seperate step
 # ------------------------------------------------------------------------------
 if [ "$1" == "build" ] ; then
-    # Make sure no processes are still running in chroot-<DIST>
-    # an umount any existing mounts
-    umount_kill "$DIR/chroot-$BASE" || true
-
-    # Ensure all files are owned by $USER since some .git/index
-    # files seem to get changed to 'root' and results in a
-    # build error when trying to hardlink to them
-    sudo chown -R $USER "$DIR/qubes-src"
-
-    # Set up WHONIX_VERSION for TEMPLATE_FLAVOR if $2 was passed
-    set_whonix_version $2
-
-    # XXX:  Not sure if this is a bug or if the local user keyring
-    # needs to have keys for building.  If so they are created by
-    # root in the build scripts and permissions need ot be reset
-    # to user.user or a build error will occur
-    if [ -d ~/.gnupg ]; then
-        sudo chown -R user.user ~/.gnupg
-    fi
-
-    make vmm-xen-vm
-    if [ -d ~/.gnupg ]; then
-        sudo chown -R user.user ~/.gnupg
-    fi
-
-    make core-vchan-xen-vm
-    make linux-utils-vm
-    make core-agent-linux-vm
-    make gui-common-vm
-    make gui-agent-linux-vm
+    make build
 fi
 
 
@@ -197,7 +110,7 @@ fi
 # ------------------------------------------------------------------------------
 if [ "$1" == "template" ] ; then
     set_whonix_version $2
-    TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=false make linux-template-builder
+    DISTS_VM=$DISTS_VM TEMPLATE_FLAVOR=$WHONIX_VERSION make template
 fi
 
 
@@ -211,5 +124,6 @@ fi
 # ------------------------------------------------------------------------------
 if [ "$1" == "template-update" ] ; then
     set_whonix_version $2
-    TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=true make linux-template-builder
+    #TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=true make linux-template-builder
+    DISTS_VM=$DISTS_VM TEMPLATE_FLAVOR=$WHONIX_VERSION UPDATE=true make template-update
 fi

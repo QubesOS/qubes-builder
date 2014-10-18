@@ -16,25 +16,39 @@
 # Makefile to build
 # ==============================================================================
 
-# ------------------------------------------------------------------------------
-# First choose a base Distribution (wheezy or jessie)
+# First choose a base Distribution (wheezy and/or jessie) or comment out to
+# use defaults in ./examples/debian.conf
 # Default=wheezy
-# ------------------------------------------------------------------------------
-export BASE=wheezy
+#
+# DISTS_VM=wheezy
+
+# Choose template flavour or leave empty for base only install or comment out
+# use use defaults in ./examples/debian.conf
+# 
+# Supported Debian flavors: whonix-gateway whonix-workstation
+# Default: no value
+#
+TEMPLATE_FLAVOR=whonix-gateway
 
 # ------------------------------------------------------------------------------
 # Installation steps.  Skip clean on new installation
 #
 # IMPORTANT:  Don't forget to verify this qubes-builder package before building!
 # ------------------------------------------------------------------------------
+export DISTS_VM
+if [ -z "$BUILDERCONF" ]; then
+    export BUILDERCONF="example-configs/debian.conf"
+fi
+echo "BUILDERCONF set to: ${BUILDERCONF}"
+
 # Clean up and delete most everything that was not part of package
-./scripts-debian/debian-install clean || exit 1
+make mostlyclean || exit 1
 
 # Get build deps and sources
-./scripts-debian/debian-install sources || exit 1
+make get-sources || exit 1
 
 # Build Modules
-./scripts-debian/debian-install build || exit 1
+make build || exit 1
 
 # ------------------------------------------------------------------------------
 # Build Template (Pick One)
@@ -46,7 +60,7 @@ export BASE=wheezy
 # ./scripts-debian/debian-install template whonix-gateway
 # ./scripts-debian/debian-install template whonix-workstation
 # ------------------------------------------------------------------------------
-./scripts-debian/debian-install template whonix-gateway || exit 1
+TEMPLATE_FLAVOR=$TEMPLATE_FLAVOR make template || exit 1
 
 
 # ==============================================================================

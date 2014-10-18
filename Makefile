@@ -95,7 +95,7 @@ help:
 	@echo "You can also specify COMPONENTS=\"c1 c2 c3 ...\" on command line"
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
-get-sources:
+get-sources::
 	@set -a; \
 	SCRIPT_DIR=$(CURDIR); \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
@@ -145,7 +145,8 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-template linux-template-builder:
+linux-template-builder: template
+template:: 
 	@for DIST in $(DISTS_VM); do
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
@@ -257,7 +258,7 @@ clean:
 		fi ;\
 	done;
 
-clean-all: clean-rpms clean
+clean-all:: clean-rpms clean
 	for dir in $(DISTS_ALL); do \
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
 		sudo umount chroot-$$dir/proc; \
