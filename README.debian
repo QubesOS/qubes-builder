@@ -5,9 +5,15 @@
 # -------------------------
 # jessie, wheezy, whonix-gateway, whonix-workstation
 #
-# Follow the steps within this readme to create a debain based template
+# Follow the steps within this README to create a debain based template
 # or just execute this README to create the defaults as shown in the 
 # examples
+#
+# Builder configuration file is located in ./examples/debian.conf
+#
+# You can also build using qubes-builder Makefile; just take a look at the
+# ./scripts-debian/debian-install script for examples since it calls the 
+# Makefile to build
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -18,15 +24,17 @@ export BASE=wheezy
 
 # ------------------------------------------------------------------------------
 # Installation steps.  Skip clean on new installation
+#
+# IMPORTANT:  Don't forget to verify this qubes-builder package before building!
 # ------------------------------------------------------------------------------
 # Clean up and delete most everything that was not part of package
-.scripts-debian/debian-install clean
+./scripts-debian/debian-install clean || exit 1
 
 # Get build deps and sources
-.scripts-debian/debian-install sources
+./scripts-debian/debian-install sources || exit 1
 
 # Build Modules
-.scripts-debian/debian-install build
+./scripts-debian/debian-install build || exit 1
 
 # ------------------------------------------------------------------------------
 # Build Template (Pick One)
@@ -34,12 +42,11 @@ export BASE=wheezy
 # whonix-gateway and whonix-workstation are flavours.  If a flavour is not 
 # specified only the base (wheezy / jessie) will be built
 #
-# ./debian-install template 
-# ./debian-install template whonix-gateway
-# ./debian-install template whonix-workstation
+# ./scripts-debian/debian-install template 
+# ./scripts-debian/debian-install template whonix-gateway
+# ./scripts-debian/debian-install template whonix-workstation
 # ------------------------------------------------------------------------------
-.scripts-debian/debian-install template whonix-gateway
-
+./scripts-debian/debian-install template whonix-gateway || exit 1
 
 
 # ==============================================================================
@@ -106,5 +113,3 @@ export BASE=wheezy
 # - Once VM is created, configured and tested consider limiting the memory to
 #   ~300-400MB.  If it is set to 128MB to X-Window system will be available and 
 #   therefore you may lose terminal access to whonix-gateway
-
-
