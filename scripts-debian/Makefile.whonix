@@ -1,0 +1,5 @@
+VERSION := git
+
+all:	
+
+clean:

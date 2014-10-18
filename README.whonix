@@ -20,17 +20,6 @@
     - append to /etc/udev/rules.d/99-qubes-whonix.rules
       SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
 
-  X Tor is disable by default until whonixsetup is run, so instead of running
-    whonixsetup:
-    - append to /etc/tor/torrc
-    DisableNetwork 0
-
-  X Since we are not running whonixsetup we need to indicate that it really was run
-    mkdir -p /var/lib/whonix/do_once
-    touch /var/lib/whonix/do_once/whonixsetup.done
-    #install -o root -g root -m 0755 -d /var/lib/whonix/do_once
-    #chown --recursive root:root /var/lib/whonix/do_once
-
   X /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
     seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
       if [ "$TEMP_DIR" = "" ]; then
@@ -52,8 +41,6 @@ After boot; check in terminal:
 
 
 Current issues:
-  X Need to manually run 'sudo whonixsetup' in terminal the first time
-
   - The next 2 issues may be addressed by completing research as indicated in
     https://www.whonix.org/forum/index.php/topic,537.msg4770.html#msg4770
     - swdate fails on start and after start.
@@ -69,33 +56,7 @@ Current issues:
 
 
 Build issues:
-  - qubes-src/Whonix/.git/modules* owned by root giving permission errors
-    and build exit.  Track down at what point are these permissions
-    changing to root and see if any other packages are also affected
-
-  - grub-pc is being installed as a recommended package and causes an error
-    during whonix installation.  Need to manually intervene at this point
-    when the error shows.  I added a script than can be executed as follows:
-      - press s and enter to open a chroot interactive shell
-      - ../whonix_fix
-      - exit 0
-
-  - one of the whonix install scripts also expect to have grub-pc installed
-    and will issue an error near the end of the installation.  Just use the
-    same example as above to fix it (it will already be removed and marked
-    so you could just press c to continue anyway, but I suggest using the 
-    whonix_fix just to make sure its implemented in the proper spot)
-
-
----------------------------------------------------------------------------------
-                             Whonix Verification
-           (https://www.whonix.org/forum/index.php/topic,538.0.html)
----------------------------------------------------------------------------------
-  - Need to get input if the submudules should have better verification
-
-  - There has been some interesting conversation withing the thread link provided
-    above with quotes from Linus Torvalds and a detailed response from 
-    Mike Gerwitz, GNU Maintainer
+  - None
 
 
 ---------------------------------------------------------------------------------
@@ -108,7 +69,7 @@ Build issues:
     sysvinit not to be re-installed on a dist-upgrade even if it is marked held or
     pinned with a value of -1.  Need to find a solution for this
 
-  - Test to make sure multiple templates can be built one after another.  About a
+  X Test to make sure multiple templates can be built one after another.  About a
     week ago I ran into permission problems; see if they still exist and fix if so
 
 
@@ -119,6 +80,6 @@ Build issues:
     seems something is not starting since the VM will boot but can not open a terminal
     app and network seems to be unreachable as well
 
-  - depends broken for jessie:
+  X depends broken for jessie:
     change qubes-src/core-vchan-xen/debian/control to include libxen-4.4,
     ** added hack to debian-install **
