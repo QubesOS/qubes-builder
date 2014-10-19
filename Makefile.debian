@@ -77,7 +77,8 @@ dist-build-dep:
 	./update-local-repo.sh $(DIST)
 	sudo chroot $(CHROOT_DIR) apt-get update
 	grep Build-Depends: $(CHROOT_DIR)$(DIST_SRC)/debian/control | cut -d: -f 2- |\
-		sed -e 's/ *, */\n/g'| cut -d'(' -f 1 |xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+		sed -e 's/ *, */\n/g'| cut -d'(' -f 1 |tr -d " " |\
+		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
 
 dist-package:
 ifndef PACKAGE
