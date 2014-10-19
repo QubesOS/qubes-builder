@@ -85,6 +85,8 @@ ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/deb/*/*
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/rpm/*/*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
 	echo "Building package in $(DIST_SRC)"
 	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY} --changes-option=-DDistribution=$(DIST)'
