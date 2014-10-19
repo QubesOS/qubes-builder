@@ -21,9 +21,8 @@
 # cp example-configs/whonix.conf builder.conf
 # make clean-all  # Will delete all existing images; use with caution
 # make get-sources
-# make build
+# make template-modules
 # make template
-# make template-flavors
 # ==============================================================================
 
 # Copy the examples/whonix.conf file to builder.conf and edit as needed
@@ -45,11 +44,10 @@ if ! [ -d "qubes-src" ]; then
 fi
 
 # Build qubes modules
-#make build || exit 1
+make template-modules || exit 1
 
 # Build templates
 make template || exit 1
-make template-flavors || exit 1
 
 # ==============================================================================
 #                                I S S U E S
@@ -69,7 +67,8 @@ make template-flavors || exit 1
 # On dom0: 
 # ========
 #
-# - A script as been created in 'qubes-src/linux-template-builder/rpm/install-templates.sh' that can help transfer the template images over for installation.  Use the following command in dom0 to get the script, then once the script has been downloaded to dom0 change the permissions of the file so it can be executed (chmod a+x install-template.sh); then edit or run the file.  It will download, remove old template and install new one.
+# - A script has been created in 'qubes-src/linux-template-builder/rpm/install-templates.sh' that can help transfer the template images over for installation.  Use the following command in dom0 to get the script, then once the script has been downloaded to dom0 change the permissions of the file so it can be executed (chmod a+x install-template.sh); then edit or run the file.  It will download, remove old template and install new one.
+#
 # qvm-run --pass-io development-qubes 'cat /home/user/qubes-builder/qubes-src/linux-template-builder/rpm/install-templates.sh' > install-templates.sh
 #
 # Or manually:

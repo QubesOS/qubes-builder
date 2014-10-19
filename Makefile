@@ -148,12 +148,19 @@ yum-dom0 yum-vm:
 linux-template-builder: template
 template:: 
 	@for DIST in $(DISTS_VM); do
+	    # Allow template flavors to be declared within the DISTS_VM declaration
+	    # <distro>+<template flavor>+<template options>+<template options>...
+	    dist_array=($${DIST//+/ })
+	    DIST=$${dist_array[0]}
+	    TEMPLATE_FLAVOR=$${dist_array[1]}
+	    TEMPLATE_OPTIONS="$${dist_array[@]:2}"
+
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
 	    export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
 	    mkdir -p "$$GNUPGHOME"
 	    chmod 700 "$$GNUPGHOME"
-	    export DIST NO_SIGN
+	    export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
 	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \
 	        if [ -r $$repo/Makefile.builder ]; then

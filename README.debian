@@ -1,0 +1,88 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+# ==============================================================================
+# Install a debian template 
+# -------------------------
+# jessie, wheezy
+#
+# Follow the steps within this README to create a debain based template
+# or just execute this README to create the defaults as shown in the 
+# examples
+#
+# Builder configuration file is located in ./example-configs/debian.conf
+#
+# The example configuration file will build:
+# ------------------------------------------
+# wheezy jessie
+#
+# NOTE:
+# -----
+# To build template flavors such as whonix-gateway, read the README.whonix file
+#
+# Build Steps
+# -----------
+# cp example-configs/debian.conf builder.conf
+# make clean-all  # Will delete all existing images; use with caution
+# make get-sources
+# make vmm-xen-vm
+# make core-vchan-xen-vm
+# make linux-utils-vm
+# make core-agent-linux-vm
+# make gui-common-vm
+# make gui-agent-linux-vm
+# make template
+# ==============================================================================
+
+# PATCH: debian jessie depends hack
+grep "libxen-4.4" qubes-src/core-vchan-xen/debian/control || \
+    sed -i 's/libxen-4.3/libxen-4.3 | libxen-4.4/g' qubes-src/core-vchan-xen/debian/control
+cp -pn scripts-debian/Makefile.whonix qubes-src/Whonix/Makefile
+
+# Copy the examples/whonix.conf file to builder.conf and edit as needed
+if ! [ -f "builder.conf" ]; then
+    ln -fs example-configs/debian.conf builder.conf
+fi
+
+# Get / update sources
+if ! [ -d "qubes-src" ]; then
+    make get-sources || exit 1
+fi
+
+# Build qubes modules
+make vmm-xen-vm || exit 1
+make core-vchan-xen-vm || exit 1
+make linux-utils-vm || exit 1
+make core-agent-linux-vm || exit 1
+make gui-common-vm || exit 1
+make gui-agent-linux-vm || exit 1
+
+# Build templates
+make template || exit 1
+
+
+# ==============================================================================
+#                I N S T A L L A T I O N   O N   D O M 0
+# ==============================================================================
+#
+# - Compiled rpm is in qubes-src/linux-template-builder/rpm/noarch
+# 
+# - Once build is complete the template rpm can be found in i
+#   '~/qubes-builder/qubes-src/linux-template-builder/rpm/noarch'
+#
+# On dom0: 
+# ========
+#
+# - A script has been created in 'qubes-src/linux-template-builder/rpm/install-templates.sh' that can help transfer the template images over for installation.  Use the following command in dom0 to get the script, then once the script has been downloaded to dom0 change the permissions of the file so it can be executed (chmod a+x install-template.sh); then edit or run the file.  It will download, remove old template and install new one.
+#
+# qvm-run --pass-io development-qubes 'cat /home/user/qubes-builder/qubes-src/linux-template-builder/rpm/install-templates.sh' > install-templates.sh
+#
+# Or manually:
+# ============
+# - you may need to erase the old VM; and remove any attached VM's first
+#   sudo yum erase qubes-template-debian-7-x64
+#
+#   qvm-run --pass-io development-qubes 'cat ~/qubes-builder/qubes-src/linux-template-builder/rpm/noarch/qubes-template-debian-7-x64-2.1.7-201410122330.noarch.rpm' > qubes-template-debian-7-x64-2.1.7-201410122330.noarch.rpm
+#
+#   sudo yum install qubes-template-debian-7-x64.noarch.rpm
+#   rm qubes-template-debian-7-x64.noarch.rpm
