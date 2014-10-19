@@ -87,17 +87,17 @@ endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
 	echo "Building package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY}'
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY} --changes-option=-DDistribution=$(DIST)'
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
-	mkdir -p $(ORIG_SRC)/deb
+	mkdir -p $(ORIG_SRC)/deb/$(DIST)
 	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
 		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(packagefile)*.changes`
 	cp -t $(BUILDER_REPO_DIR)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
 	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
-		mv -t $(PWD)/$(ORIG_SRC)/deb  `$(listfiles) $(packagefile)*.changes`
-	mv -t $(PWD)/$(ORIG_SRC)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
+		mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST)  `$(listfiles) $(packagefile)*.changes`
+	mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST) $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
 
 update-repo:
 ifndef UPDATE_REPO
@@ -119,12 +119,7 @@ else
 		sudo mount --bind $(UPDATE_REPO) $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
 	fi
 
-	# Add --ignore=wrongdistribution for wheezy
-	if [ "$DIST" == "wheezy" ]; then \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro --ignore=wrongdistribution -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
-	else \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
-	fi
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
 	sudo umount $(CHROOT_DIR)/tmp/qubes-apt-repo
 	sudo umount $(CHROOT_DIR)/tmp/qubes-deb
 endif
