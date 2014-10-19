@@ -119,12 +119,12 @@ $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(CO
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM); do \
-	    		DIST=($${DIST//+/ }); \
+			DIST=$${DIST%+*}; \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
 		done; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM); do \
-    		DIST=($${DIST//+/ }); \
+		DIST=$${DIST%+*}; \
 	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
 	    done; \
 	fi
@@ -256,7 +256,7 @@ clean:
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
-    				DIST=($${DIST//+/ }) make -s -C $$REPO clean || exit 1; \
+				DIST=$${DIST%+*} make -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
@@ -297,7 +297,7 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
-		DIST=($${DIST//+/ }); \
+		DIST=$${DIST%+*}; \
 		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
@@ -457,7 +457,7 @@ update-repo-current-testing update-repo-unstable: update-repo-%:
 				SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
-				DIST=($${DIST//+/ }); \
+				DIST=$${DIST%+*}; \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 				[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 				repos_to_update+=" $$repo_vm_basedir"; \
@@ -484,7 +484,7 @@ update-repo-current:
 	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
 	repos_to_update="$$repo_dom0_basedir"; \
 	for DIST in $(DISTS_VM); do \
-		DIST=($${DIST//+/ }); \
+		DIST=$${DIST%+*}; \
 		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 		[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 		repos_to_update+=" $$repo_vm_basedir"; \
