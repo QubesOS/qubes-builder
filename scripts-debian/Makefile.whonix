@@ -3,3 +3,9 @@ VERSION := git
 all:	
 
 clean:
+	cp Makefile /tmp/Makefile.whonix
+	git submodule foreach --recursive git reset --hard
+	git submodule foreach --recursive git clean -d -f
+	git clean -d -f
+	git reset --hard HEAD
+	cp /tmp/Makefile.whonix Makefile.whonix
