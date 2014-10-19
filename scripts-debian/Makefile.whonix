@@ -8,4 +8,4 @@ clean:
 	git submodule foreach --recursive git clean -d -f
 	git clean -d -f
 	git reset --hard HEAD
-	cp /tmp/Makefile.whonix Makefile.whonix
+	cp /tmp/Makefile.whonix Makefile
