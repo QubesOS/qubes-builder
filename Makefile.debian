@@ -119,7 +119,7 @@ else
 	fi
 
 	# Add --ignore=wrongdistribution for wheezy
-	if [ "$DIST" == "wheezy" ]; then \
+	if [ "$(DEBIANVERSION)" == "wheezy" ]; then \
 		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro --ignore=wrongdistribution -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
 	else \
 		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
