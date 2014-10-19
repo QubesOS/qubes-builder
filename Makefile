@@ -239,7 +239,7 @@ qubes-os-iso: get-sources qubes sign-all iso
 clean-installer-rpms:
 	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
-clean-rpms: clean-installer-rpms
+clean-rpms:: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
 		echo "Cleaning up rpms in qubes-rpms-mirror-repo/$$dist/rpm/..."; \
 		sudo rm -rf qubes-rpms-mirror-repo/$$dist/rpm/*.rpm || true ;\
