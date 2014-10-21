@@ -3,7 +3,6 @@
 #
 # Written by Jason Mehring (nrgaway@gmail.com) 
 # 
-INSTALLDIR="$(readlink -m mnt)"
 # Kills any processes within the mounted location and 
 # unmounts any mounts active within.
 # 
