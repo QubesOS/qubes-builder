@@ -44,8 +44,10 @@ endef
 export aptdistributions
 
 dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
-	@echo "-> dist-prepare-chroot for $(DIST)"
-	@echo "-> sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;"
+	@if [ $(VERBOSE) -gt 0 ]; then \
+		echo "-> dist-prepare-chroot for $(DIST)"; \
+		echo "-> sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;"; \
+	fi
 	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
 		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
 	fi
