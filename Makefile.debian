@@ -93,8 +93,10 @@ endef
 export aptdistributions
 
 dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
-	@echo "-> dist-prepare-chroot for $(DIST)"
-	@echo "-> sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;"
+	@if [ $(VERBOSE) -gt 0 ]; then \
+		echo "-> dist-prepare-chroot for $(DIST)"; \
+		echo "-> sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;"; \
+	fi
 	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
 		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
 	fi
@@ -126,26 +128,29 @@ dist-build-dep:
 	./update-local-repo.sh $(DIST)
 	sudo chroot $(CHROOT_DIR) apt-get update
 	grep Build-Depends: $(CHROOT_DIR)$(DIST_SRC)/debian/control | cut -d: -f 2- |\
-		sed -e 's/ *, */\n/g'| cut -d'(' -f 1 |xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+		sed -e 's/ *, */\n/g'| cut -d'(' -f 1 |tr -d " " |\
+		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
 
 dist-package:
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/deb/*/*
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/rpm/*/*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
 	echo "Building package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY}'
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY} --changes-option=-DDistribution=$(DIST)'
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
-	mkdir -p $(ORIG_SRC)/deb
+	mkdir -p $(ORIG_SRC)/deb/$(DIST)
 	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
 		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(packagefile)*.changes`
 	cp -t $(BUILDER_REPO_DIR)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
 	cd $(CHROOT_DIR)/$(DIST_SRC)/..; \
-		mv -t $(PWD)/$(ORIG_SRC)/deb  `$(listfiles) $(packagefile)*.changes`
-	mv -t $(PWD)/$(ORIG_SRC)/deb/ $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
+		mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST)  `$(listfiles) $(packagefile)*.changes`
+	mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST) $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*.changes
 
 update-repo:
 ifndef UPDATE_REPO
