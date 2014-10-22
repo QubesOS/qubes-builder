@@ -1,12 +1,61 @@
 # Makefile for debian package build
+# 
 # Davíð Steinn Geirsson <david@dsg.is>
+#
+# For "API" documentation check Makefile.generic
+#
+# Variables used as "parameters":
+#  DIST
+#  SRC_DIR
+#  COMPONENT
+#  PACKAGE_SET (currently "dom0" or "vm")
 
+### Load component-specific settings
+
+# Component specific settings. Generic variables:
+#  SOURCE_PREP - make target to run at "prep" stage
+#  SOURCE_COPY_IN - make target to run after "copy-in" stage
+#  SOURCE_COPY_OUT - make target to run after "copy-out" stage
+# Above are mainly to extend Makefile with some component-specific actions
+# (like handling additional sources)
+#
+#
+# Check Makefile.DISTRIBUTION for distribution-specific supported variables
+
+### Load distro-specific settings
+
+# This file should define:
+# 1. variables:
+#   PACKAGE_LIST - list of packages to build. Targets 'build-dep', 'package' and 'copy-out'
+#     will be run for each word on the list, with PACKAGE set to current word
+#   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
+#     CHROOT_DIR (qubes-src will be created in this directory)
+# targets:
+#   dist-prepare-chroot - initial preparation of chroot environment
+#   dist-prep - some preparation of sources (if needed)
+#   dist-build-dep - install build dependencies (should operate on chroot directory)
+#   dist-package - compile package (should operate on chroot directory)
+#   dist-copy-out - copy compiled package out of chroot env; this target should
+#     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
+#     BUILDER_REPO_DIR
+#
+#   dist-build-dep, dist-package and dist-copy-out targets are run in separate
+#   process with stdout+stderr redirected to log file. If you want to print
+#   some message, use 3-rd file descriptor
+#
+# This file can specify additional targets (like update-repo-*)
+
+### Variables required Makefile.generic
 PACKAGE_LIST = $(DEBIAN_BUILD_DIRS)
-DIST_BUILD_DIR=/home/user
-RUN_AS_USER=user
+DIST_BUILD_DIR = /home/user
 
+### Global variables
 DEBIANVERSION=$(DIST)
 export DEBIANVERSION
+
+### Local variables
+RUN_AS_USER = user
+
 
 DEBIAN_DEPENDENCIES := dpkg-dev debootstrap
 
@@ -86,7 +135,7 @@ endif
 	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(packagefile)*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
 	echo "Building package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY}'
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY}'
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
@@ -120,9 +169,9 @@ else
 
 	# Add --ignore=wrongdistribution for wheezy
 	if [ "$(DEBIANVERSION)" == "wheezy" ]; then \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro --ignore=wrongdistribution -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
+		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro --ignore=wrongdistribution -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
 	else \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su user -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
+		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
 	fi
 	sudo umount $(CHROOT_DIR)/tmp/qubes-apt-repo
 	sudo umount $(CHROOT_DIR)/tmp/qubes-deb
