@@ -1,7 +1,8 @@
 =================================================================================
                   D E B I A N  /  W H O N I X   N O T E S
 
-           [X] = Implemented feature waiting for testing results
+           [⏳] = Implemented feature waiting for testing results [23F3]
+           [✓] = Feature Implemented and appears working [2713]
 =================================================================================
 
 ---------------------------------------------------------------------------------
@@ -15,12 +16,12 @@
                          (using terminal once installed)
                 [will end up in build scripts once proven to work]
 ---------------------------------------------------------------------------------
-  X /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
+  ⏳ /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
     udev rule gets applied after qubes also run setup-ip when eth* goes online
     - append to /etc/udev/rules.d/99-qubes-whonix.rules
       SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
 
-  X /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
+  ⏳ /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
     seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
       if [ "$TEMP_DIR" = "" ]; then
          error "Variable TEMP_DIR is empty."
@@ -31,13 +32,13 @@
                           Whonix Checks and Issues
 ---------------------------------------------------------------------------------
 After boot; check in terminal:
-  X confirm umask set properly for user and root
-  X Check eth1 interface exists
-  X Check tor status; make sure its binding to netvm IP address
-  X iptables; confirm whonix firewall loaded
+  ⏳ confirm umask set properly for user and root
+  ⏳ Check eth1 interface exists
+  ⏳ Check tor status; make sure its binding to netvm IP address
+  ⏳ iptables; confirm whonix firewall loaded
   - routes
-  X run whonixcheck as 'user'
-  X Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
+  ⏳ run whonixcheck as 'user'
+  ⏳ Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
 
 
 Current issues:
@@ -65,21 +66,29 @@ Build issues:
   - Not sure if debian distributions starting XServer correctly since no themes are
     being used, even when kde is installed
 
-  - Debian templates are going the way of systemd, but wheezy seems to have no way for
-    sysvinit not to be re-installed on a dist-upgrade even if it is marked held or
-    pinned with a value of -1.  Need to find a solution for this
-
-  X Test to make sure multiple templates can be built one after another.  About a
+  - Test to make sure multiple templates can be built one after another.  About a
     week ago I ran into permission problems; see if they still exist and fix if so
 
 
 ---------------------------------------------------------------------------------
                             Marmarek Repo Issues
 ---------------------------------------------------------------------------------
-  - marmarek repo build broken since core-agent-linux has been moved to systemd and it
+  - No issues at present time
+
+
+---------------------------------------------------------------------------------
+                                Solved Issues
+---------------------------------------------------------------------------------
+  ✓ Debian templates are going the way of systemd, but wheezy seems to have no way for
+    sysvinit not to be re-installed on a dist-upgrade even if it is marked held or
+    pinned with a value of -1.  Need to find a solution for this [Pinning with value
+    of -100 works; sysvinit no longer re-installs itself with dist-upgrade]
+
+  ✓ depends broken for jessie:
+    change qubes-src/core-vchan-xen/debian/control to include libxen-4.4,
+    ** added hack to debian-install **
+
+  ✓ marmarek repo build broken since core-agent-linux has been moved to systemd and it
     seems something is not starting since the VM will boot but can not open a terminal
     app and network seems to be unreachable as well
 
-  X depends broken for jessie:
-    change qubes-src/core-vchan-xen/debian/control to include libxen-4.4,
-    ** added hack to debian-install **

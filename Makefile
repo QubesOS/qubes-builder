@@ -268,12 +268,12 @@ clean:
 	done;
 
 clean-all:: clean-rpms clean
-	for dir in $(DISTS_ALL); do \
+	for dir in $${DISTS_ALL[@]%+*}; do \
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
 		sudo umount chroot-$$dir/proc; \
 		sudo umount chroot-$$dir/tmp/qubes-rpms-mirror-repo; \
 	done || true
-	sudo rm -rf $(addprefix chroot-,$(DISTS_ALL)) || true
+	sudo rm -rf $(addprefix chroot-,$${DISTS_ALL[@]%+*}) || true
 	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: iso

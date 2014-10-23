@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# XXX: Hack for DEBUG mode to allow multiple vms to be built at same time
+[[ "0$DEBUG" -ge 1 ]] && exit 1
+
 debchange=`dirname $0`/debchange
 
 v=`dpkg-parsechangelog | sed -n 's/^Version: //p'`
