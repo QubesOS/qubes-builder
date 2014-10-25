@@ -6,30 +6,57 @@
 =================================================================================
 
 ---------------------------------------------------------------------------------
-                               Jessie build issues
----------------------------------------------------------------------------------
-
-
----------------------------------------------------------------------------------
-                           Whonix Manual Configurations 
-
-                         (using terminal once installed)
-                [will end up in build scripts once proven to work]
----------------------------------------------------------------------------------
-  ⏳ /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
-    udev rule gets applied after qubes also run setup-ip when eth* goes online
-    - append to /etc/udev/rules.d/99-qubes-whonix.rules
-      SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
-
-  ⏳ /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
-    seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
-      if [ "$TEMP_DIR" = "" ]; then
-         error "Variable TEMP_DIR is empty."
-      fi
-
-
----------------------------------------------------------------------------------
                           Whonix Checks and Issues
+---------------------------------------------------------------------------------
+Current issues:
+  - Unable to launch some of the Whonix apps.  Actually will creash VM
+    - Whonix Setup Connection wizard will shut down machine
+    - Choose repository does not work.  Some onw will need to make a list!
+
+  - Need a utility to search for files with IP address pattern during installation.
+    Currently the list is manually generated
+
+  - Need to add a hook to run search and replace after any apt-get updates since
+    if it was a whonix update, could have IP adressess come back again.  A restart
+    of whonix will do the replace though
+
+  - Still need to look at installing the xen-utils-common package for proxy
+    instead of copying the files over manually so they can update
+
+  - Tor browser installs but does not launch from menu.  Need to manually start
+    it via a terminal -> cd tor_browser_en-US -> ./start-tor-browser &
+
+Build issues:
+  - None
+
+
+---------------------------------------------------------------------------------
+                      Qubes Related Configuration Issues
+---------------------------------------------------------------------------------
+  - Not sure if debian distributions starting XServer correctly since no themes are
+    being used, even when kde is installed
+
+  - local time setting in config file... Is it available for AppVM?
+
+  - qvm-sync-appmenu errors:
+    Failed to get icon for xxx.desktop: Image format violation (for lots of apps)
+    setterm: $TERM is not defined (again for many apps)
+
+  - Currently the Whonix Proxy must be created as a standalone VM until it is 
+    modified to store configurations on /rw
+
+  - Another issue which is more important would be to make sure whonix has the
+    for the template to update... it updates VIA tor not clearnet
+
+
+---------------------------------------------------------------------------------
+                            Marmarek Repo Issues
+---------------------------------------------------------------------------------
+  - No issues at present time
+
+
+---------------------------------------------------------------------------------
+                           Most Likely Solved Issues
 ---------------------------------------------------------------------------------
 After boot; check in terminal:
   ⏳ confirm umask set properly for user and root
@@ -40,40 +67,29 @@ After boot; check in terminal:
   ⏳ run whonixcheck as 'user'
   ⏳ Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
 
+  ⏳ /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
+    udev rule gets applied after qubes also run setup-ip when eth* goes online
+    - append to /etc/udev/rules.d/99-qubes-whonix.rules
+      SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
+    * important files now have immutable +i bit set.
 
-Current issues:
+  ⏳ /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
+    seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
+      if [ "$TEMP_DIR" = "" ]; then
+         error "Variable TEMP_DIR is empty."
+      fi
+    * This issue still exists but does not seem to affect build or operation
+
+  - apt-get remove --purge apt-cacher-ng
+
+  - remove /etc/apt/sources.list
+
   - The next 2 issues may be addressed by completing research as indicated in
     https://www.whonix.org/forum/index.php/topic,537.msg4770.html#msg4770
     - swdate fails on start and after start.
     - initial whonixcheck fails on start, but works.  Might not be waiting for
       tor to bootstrap 
-
-  - Unable to launch some of the Whonix apps.  Actually will creash VM
-
-  - Currently the Whonix Proxy must be created as a standalone VM until it is 
-    modified to store configurations on /rw
-
-  - whonix-workstation not yet implemented
-
-
-Build issues:
-  - None
-
-
----------------------------------------------------------------------------------
-                            Configuration Issues
----------------------------------------------------------------------------------
-  - Not sure if debian distributions starting XServer correctly since no themes are
-    being used, even when kde is installed
-
-  - Test to make sure multiple templates can be built one after another.  About a
-    week ago I ran into permission problems; see if they still exist and fix if so
-
-
----------------------------------------------------------------------------------
-                            Marmarek Repo Issues
----------------------------------------------------------------------------------
-  - No issues at present time
+    * Added a iptables rule to force traffic from netvm to netvm to go to localhost
 
 
 ---------------------------------------------------------------------------------
@@ -92,3 +108,7 @@ Build issues:
     seems something is not starting since the VM will boot but can not open a terminal
     app and network seems to be unreachable as well
 
+  - Test to make sure multiple templates can be built one after another.  About a
+    week ago I ran into permission problems; see if they still exist and fix if so
+
+  - whonix-workstation not yet implemented
