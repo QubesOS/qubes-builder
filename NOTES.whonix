@@ -140,3 +140,6 @@ After boot; check in terminal:
 
   ✓ Test to make sure multiple templates can be built one after another.  About a
     week ago I ran into permission problems; see if they still exist and fix if so
+
+  ✓ No network access (Gnome)
+    systemctl disable network-manager
