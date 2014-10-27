@@ -22,6 +22,8 @@ Current issues:
 
   - Still need to look at installing the xen-utils-common package for proxy
     instead of copying the files over manually so they can update
+      - I tried manually installing the package and it over wrote the qubes file
+        that was in the /etc/xen/scripts directory so I did not add to package list
 
   - Tor browser installs but does not launch from menu.  Need to manually start
     it via a terminal -> cd tor_browser_en-US -> ./start-tor-browser &
@@ -33,9 +35,6 @@ Build issues:
 ---------------------------------------------------------------------------------
                       Qubes Related Configuration Issues
 ---------------------------------------------------------------------------------
-  - Not sure if debian distributions starting XServer correctly since no themes are
-    being used, even when kde is installed
-
   - local time setting in config file... Is it available for AppVM?
 
   - qvm-sync-appmenu errors:
@@ -59,32 +58,41 @@ Build issues:
                            Most Likely Solved Issues
 ---------------------------------------------------------------------------------
 After boot; check in terminal:
-  ⏳ confirm umask set properly for user and root
-  ⏳ Check eth1 interface exists
-  ⏳ Check tor status; make sure its binding to netvm IP address
-  ⏳ iptables; confirm whonix firewall loaded
-  - routes
-  ⏳ run whonixcheck as 'user'
-  ⏳ Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
 
-  ⏳ /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
+
+---------------------------------------------------------------------------------
+                                Solved Issues
+---------------------------------------------------------------------------------
+  ✓ whonix-workstation not yet implemented
+
+  ✓ confirm umask set properly for user and root
+
+  ✓ Check eth1 interface exists
+
+  ✓ Check tor status; make sure its binding to netvm IP address
+
+  ✓ iptables; confirm whonix firewall loaded
+
+  ✓ Confirm AppVM can connect via socks and non-socks to https://check.torproject.org
+
+  ✓ /etc/resolv.conf is being updated by quebes setup-ip; so to make sure whonix
     udev rule gets applied after qubes also run setup-ip when eth* goes online
     - append to /etc/udev/rules.d/99-qubes-whonix.rules
       SUBSYSTEMS=="xen", KERNEL=="eth*", ACTION=="online", RUN+="/usr/lib/whonix/setup-ip"
     * important files now have immutable +i bit set.
 
-  ⏳ /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
+  ✓ /usr/lib/anon-shared-helper-scripts/tor_bootstrap_check.bsh: line 86: error: command not found
     seems like the 'error' command is not found and is called since TEMP_DIR is not defined:
       if [ "$TEMP_DIR" = "" ]; then
          error "Variable TEMP_DIR is empty."
       fi
     * This issue still exists but does not seem to affect build or operation
 
-  - apt-get remove --purge apt-cacher-ng
+  ✓ apt-get remove --purge apt-cacher-ng
 
-  - remove /etc/apt/sources.list
+  ✓ remove /etc/apt/sources.list
 
-  - The next 2 issues may be addressed by completing research as indicated in
+  ✓ The next 2 issues may be addressed by completing research as indicated in
     https://www.whonix.org/forum/index.php/topic,537.msg4770.html#msg4770
     - swdate fails on start and after start.
     - initial whonixcheck fails on start, but works.  Might not be waiting for
@@ -93,8 +101,30 @@ After boot; check in terminal:
 
 
 ---------------------------------------------------------------------------------
-                                Solved Issues
+                       Solved Issues - Not Whonix Specific
 ---------------------------------------------------------------------------------
+  ✓ Wheezy terminal starts black in black; ugly theme
+    being used, even when kde is installed
+      - add to packages_qubes.list:
+	  - xdg-user-dirs gnome-themes-standard xsettingsd 
+        +configfiles:
+          - /etc/X11/Xsession.d/25qubes-settings
+          - /etc/xdg/fonts.conf
+          - /etc/xdg/Xresources
+          - /etc/xdg/xsettingsd
+
+  ✓umask also needs to be set for wheezy and jessie
+    - echo "session optional pam_umask.so" >> "${INSTALLDIR}/etc/pam.d/common-session"
+
+  ✓ unable to resolve host name 
+    - /usr/lib/qubes/init/qubes-sysinit.sh can't parse hosts file with tabs in it
+      - expand "${INSTALLDIR}/etc/hosts" > "${INSTALLDIR}/etc/hosts.dist"
+      - mv "${INSTALLDIR}/etc/hosts.dist" "${INSTALLDIR}/etc/hosts"
+
+  ✓ Update not working
+    - add to packages_qubes.list:
+	- gnome-packagekit
+
   ✓ Debian templates are going the way of systemd, but wheezy seems to have no way for
     sysvinit not to be re-installed on a dist-upgrade even if it is marked held or
     pinned with a value of -1.  Need to find a solution for this [Pinning with value
@@ -108,7 +138,5 @@ After boot; check in terminal:
     seems something is not starting since the VM will boot but can not open a terminal
     app and network seems to be unreachable as well
 
-  - Test to make sure multiple templates can be built one after another.  About a
+  ✓ Test to make sure multiple templates can be built one after another.  About a
     week ago I ran into permission problems; see if they still exist and fix if so
-
-  - whonix-workstation not yet implemented
