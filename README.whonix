@@ -34,13 +34,14 @@
 # Here are the steps though (currently Makefile may handle this):
 # 
 # Import the Qubes master key 
-# gpg --recv-keys 0x36879494 
+gpg --recv-keys 0x36879494 
+gpg --recv-keys 0x36879494 
 #
 # Verify its fingerprint, set as 'trusted'. 
 # This is described here: 
 # https://wiki.qubes-os.org/trac/wiki/VerifyingSignatures 
-# wget http://keys.qubes-os.org/keys/qubes-developers-keys.asc 
-# gpg --import qubes-developers-keys.asc 
+wget http://keys.qubes-os.org/keys/qubes-developers-keys.asc 
+gpg --import qubes-developers-keys.asc 
 # ==============================================================================
 
 # Copy the examples/whonix.conf file to builder.conf and edit as needed
