@@ -23,6 +23,25 @@
 # make get-sources
 # make template-modules
 # make template
+#
+# ==============================================================================
+# FIRST TIME INSTALLATION NOTES:
+# ------------------------------
+# Before building for the first time, you need to follow the instructions 
+# on the Qubes repo for setting up the Qubes master keys:
+# https://qubes-os.org/wiki/QubesBuilder
+#
+# Here are the steps though:
+# 
+# Import the Qubes master key 
+gpg --recv-keys 0x36879494 
+gpg --recv-keys 0x36879494 
+#
+# Verify its fingerprint, set as 'trusted'. 
+# This is described here: 
+# https://wiki.qubes-os.org/trac/wiki/VerifyingSignatures 
+# wget http://keys.qubes-os.org/keys/qubes-developers-keys.asc 
+gpg --import qubes-developers-keys.asc 
 # ==============================================================================
 
 # Copy the examples/whonix.conf file to builder.conf and edit as needed
@@ -39,9 +58,8 @@ if ! [ "$(make about)" == "whonix.conf" ]; then
 fi
 
 # Get / update sources
-if ! [ -d "qubes-src" ]; then
-    make get-sources || exit 1
-fi
+make get-sources || exit 1
+
 
 # Build qubes modules
 make template-modules || exit 1
