@@ -9,9 +9,6 @@
                           Whonix Checks and Issues
 ---------------------------------------------------------------------------------
 Current issues:
-  - Update not working in template yet
-    - tiny-proxy transparent proxy to Tor
-
   - Currently the Whonix Proxy must be created as a standalone VM until it is 
     modified to store configurations on /rw
 
@@ -118,6 +115,9 @@ After boot; check in terminal:
       will find on AppVM boot
 
   ✓ ip forwarding is enabled by defualt within Qubes; disable it
+
+  ✓ Update not working in template yet
+    - tiny-proxy transparent proxy to Tor
 
 
 ---------------------------------------------------------------------------------
