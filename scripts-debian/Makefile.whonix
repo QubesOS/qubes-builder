@@ -1,20 +1,17 @@
 VERSION := $(shell git describe --tags HEAD)
 
-RPMS_DIR=rpm/
-DIST_DOM0 ?= fc20
-LIBDIR ?= /usr/lib64
-DATADIR ?= /usr/share
+all: help
 
-help:
-	@echo "Qubes Whonix main Makefile:" ;\
-	    echo "make clean                <--- clean all the binary files";\
-	    @exit 0;
+get-sources:
+	git clean -dff
+	git submodule update --init --recursive
+	git status --porcelain
 
-all:	
+verify-sources: 
 
 appvm:
 
-rpms: rpms-dom0 rpms-vm
+rpms:
 
 rpms-vm:
 
@@ -22,17 +19,21 @@ tar:
 	git archive --format=tar --prefix=whonix/ HEAD -o whonix.tar
 
 clean:
-	cp Makefile /tmp/Makefile.whonix
 	git submodule foreach --recursive git reset --hard
 	git submodule foreach --recursive git clean -d -f
 	git clean -d -f
 	git reset --hard HEAD
-	cp /tmp/Makefile.whonix Makefile
 
-install: install-rh
+install:
 
-install-rh: appvm install-common
+install-rh:
 
-install-debian: appvm install-common
+install-debian:
 
 install-common:
+
+help:
+	@echo "Qubes Whonix main Makefile:" ;\
+	    @echo "make clean             Clean all the binary files"
+	    @echo "make get-sources       Get submodules"
+
