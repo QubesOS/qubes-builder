@@ -3,9 +3,9 @@ VERSION := $(shell git describe --tags HEAD)
 all: help
 
 get-sources:
-	git clean -dff
-	git submodule update --init --recursive
-	git status --porcelain
+	#git clean -dff
+	#git submodule update --init --recursive
+	#git status --porcelain
 
 verify-sources: 
 
