@@ -9,16 +9,9 @@
                           Whonix Checks and Issues
 ---------------------------------------------------------------------------------
 Current issues:
-  - Currently the Whonix Proxy must be created as a standalone VM until it is 
-    modified to store configurations on /rw
-
   - Need a utility to search for files with IP address pattern during installation.
     Currently the list is manually generated
     - Make sure Whonix provides a trigger
-
-  - Tor browser installs but does not launch from menu.  Need to manually start
-    it via a terminal -> cd tor_browser_en-US -> ./start-tor-browser &
-    - might just be an issue with Whonix 9.2; retest when 9.3 is installed
 
 Build issues:
   - None
@@ -30,10 +23,10 @@ Build issues:
   - check VM time to see if its set to proper timezone based on dom0?
 
   - netvm works in d8 - no wireless
+    - firmware-linux-free ??
+    - firmware-linux-nonfree ??
 
   - xdg-utils ??
-
-  - firmware-linux-free ??
 
 
 ---------------------------------------------------------------------------------
@@ -55,9 +48,6 @@ Build issues:
                            Most Likely Solved Issues
 ---------------------------------------------------------------------------------
 After boot; check in terminal:
-
-  ⏳ Another issue which is more important would be to make sure whonix has the
-    for the template to update... it updates VIA tor not clearnet
 
 
 ---------------------------------------------------------------------------------
@@ -118,6 +108,16 @@ After boot; check in terminal:
 
   ✓ Update not working in template yet
     - tiny-proxy transparent proxy to Tor
+
+  ✓ Another issue which is more important would be to make sure whonix has the
+    for the template to update... it updates VIA tor not clearnet
+
+  ✓ Currently the Whonix Proxy must be created as a standalone VM until it is 
+    modified to store configurations on /rw
+
+  ✓ Tor browser installs but does not launch from menu.  Need to manually start
+    it via a terminal -> cd tor_browser_en-US -> ./start-tor-browser &
+    - might just be an issue with Whonix 9.2; retest when 9.3 is installed
 
 
 ---------------------------------------------------------------------------------
