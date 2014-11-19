@@ -1,5 +1,5 @@
 # Set defaults
-GIT_SUBDIR ?= mainstream
+GIT_SUBDIR ?= qubes-r3
 BRANCH ?= master
 GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
@@ -7,32 +7,36 @@ DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
 VERBOSE ?= 0
 # Beware of build order
-COMPONENTS ?= vmm-xen \
-			  core-vchan-xen \
-			  linux-utils \
-			  qubes-app-linux-img-converter \
-			  core-admin \
-			  core-admin-linux \
-			  core-agent-linux \
-			  linux-kernel \
-			  artwork \
-			  gui-common \
-			  gui-daemon \
-			  gui-agent-linux \
-			  gui-agent-xen-hvm-stubdom \
-			  qubes-app-linux-split-gpg \
-			  qubes-app-linux-tor \
-			  qubes-app-thunderbird \
-			  qubes-app-linux-pdf-converter \
-			  linux-template-builder \
-			  desktop-linux-kde \
-			  desktop-linux-xfce4 \
-			  qubes-manager \
-			  installer-qubes-os \
-			  linux-yum \
-			  vmm-xen-windows-pvdrivers \
-			  antievilmaid \
-			  qubes-builder
+
+COMPONENTS ?= \
+    vmm-xen \
+    core-libvirt \
+    core-vchan-xen \
+    core-qubesdb \
+    linux-utils \
+    core-admin \
+    core-admin-linux \
+    core-agent-linux \
+    linux-kernel \
+    artwork \
+    gui-common \
+    gui-daemon \
+    gui-agent-linux \
+    gui-agent-xen-hvm-stubdom \
+    qubes-app-linux-split-gpg \
+    qubes-app-linux-tor \
+    qubes-app-thunderbird \
+    qubes-app-linux-pdf-converter \
+    linux-template-builder \
+    desktop-linux-kde \
+    desktop-linux-xfce4 \
+    qubes-manager \
+    installer-qubes-os \
+    linux-yum \
+    vmm-xen-windows-pvdrivers \
+    antievilmaid \
+    qubes-builder
+
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os

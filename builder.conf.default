@@ -8,7 +8,7 @@
 # Default: git://git.qubes-os.org
 
 # GIT_SUBDIR - whose repo to clone
-# Default: mainstream
+# Default: qubes-r3
 
 # GIT_SUFFIX - git component dir suffix
 # Default: .git
