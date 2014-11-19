@@ -343,7 +343,11 @@ push:
 	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		BRANCH=$(BRANCH); \
-		branch_var="BRANCH_`basename $${REPO//-/_}`"; \
+		if [ "$$REPO" == "." ]; then
+			branch_var="BRANCH_qubes_builder"; \
+		else \
+			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
+		fi; \
 		[ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
 		PUSH_REMOTE=`git config branch.$$BRANCH.remote`; \
 		[ -n "$(GIT_REMOTE)" ] && PUSH_REMOTE="$(GIT_REMOTE)"; \
