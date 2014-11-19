@@ -314,7 +314,7 @@ check:
 	done; \
 	HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
-		git tag --contains HEAD | grep ^. > /dev/null; \
+		git tag --points-at HEAD | grep ^. > /dev/null; \
 		if [ $$? -ne 0 ]; then \
 			if [ X$$HEADER_PRINTED == X ]; then HEADER_PRINTED="1"; echo "Unsigned HEADs in:"; fi; \
 			echo "> $$REPO"; fi; \
