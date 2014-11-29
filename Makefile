@@ -72,7 +72,7 @@ help:
 	@echo "You can also specify COMPONENTS=\"c1 c2 c3 ...\" on command line"
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
-get-sources:
+get-sources::
 	@set -a; \
 	SCRIPT_DIR=$(CURDIR); \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
@@ -96,10 +96,12 @@ $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(CO
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM); do \
+			DIST=$${DIST%%+*}; \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
 		done; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM); do \
+		DIST=$${DIST%%+*}; \
 	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
 	    done; \
 	fi
@@ -122,14 +124,22 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-template linux-template-builder:
+linux-template-builder: template
+template:: 
 	@for DIST in $(DISTS_VM); do
+	    # Allow template flavors to be declared within the DISTS_VM declaration
+	    # <distro>+<template flavor>+<template options>+<template options>...
+	    dist_array=($${DIST//+/ })
+	    DIST=$${dist_array[0]}
+	    TEMPLATE_FLAVOR=$${dist_array[1]}
+	    TEMPLATE_OPTIONS="$${dist_array[@]:2}"
+
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
 	    export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
 	    mkdir -p "$$GNUPGHOME"
 	    chmod 700 "$$GNUPGHOME"
-	    export DIST NO_SIGN
+	    export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
 	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	    for repo in $(GIT_REPOS); do \
 	        if [ -r $$repo/Makefile.builder ]; then
@@ -206,7 +216,7 @@ qubes-os-iso: get-sources qubes sign-all iso
 clean-installer-rpms:
 	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
-clean-rpms: clean-installer-rpms
+clean-rpms:: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
 		echo "Cleaning up rpms in qubes-rpms-mirror-repo/$$dist/rpm/..."; \
 		sudo rm -rf qubes-rpms-mirror-repo/$$dist/rpm/*.rpm || true ;\
@@ -223,7 +233,7 @@ clean:
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
-				DIST=$$DIST make -s -C $$REPO clean || exit 1; \
+				DIST=$${DIST%%+*} make -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
@@ -234,13 +244,13 @@ clean:
 		fi ;\
 	done;
 
-clean-all: clean-rpms clean
-	for dir in $(DISTS_ALL); do \
+clean-all:: clean-rpms clean
+	for dir in $${DISTS_ALL[@]%%+*}; do \
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
 		sudo umount chroot-$$dir/proc; \
 		sudo umount chroot-$$dir/tmp/qubes-rpms-mirror-repo; \
 	done || true
-	sudo rm -rf $(addprefix chroot-,$(DISTS_ALL)) || true
+	sudo rm -rf $(addprefix chroot-,$${DISTS_ALL[@]%%+*}) || true
 	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: iso
@@ -264,6 +274,7 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
+		DIST=$${DIST%%+*}; \
 		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
@@ -427,6 +438,7 @@ update-repo-current-testing update-repo-unstable: update-repo-%:
 				SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 				update-repo; \
 			for DIST in $(DISTS_VM); do \
+				DIST=$${DIST%%+*}; \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 				[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 				repos_to_update+=" $$repo_vm_basedir"; \
@@ -453,6 +465,7 @@ update-repo-current:
 	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
 	repos_to_update="$$repo_dom0_basedir"; \
 	for DIST in $(DISTS_VM); do \
+		DIST=$${DIST%%+*}; \
 		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 		[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 		repos_to_update+=" $$repo_vm_basedir"; \
