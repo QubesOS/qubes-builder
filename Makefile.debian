@@ -140,8 +140,11 @@ endif
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs/*
 	cd $(CHROOT_DIR)/$(DIST_SRC); $(PWD)/scripts-debian/debian-changelog.sh
+	# Break the hardlink
+	cp $(CHROOT_DIR)/$(DIST_SRC)/debian/changelog $(CHROOT_DIR)/$(DIST_SRC)/debian/changelog.copy
+	mv $(CHROOT_DIR)/$(DIST_SRC)/debian/changelog.copy $(CHROOT_DIR)/$(DIST_SRC)/debian/changelog
 	echo "Building package in $(DIST_SRC)"
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); LC_ALL=C dpkg-buildpackage -sa -k${SIGN_KEY} --changes-option=-DDistribution=$(DIST)'
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); export LC_ALL=C; debchange -l$(DIST) "Build for $(DIST)"; debchange --force-distribution -r -D $(DIST) $(DIST); dpkg-buildpackage -sa -k${SIGN_KEY}'
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
