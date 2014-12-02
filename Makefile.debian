@@ -55,7 +55,7 @@ export DEBIANVERSION
 
 ### Local variables
 RUN_AS_USER = user
-
+REPO_CHROOT_DIR ?= chroot-jessie
 
 DEBIAN_DEPENDENCIES := dpkg-dev debootstrap
 
@@ -166,23 +166,19 @@ else
 	@mkdir -p $(UPDATE_REPO)/conf
 	[ ! -e $(UPDATE_REPO)/conf/distributions ] && echo "$$aptdistributions" > $(UPDATE_REPO)/conf/distributions || :
 
-	if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
-		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb ;\
-		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb ;\
+	-sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo $(REPO_CHROOT_DIR)/tmp/qubes-deb 2>/dev/null
+	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
+		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
 	fi
 
-	if ! [ -d $(CHROOT_DIR)/tmp/qubes-apt-repo/dists ]; then \
-		mkdir -p $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
-		sudo mount --bind $(UPDATE_REPO) $(CHROOT_DIR)/tmp/qubes-apt-repo ;\
+	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo/dists ]; then \
+		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
+		sudo mount --bind $(UPDATE_REPO) $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
 	fi
 
-	# Add --ignore=wrongdistribution for wheezy
-	if [ "$(DEBIANVERSION)" == "wheezy" ]; then \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro --ignore=wrongdistribution -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
-	else \
-		sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)_amd64.changes" ;\
-	fi
-	sudo umount $(CHROOT_DIR)/tmp/qubes-apt-repo
-	sudo umount $(CHROOT_DIR)/tmp/qubes-deb
+	sudo $(CHROOT_ENV) chroot $(REPO_CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(packagefile)$(DIST)1_amd64.changes"
+	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo
+	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-deb
 endif
 
