@@ -21,7 +21,7 @@ else
 fi
 
 IFS=%
-git log --no-merges --topo-order --reverse --pretty=format:%an%%%ae%%%ad%%%s v$v..HEAD |\
+(git log --no-merges --topo-order --reverse --pretty=format:%an%%%ae%%%ad%%%s v$v..HEAD;echo) |\
     while read a_name a_email date sum; do
         export DEBFULLNAME="$a_name"
         export DEBEMAIL="$a_email"
