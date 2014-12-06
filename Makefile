@@ -42,6 +42,20 @@ ifneq (,$(findstring qubes-builder,$(COMPONENTS)))
 GIT_REPOS += .
 endif
 
+check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
+				   BRANCH=$(BRANCH); \
+				   branch_var="BRANCH_$(subst -,_,$(1))"; \
+				   [ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
+				   pushd $(SRC_DIR)/$(1) > /dev/null; \
+				   CURRENT_BRANCH=`git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'`; \
+				   if [ "$$BRANCH" != "$$CURRENT_BRANCH" ]; then \
+					   echo "-> ERROR: Wrong branch $$CURRENT_BRANCH (expected $$BRANCH)"; \
+					   exit 1; \
+				   fi; \
+				   popd > /dev/null; \
+			   fi; 
+
+
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:
 help:
@@ -94,6 +108,7 @@ check-depend:
 $(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
 
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
+	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM); do \
 			DIST=$${DIST%%+*}; \
@@ -107,6 +122,7 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	fi
 
 $(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depend
+	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
@@ -334,8 +350,20 @@ show-vtags:
 		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '; \
 		git config --get-color "" "reset"; \
 		echo -n '('; \
-		git config --get-color color.decorate.branch "green bold"; \
-		git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'; \
+		BRANCH=$(BRANCH); \
+		if [ "$$REPO" == "." ]; then
+			branch_var="BRANCH_qubes_builder"; \
+		else \
+			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
+		fi; \
+		[ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
+		CURRENT_BRANCH=`git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'`; \
+		if [ "$$BRANCH" != "$$CURRENT_BRANCH" ]; then \
+			git config --get-color color.decorate.tag "yellow bold"; \
+		else \
+			git config --get-color color.decorate.branch "green bold"; \
+		fi; \
+		echo -n $$CURRENT_BRANCH; \
 		git config --get-color "" "reset"; \
 		echo ')'; \
 	    popd > /dev/null; \

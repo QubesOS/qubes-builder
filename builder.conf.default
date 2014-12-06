@@ -28,6 +28,10 @@
 # make prepare-merge GIT_REMOTE="joanna"
 # Default: no value
 
+# CHECK_BRANCH - check if the current branch is set to the one configured in
+# builder.conf before building the component. Set this to "1" to enable the feature
+# Default: no value (disabled)
+
 # COMPONENTS - list of Qubes components. Can be used to easily add custom
 # components to build environment.
 # Preferred use is:
