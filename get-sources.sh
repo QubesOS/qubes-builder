@@ -53,7 +53,7 @@ if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
     VERIFY_REF=FETCH_HEAD
 else
     rm -rf $REPO
-    git clone -q -b $BRANCH $GIT_URL $REPO
+    git clone -n -q -b $BRANCH $GIT_URL $REPO
     VERIFY_REF=HEAD
 fi
 
@@ -80,7 +80,7 @@ fi
 if [ "$FETCH_ONLY" != "1" ]; then
 
 CURRENT_BRANCH=`cd $REPO; git branch | sed -n -e 's/^\* \(.*\)/\1/p'`
-if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+if [ "$CURRENT_BRANCH" != "$BRANCH" -o "$VERIFY_REF" == "HEAD" ]; then
     pushd $REPO &> /dev/null
     red="`echo -e '\033[1;31m'`"
     green="`echo -e '\033[1;32m'`"
