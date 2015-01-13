@@ -28,7 +28,10 @@ if ! [ -d $DIR/home/user ]; then
 
     qubes-src/linux-template-builder/scripts_archlinux/01_install_core.sh
 
-    sudo mount $CACHEDIR/root-image.fs mnt_archlinux_dvd
+    sudo mount $CACHEDIR/airootfs.img mnt_archlinux_dvd
+
+    echo "Fix bug intruduced in arch-chroot causing arguments not to be passed"
+    sed "s/unshare --fork --pid//" -i mnt_archlinux_dvd/usr/bin/arch-chroot
 
     cp /etc/resolv.conf $DIR/etc/
 
