@@ -1,0 +1,130 @@
+#!/bin/bash
+# vim: set ts=4 sw=4 sts=4 et :
+
+# ------------------------------------------------------------------------------
+# Configuration
+# $1: chroot directory [chroot-trusty, chroot-utopic]
+# $2: distribution [trusty, utopic]
+# ------------------------------------------------------------------------------
+DIR=$1
+DISTRO=$2
+
+set -e
+if [ "$VERBOSE" -ge 2 -o "$DEBUG" == "1" ]; then
+    set -x
+fi
+
+# ------------------------------------------------------------------------------
+# Build packages to be installed to allow building of Qubes modules
+# ------------------------------------------------------------------------------
+BUILDPACKAGES="reprepro build-essential devscripts git git-buildpackage pbuilder debhelper quilt libxen-dev python libpulse-dev libtool automake xorg-dev xutils-dev libxdamage-dev libxcomposite-dev libxt-dev libx11-dev"
+
+INITIAL=
+
+if ! [ -d $DIR/home/user ]; then
+    # --------------------------------------------------------------------------
+    # Install qubuntu choot if /home/user does not exist (initial run)
+    # --------------------------------------------------------------------------
+    INITIAL=1
+    mkdir -p $DIR
+    echo "-> Installing qubuntu build chroot..."
+    COMPONENTS="" debootstrap --arch=amd64 \
+                --include=ncurses-term,qubuntu-keyring \
+                --keyring=keys_qubuntu/$DIST-qubuntu-archive-keyring.gpg \
+                $DEBIANVERSION $DIR http://archive.ubuntu.com/ubuntu \
+                || { echo "Error in debootstrap"; exit 1; }
+
+    # --------------------------------------------------------------------------
+    # Set up a temporary policy-rc.d to prevent apt from starting services
+    # on package installation
+    # --------------------------------------------------------------------------
+    cat > $DIR/usr/sbin/policy-rc.d <<EOF
+#!/bin/sh
+return 101 # Action forbidden by policy
+EOF
+    chmod 755 $DIR/usr/sbin/policy-rc.d
+
+    # --------------------------------------------------------------------------
+    # Add some groups and users
+    # --------------------------------------------------------------------------
+    [ -n "$SUDO_UID" ] && USER_OPTS="-u $SUDO_UID"
+    [ -n "$USER_UID" ] && USER_OPTS="-u $USER_UID"
+
+    # Added -f to ignore if group already exists
+    if [ -n "$USER_GID" ]; then
+        chroot $DIR groupadd -f -g $USER_GID user
+    elif [ -n "$SUDO_GID" ]; then
+        chroot $DIR groupadd -f -g $SUDO_GID user
+    else
+        chroot $DIR groupadd user
+    fi
+    chroot $DIR sh -c "useradd -g user $USER_OPTS -m user;su -c 'mkdir qubes-src' - user"
+
+    # --------------------------------------------------------------------------
+    # /dev/null should be 0666
+    # --------------------------------------------------------------------------
+    chroot $DIR sh -c "chmod 0666 /dev/null"
+else
+    # --------------------------------------------------------------------------
+    # /home/user directory already exists, so above stage already complete so
+    # temporary remove builder repo, it will be recreated at the end of this 
+    # script
+    # --------------------------------------------------------------------------
+    rm -f $DIR/etc/apt/sources.list.d/qubes-builder.list
+
+    # update chroot
+    chroot $DIR apt-get update
+    chroot $DIR apt-get -y upgrade
+fi
+
+# ------------------------------------------------------------------------------
+# Mount /proc within chroot environment
+# ------------------------------------------------------------------------------
+if ! [ -r $DIR/proc/cpuinfo ]; then
+    mount -t proc proc $DIR/proc
+fi
+
+# ------------------------------------------------------------------------------
+# Add universe to sources.list
+# ------------------------------------------------------------------------------
+sed -i "s/${DIST} main$/${DIST} main universe/g" $DIR/etc/apt/sources.list
+chroot $DIR apt-get update
+
+# ------------------------------------------------------------------------------
+# Install all build packages specified
+# ------------------------------------------------------------------------------
+chroot $DIR apt-get -y install $BUILDPACKAGES
+
+# Install pulseaudio5
+chroot $DIR apt-get install -y software-properties-common
+chroot $DIR add-apt-repository -y ppa:ubuntu-audio-dev/pulse-testing
+chroot $DIR apt-get update
+chroot $DIR apt-get install -y libpulse-dev
+
+# ------------------------------------------------------------------------------
+# Install keyring
+# ------------------------------------------------------------------------------
+if ! [ -f keys_qubuntu/$DIST-secring.gpg ]; then
+    gpg --gen-key --batch <<EOF
+Key-Type: RSA
+Key-Length: 1024
+Key-Usage: sign
+Name-Real: Qubes builder
+Expire-Date: 0
+%pubring keys_qubuntu/$DIST-pubring.gpg
+%secring keys_qubuntu/$DIST-secring.gpg
+%commit
+EOF
+    chown --reference=keys_qubuntu/ keys_qubuntu/$DIST-*ring.gpg
+fi
+
+echo cp keys_qubuntu/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+cp keys_qubuntu/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+
+# ------------------------------------------------------------------------------
+# Update qubuntu apt sources list to use local qubes repo
+# ------------------------------------------------------------------------------
+cat > $DIR/etc/apt/sources.list.d/qubes-builder.list <<EOF
+deb file:/tmp/qubes-deb $DEBIANVERSION main
+EOF
+

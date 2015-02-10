@@ -1,0 +1,211 @@
+# Makefile for qubuntu package build
+# 
+# Davíð Steinn Geirsson <david@dsg.is>
+#
+# For "API" documentation check Makefile.generic
+#
+# Variables used as "parameters":
+#  DIST
+#  SRC_DIR
+#  COMPONENT
+#  PACKAGE_SET (currently "dom0" or "vm")
+
+### Load component-specific settings
+
+# Component specific settings. Generic variables:
+#  SOURCE_PREP - make target to run at "prep" stage
+#  SOURCE_COPY_IN - make target to run after "copy-in" stage
+#  SOURCE_COPY_OUT - make target to run after "copy-out" stage
+# Above are mainly to extend Makefile with some component-specific actions
+# (like handling additional sources)
+#
+#
+# Check Makefile.DISTRIBUTION for distribution-specific supported variables
+
+### Load distro-specific settings
+
+# This file should define:
+# 1. variables:
+#   PACKAGE_LIST - list of packages to build. Targets 'build-dep', 'package' and 'copy-out'
+#     will be run for each word on the list, with PACKAGE set to current word
+#   DIST_BUILD_DIR - basedir for sources inside of chroot - relative to
+#     CHROOT_DIR (qubes-src will be created in this directory)
+# targets:
+#   dist-prepare-chroot - initial preparation of chroot environment
+#   dist-prep - some preparation of sources (if needed)
+#   dist-build-dep - install build dependencies (should operate on chroot directory)
+#   dist-package - compile package (should operate on chroot directory)
+#   dist-copy-out - copy compiled package out of chroot env; this target should
+#     move packages to ORIG_SRC (distro-specific subdir) and hardlink them to
+#     BUILDER_REPO_DIR
+#
+#   dist-build-dep, dist-package and dist-copy-out targets are run in separate
+#   process with stdout+stderr redirected to log file. If you want to print
+#   some message, use 3-rd file descriptor
+#
+# This file can specify additional targets (like update-repo-*)
+
+### Variables required Makefile.generic
+PACKAGE_LIST = $(DEBIAN_BUILD_DIRS)
+DIST_BUILD_DIR = /home/user
+DEBIAN_DIR = $(DIST_SRC)/$(DEBIAN_BUILD_DIRS)
+DEBIAN_CHROOT_DIR = $(CHROOT_DIR)/$(DIST_SRC)/$(DEBIAN_BUILD_DIRS)
+
+### Global variables
+DEBIANVERSION=$(DIST)
+export DEBIANVERSION
+
+### Local variables
+RUN_AS_USER = user
+REPO_CHROOT_DIR ?= chroot-qubuntu
+
+DEBIAN_DEPENDENCIES := dpkg-dev debootstrap
+PARSER=./scripts-debian/debian-parser
+
+ifneq (,$(DEBIAN_BUILD_DIRS))
+package_file = $(shell $(PARSER) changelog --package-release-name-full $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
+orig_package_file = $(shell $(PARSER) changelog --package-release-name $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
+endif
+
+listfiles = awk 'section == "Files:" { print $$5 } /^[A-Z].*.$$/ { section=$$1 }'
+
+ifdef UPDATE_REPO
+ifneq (,$(findstring current-testing,$(UPDATE_REPO)))
+REPO_SUFFIX = -testing
+else ifneq (,$(findstring unstable,$(UPDATE_REPO)))
+REPO_SUFFIX = -unstable
+endif
+endif
+
+define aptdistributions
+Origin: Qubes Qubuntu
+Label: Qubes Qubuntu
+Codename: trusty
+Architectures: amd64 source
+Components: main
+Description: Apt repository with qubes domU support tools for qubuntu trusty
+
+Origin: Qubes Qubuntu
+Label: Qubes Qubuntu
+Codename: utopic
+Architectures: amd64 source
+Components: main
+Description: Apt repository with qubes domU support tools for qubuntu utopic
+
+Origin: Qubes Qubuntu
+Label: Qubes Qubuntu
+Codename: vivid
+Architectures: amd64 source
+Components: main
+Description: Apt repository with qubes domU support tools for qubuntu vivid
+endef
+export aptdistributions
+
+dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
+	@if [ $(VERBOSE) -gt 0 ]; then \
+		echo "-> dist-prepare-chroot for $(DIST)"; \
+		echo "-> sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;"; \
+	fi
+	@if [ ! -r $(CHROOT_DIR)/proc/cpuinfo ]; then\
+		sudo mount -t proc proc $(CHROOT_DIR)/proc;\
+	fi
+	@if ! [ -d $(CHROOT_DIR)/tmp/qubes-deb/deb ]; then\
+		mkdir -p $(CHROOT_DIR)/tmp/qubes-deb;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;\
+	fi
+
+$(CHROOT_DIR)/home/user/.prepared_base: ./prepare-chroot-qubuntu
+	# Make sure repo directory exists
+	@if ! [ -d "$(PWD)/qubes-rpms-mirror-repo/$(DIST)/dists" ]; then\
+	    mkdir -p "$(PWD)/qubes-rpms-mirror-repo/$(DIST)/dists";\
+	fi
+	@echo "-> Preparing $(DIST) build environment"
+	@sudo -E ./prepare-chroot-qubuntu $(CHROOT_DIR) $(DIST)
+	@touch $(CHROOT_DIR)/home/user/.prepared_base
+
+dist-prep:
+	@if ! which rpm >/dev/null 2>&1; then \
+		echo "WARNING: rpm executable not found (are you on cygwin?)"; \
+	elif [ $(VERBOSE) -gt 0 ]; then \
+		echo "currently installed dependencies:"; \
+		rpm -q $(DEBIAN_DEPENDENCIES) || exit 1; \
+	else \
+		rpm -q $(DEBIAN_DEPENDENCIES) >/dev/null 2>&1 || exit 1; \
+	fi
+
+dist-build-dep: REPO_DIR=$(PWD)/qubes-rpms-mirror-repo/$(DIST)
+dist-build-dep: 
+	if [ ! -d ${REPO_DIR}/dists ]; then \
+		mkdir -p $(REPO_DIR)/dists; \
+	fi
+	./update-local-repo.sh $(DIST)
+	sudo chroot $(CHROOT_DIR) apt-get update
+	$(PARSER) control --build-depends $(DEBIAN_CHROOT_DIR)/control |\
+		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+
+dist-package:
+ifndef PACKAGE
+	$(error "PACKAGE need to be set!")
+endif
+	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(package_file)*
+	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/deb/*
+	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
+	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs/*
+	cd $(DEBIAN_CHROOT_DIR)/..; $(PWD)/scripts-debian/debian-changelog.sh
+
+	# Break the hardlink
+	cp $(DEBIAN_CHROOT_DIR)/changelog $(DEBIAN_CHROOT_DIR)/changelog.copy
+	mv $(DEBIAN_CHROOT_DIR)/changelog.copy $(DEBIAN_CHROOT_DIR)/changelog
+
+	echo "Building package in $(DIST_SRC)"
+
+	# Hook to see if Makefile has a 'dist' target so it can be run to allow 
+	# "3.0 (quilt) formats to work (will grab remote source package) or create
+	# a local one based on repo
+	if [ -n "`make -n -s -C $(SRC_DIR)/$(COMPONENT) dist 2> /dev/null`" ]; then \
+	    sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); export LC_ALL=C; make -s dist'; \
+	fi;
+
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DEBIAN_DIR)/..; export LC_ALL=C; debchange -l$(DIST) "Build for $(DIST)"; debchange --force-distribution -r -D $(DIST) $(DIST); dpkg-buildpackage -sa -k${SIGN_KEY}';
+
+dist-copy-out:
+	mkdir -p $(BUILDER_REPO_DIR)/deb
+	mkdir -p $(ORIG_SRC)/deb/$(DIST)
+	cd $(DEBIAN_CHROOT_DIR)/../..; \
+		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(package_file)*.changes`
+	cp -t $(BUILDER_REPO_DIR)/deb/ $(DEBIAN_CHROOT_DIR)/../../$(package_file)*.changes
+	cd $(DEBIAN_CHROOT_DIR)/../..; \
+		mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST)  `$(listfiles) $(package_file)*.changes`
+	mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST) $(DEBIAN_CHROOT_DIR)/../../$(package_file)*.changes
+
+update-repo:
+ifndef UPDATE_REPO
+	$(error "You need to specify destination repo in UPDATE_REPO variable")
+endif
+ifeq (,$(DEBIAN_BUILD_DIRS))
+	@true
+else
+	@mkdir -p $(UPDATE_REPO)/conf
+	[ ! -e $(UPDATE_REPO)/conf/distributions ] && echo "$$aptdistributions" > $(UPDATE_REPO)/conf/distributions || :
+
+	-sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo $(REPO_CHROOT_DIR)/tmp/qubes-deb 2>/dev/null
+
+	# Softlink to the first distribution called; it will be used to create and store repo
+	if ! [ -L $(REPO_CHROOT_DIR) ]; then \
+	    ln -sf chroot-${DIST} ${REPO_CHROOT_DIR}; \
+	fi
+
+	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
+		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
+		sudo mount --bind $(BUILDER_REPO_DIR) $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
+	fi
+
+	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo/dists ]; then \
+		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
+		sudo mount --bind $(UPDATE_REPO) $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
+	fi
+
+	sudo $(CHROOT_ENV) chroot $(REPO_CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(package_file)$(DIST)1_amd64.changes"
+	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo
+	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-deb
+endif
