@@ -2,7 +2,7 @@
 
 # Configuration by env:
 #  - GIT_BASEURL - base url of git repos
-#  - GIT_SUBDIR - whose repo to clone
+#  - GIT_PREFIX - whose repo to clone
 #  - GIT_SUFFIX - git component dir suffix (default .git)
 #  - COMPONENT - component to clone
 #  - BRANCH - git branch
@@ -31,7 +31,7 @@ url_var="GIT_URL_${COMPONENT//-/_}"
 if [ -n "${!url_var}" ]; then
     GIT_URL="${!url_var}"
 else
-    GIT_URL=$GIT_BASEURL/$GIT_SUBDIR/$COMPONENT$GIT_SUFFIX
+    GIT_URL=$GIT_BASEURL/$GIT_PREFIX$COMPONENT$GIT_SUFFIX
 fi
 
 # Override GIT_URL with GIT_REMOTE if given

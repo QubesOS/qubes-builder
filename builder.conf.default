@@ -7,8 +7,9 @@
 # GIT_BASEURL - base url of git repos
 # Default: git://git.qubes-os.org
 
-# GIT_SUBDIR - whose repo to clone
-# Default: qubes-r3
+# GIT_PREFIX - whose repo to clone; can be used either to specify subdir
+# ("qubes-r3/"), or real prefix ("qubes-")
+# Default: no value
 
 # GIT_SUFFIX - git component dir suffix
 # Default: .git
@@ -103,6 +104,6 @@
 # WIN_BUILD_TYPE
 
 # Example for using local git dirs as repo:
-# GIT_BASEURL=/home/user/qubes-src
-# GIT_SUBDIR=
+# GIT_BASEURL=/home/user/qubes-src/
+# GIT_PREFIX=
 # GIT_SUFFIX=

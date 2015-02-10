@@ -1,5 +1,7 @@
 # Set defaults
-GIT_SUBDIR ?=
+ifdef GIT_SUBDIR
+GIT_PREFIX ?= $(GIT_SUBDIR)/
+endif
 BRANCH ?= master
 GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
