@@ -97,9 +97,22 @@ chroot $DIR apt-get -y install $BUILDPACKAGES
 if [ "$DIST" == "wheezy" ]; then
     # Looks like a SID only package is being used to build packages
     # there is a backport available for wheezy
-    echo "deb http://http.debian.net/debian wheezy-backports main" >> $DIR/etc/apt/sources.list
+    source "deb http://http.debian.net/debian wheezy-backports main"
+    if ! grep -r -q "$source" "${DIR}/etc/apt/sources.list"*; then
+        touch "${DIR}/etc/apt/sources.list"
+        echo "$source" >> "${DIR}/etc/apt/sources.list"
+    fi
     chroot $DIR apt-get update
-    chroot $DIR apt-get -t wheezy-backports install dh-systemd
+    chroot $DIR apt-get -t wheezy-backports install -y dh-systemd config-package-dev
+fi
+
+# ------------------------------------------------------------------------------
+# Install Debian source repo
+# ------------------------------------------------------------------------------
+source="deb-src http://http.debian.net/debian ${DEBIANVERSION} main"
+if ! grep -r -q "$source" "${DIR}/etc/apt/sources.list"*; then
+    touch "${DIR}/etc/apt/sources.list"
+    echo "$source" >> "${DIR}/etc/apt/sources.list"
 fi
 
 # ------------------------------------------------------------------------------
@@ -120,6 +133,11 @@ EOF
 fi
 
 cp keys_debian/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+
+# ------------------------------------------------------------------------------
+# Refresh package list (but not quebes repo since it does not yet exist)
+# ------------------------------------------------------------------------------
+chroot $DIR apt-get update
 
 # ------------------------------------------------------------------------------
 # Update debian apt sources list to use local qubes repo
