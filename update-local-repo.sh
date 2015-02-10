@@ -5,8 +5,9 @@ set -e
 [ -z "$1" ] && { echo "Usage: $0 <dist>"; exit 1; }
 
 REPO_DIR=$PWD/qubes-rpms-mirror-repo/$1
-KEYS_DIR=$PWD/keys_debian
 DIST=$1
+
+KEYS_DIR="${PWD}/keys_${DISTRIBUTION}"
 
 if [ -d $REPO_DIR/dists ]; then
     pushd $REPO_DIR
