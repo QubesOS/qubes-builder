@@ -1,0 +1,596 @@
+#!/bin/bash +e
+# vim: set ts=4 sw=4 sts=4 et :
+
+CONF_MASTER_DIR=./example-configs
+CONF_MASTER_FILE=templates.conf
+CONF_FILE=./setup.conf
+CONF_FILE_OLD=./setup.conf.old
+CONF_OVERRIDE=override.conf
+CONF_RELEASE=./builder-release.conf
+
+DIALOG=/usr/bin/dialog
+
+
+# ------------------------------------------------------------------------------
+# Colors
+# ------------------------------------------------------------------------------
+colors() {
+   ## Thanks to:
+   ## http://mywiki.wooledge.org/BashFAQ/037
+   ## Variables for terminal requests.
+   [[ -t 2 ]] && {
+       export alt=$(      tput smcup  || tput ti      ) # Start alt display
+       export ealt=$(     tput rmcup  || tput te      ) # End   alt display
+       export hide=$(     tput civis  || tput vi      ) # Hide cursor
+       export show=$(     tput cnorm  || tput ve      ) # Show cursor
+       export save=$(     tput sc                     ) # Save cursor
+       export load=$(     tput rc                     ) # Load cursor
+       export bold=$(     tput bold   || tput md      ) # Start bold
+       export stout=$(    tput smso   || tput so      ) # Start stand-out
+       export estout=$(   tput rmso   || tput se      ) # End stand-out
+       export under=$(    tput smul   || tput us      ) # Start underline
+       export eunder=$(   tput rmul   || tput ue      ) # End   underline
+       export reset=$(    tput sgr0   || tput me      ) # Reset cursor
+       export blink=$(    tput blink  || tput mb      ) # Start blinking
+       export italic=$(   tput sitm   || tput ZH      ) # Start italic
+       export eitalic=$(  tput ritm   || tput ZR      ) # End   italic
+   [[ ${TERM} != *-m ]] && {
+       export red=$(      tput setaf 1|| tput AF 1    )
+       export green=$(    tput setaf 2|| tput AF 2    )
+       export yellow=$(   tput setaf 3|| tput AF 3    )
+       export blue=$(     tput setaf 4|| tput AF 4    )
+       export magenta=$(  tput setaf 5|| tput AF 5    )
+       export cyan=$(     tput setaf 6|| tput AF 6    )
+   }
+       export white=$(    tput setaf 7|| tput AF 7    )
+       export default=$(  tput op                     )
+       export eed=$(      tput ed     || tput cd      )   # Erase to end of display
+       export eel=$(      tput el     || tput ce      )   # Erase to end of line
+       export ebl=$(      tput el1    || tput cb      )   # Erase to beginning of line
+       export ewl=$eel$ebl                                # Erase whole line
+       export draw=$(     tput -S <<< '   enacs
+                                   smacs
+                                   acsc
+                                   rmacs' || { \
+                   tput eA; tput as;
+                   tput ac; tput ae;         } )   # Drawing characters
+       export back=$'\b'
+   } 2>/dev/null ||:
+
+   export build_already_defined_colors="true"
+}
+
+if [ ! "$build_already_defined_colors" = "true" ]; then
+   colors
+fi
+
+
+# ------------------------------------------------------------------------------
+# Display messages in color
+# ------------------------------------------------------------------------------
+# Only output text under certain conditions
+output() {
+    # Don't echo if -x is set since it will already be displayed via true
+    [[ ${-/x} != $- ]] || echo -e "${1}"
+}
+
+info() {
+    output "${bold}${blue}${1}${reset}" || :
+}
+
+debug() {
+    output "${bold}${green}${1}${reset}" || :
+}
+
+warn() {
+    output "${stout}${yellow}${1}${reset}" || :
+}
+
+error() {
+    output "${bold}${red}${1}${reset}" || :
+}
+
+
+# ------------------------------------------------------------------------------
+# Takes an array and exports it a global variable
+#
+# $1: Array to export
+# $2: Global variable name to use for export
+#
+# http://ihaveabackup.net/2012/01/29/a-workaround-for-passing-arrays-in-bash/
+#
+# ------------------------------------------------------------------------------
+setArrayAsGlobal() {
+    local array="$1"
+    local export_as="$2"
+    local code=$(declare -p "$array")
+    local replaced="${code/$array/$export_as}"
+    eval ${replaced/declare -/declare -g}
+} 
+
+
+# ------------------------------------------------------------------------------
+# $1: element to check for
+# $2: array to check for element in
+# ------------------------------------------------------------------------------
+elementIn () {
+  local element
+  for element in "${@:2}"; do [[ "$element" == "$1" ]] && return 0; done
+  return 1
+}
+
+
+# ------------------------------------------------------------------------------
+# Install 'dialog' program if it does not yet exist
+# ------------------------------------------------------------------------------
+installDialog() {
+    if [ ! -f "$DIALOG" ]; then
+        _dialog="${DIALOG##*/}"
+        info "${red}${_dialog}${blue} is not installed and required for setup."
+        echo
+        read -p "Enter 'Y' to install now or anything else to quit [YyNnQq]: " -r
+        if [[ ! $REPLY =~ ^[]|[Yy]$ ]] && [[ -n $REPLY ]]; then
+            error "You selected not to install ${blue}${_dialog}${red} and therefore setup must now exit"
+            error "Exiting!"
+            exit 1
+        fi
+
+        exec sudo yum -y install ${_dialog} 2>&1 > /dev/null &
+        pid=$!
+
+        info "Waiting for ${red}${_dialog}${blue} to install"
+        while ps -p$pid 2>&1 > /dev/null; do
+            printf "${red}.${reset}"
+            sleep 1
+        done
+        echo
+    fi
+}
+
+
+# ------------------------------------------------------------------------------
+# useOverrideConfiguration
+# ------------------------------------------------------------------------------
+useOverrideConfiguration() {
+    title="Use Branch Specific Configuration File?"
+    message="A  branch specific configuration file was found in your personal directory: ${OVERRIDE_SOURCE}.\n\nWould you like to use and override the other provided repos?"
+    dialog --default-button yes --title "${title}" --yesno "${message}" 12 60
+    return $?
+}
+
+
+# ------------------------------------------------------------------------------
+# chooseVersion
+# ------------------------------------------------------------------------------
+chooseVersion() {
+    release="${1}"
+    default="yes"
+    if [ "${release}" == "3" ]; then
+        default="no"
+    fi
+    title="Choose Qubes Version"
+    message="Choose which version of Qubes you wish to build.\n\nValid options are either the stable release 2 or development release 3 version." 
+    dialog --default-button "${default}" --yes-label "Release 2" --no-label "Release 3" --title "${title}" --yesno "${message}" 8 60
+        return $?
+}
+
+
+# ------------------------------------------------------------------------------
+# sshAccessDialog
+# ------------------------------------------------------------------------------
+sshAccessDialog() {
+    if [ "${1}" == "2" ]; then
+        default="yes"
+    else
+        default="no"
+    fi
+    title="Enable SSH Access"
+    message="Do you have ssh access to the repos?\n\nSelect 'Yes' to configure urls to match git or 'No' for https" 
+    dialog --default-button ${default} --title "${title}" --yesno "${message}" 8 60
+        return $?
+}
+
+
+# ------------------------------------------------------------------------------
+# templateOnlyDialog
+# ------------------------------------------------------------------------------
+templateOnlyDialog() {
+    if [ "${1}" == "1" ]; then
+        default="yes"
+    else
+        default="no"
+    fi
+    title="Build Template Only?"
+    message="Would you like to build only the templates?\n\nSelect 'Yes' to to only build templates or 'No' for complete build" 
+    dialog --default-button ${default} --title "${title}" --yesno "${message}" 8 60
+        return $?
+}
+
+
+# ------------------------------------------------------------------------------
+# Check / Install Keys
+# ------------------------------------------------------------------------------
+#declare -A KEYS
+read -r -d '' KEYS[0x36879494] <<'EOF' || true
+(
+    [key]="427F11FD0FAA4B080123F01CDDFA1A3E36879494"
+    [key_short]=0x36879494 
+    [owner]="Qubes Master Signing Key" 
+    [fingerprint]="427F 11FD 0FAA 4B08 0123  F01C DDFA 1A3E 3687 9494"
+    [verify]="fpr:::::::::427F11FD0FAA4B080123F01CDDFA1A3E36879494:"
+    [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
+)
+EOF
+read -r -d '' KEYS[0x5A4C6DAD] <<'EOF' || true
+(
+    [key]="E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD"
+    [key_short]=0x5A4C6DAD 
+    [owner]="Jason Mehring (Qubes OS Signing Key) <nrgaway@gmail.com>"
+    [fingerprint]="E0E3 2283 FDCA C1A5 1007  8F27 1BB9 B1FB 5A4C 6DAD"
+    [verify]="fpr:::::::::E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD:"
+    [url]=""
+)
+EOF
+
+
+gpgListKey() {
+    text="$(gpg --list-key $1)" && retval=0 || retval=1
+    echo "${text}"
+    return $retval
+}
+
+
+gpgRecvKeys() {
+    text="$(gpg --recv-keys $1)" && retval=0 || retval=1
+    echo "${text}"
+    return $retval
+}
+
+
+gpgVerifyKey() {
+    text="$(gpg --with-colons --fingerprint $1)" && retval=0 || retval=1
+
+    while read -r line; do
+        if [ "${line:0:4}" == "fpr:" ]; then
+            if [ "${line:$[${#line} - ${#1} -1]:-1}" != "${1}" ]; then
+                echo "$(gpg --fingerprint $1)" || true
+                return 1
+            fi
+        fi
+    done <<< "${text}"
+
+    echo "${text}"
+    return $retval
+}
+
+
+checkKeys() {
+    echo "Parsing keys..."
+    for key in "${!KEYS[@]}"; do
+        eval "declare -A key="${KEYS[key]}
+        echo ${key[owner]}
+
+        # Check if key exists
+        text="$(gpgListKey ${key[key]})"
+        if [ $? != "0" ]; then
+            title="Add Keys"
+            message="${key[owner]} key does not exist.\n\nSelect 'Yes' to add or 'No' to exit"
+            dialog --default-button yes --title "${title}" --yesno "${message}" 8 60
+                if [ $? != "0" ]; then
+                    exit 1
+                else
+                    gpgRecvKeys ${key[key]}
+                fi
+        fi
+
+        # Verify key
+        text="$(gpgVerifyKey ${key[key]})"
+        if [ $? != "0" ]; then
+            title="${key[owner]} fingerprint failed!"
+            message="\nWrong fingerprint:\n${key[fingerprint]}\n\nExiting!"
+            dialog --title "${title}" --infobox "${message}" 8 60
+            echo
+            echo "${text}"
+            exit 1
+        fi
+
+        # Add developers keys
+        gpg --import qubes-developers-keys.asc 
+    done
+}
+
+
+# ------------------------------------------------------------------------------
+# Display VM's for selction
+# ------------------------------------------------------------------------------
+chooseDistsDialog() {
+    return_global_var=${1}
+
+    counter=1
+    options=()
+    for dist in ${DISTS_VM[@]}; do
+        elementIn "$dist" ${SELECTED_DISTS_VM[@]} && toggle='on' || toggle='off'
+        options+=("${counter} "${dist}" $toggle")
+        counter=$[counter + 1]
+    done
+
+    cmd=($DIALOG --separate-output --checklist "Select options:" 22 76 16)
+    choices=$("${cmd[@]}" ${options[@]} 2>&1 >/dev/tty)
+
+    # Exit on cancel
+    if [ $? != 0 ]; then
+        exit 1
+    fi
+
+    DISTS=()
+    for choice in $choices; do
+        DISTS+=("${DISTS_VM[$[choice - 1]]}")
+    done
+
+    setArrayAsGlobal DISTS $return_global_var
+}
+
+
+# ------------------------------------------------------------------------------
+# Write Configuration file
+# ------------------------------------------------------------------------------
+writeConfiguration() {
+    dists=($@)
+
+    echo "DISTS_VM :=" > ${CONF_FILE}
+    for dist in ${dists[@]}; do
+        echo "DISTS_VM += ${dist}" >> "${CONF_FILE}"
+    done
+}
+
+
+# ------------------------------------------------------------------------------
+# Summary
+# ------------------------------------------------------------------------------
+comment() {
+
+    echo -e "\n#" >> "${CONF_FILE}"
+    for line in "$@"; do
+        echo -e "# ${line}" >> "${CONF_FILE}"
+    done
+    echo -e "#" >> "${CONF_FILE}"
+
+}
+
+
+summary() {
+    # About - General Information
+    #--------------------------------------------------------------------------
+    about="${ABOUT[@]}"
+    comment "Qubes Release: ${RELEASE}" "" \
+            "Master Configuration File(s):" "setup.conf ${about}" "" \
+            "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}"
+
+    # Set SSH mode on/off; will translate git@ to https:// if disabled
+    #--------------------------------------------------------------------------
+    comment "Set SSH_ACCESS to 2 if you can connect to repo via git@ otherwise" \
+            "set to 1 for https:// access."
+    echo -e "SSH_ACCESS := ${SSH_ACCESS}" >> "${CONF_FILE}"
+
+
+    # Handle custom branch specific overrides
+    #--------------------------------------------------------------------------
+    INCLUDES=""
+
+    if [[ -n "${OVERRIDE_SOURCE}" ]]; then
+        INCLUDES+="-include ${OVERRIDE_TARGET}"
+        comment "Override configuration files to be included"
+        echo -e "${INCLUDES}" >> "${CONF_FILE}"
+    fi
+
+    # Disable some COMPONENTS if template only build
+    #--------------------------------------------------------------------------
+    if [ "${TEMPLATE}" == "1" ]; then
+        comment "Only build templates (comment out to build all of Qubes)"
+        echo -e "TEMPLATE_ONLY := ${TEMPLATE}" >> "${CONF_FILE}"
+        echo -e 'COMPONENTS := $(TEMPLATE)' >> "${CONF_FILE}"
+        echo -e 'DIST_DOM0 :=' >> "${CONF_FILE}"
+    fi
+
+    # Write the file
+    #--------------------------------------------------------------------------
+    cat >> "${CONF_FILE}" <<'EOF'
+
+about::
+	@echo "setup.conf"
+EOF
+
+    info "New configuration file written to: ${CONF_FILE}"
+    debug "$(cat ${CONF_FILE})"
+    info
+}
+
+
+instructions() {
+    # Qubes build info
+    if [ "${TEMPLATE}" != "1" ]; then
+        read -r -d '' BUILD_QUBES <<'EOF' || true
+Complete Qubes Build Steps
+--------------------------
+make get-sources
+make qubes
+make iso
+EOF
+    echo
+    info "${BUILD_QUBES}"
+    fi
+
+    # Template build info
+    read -r -d '' BUILD_TEMPLATES <<'EOF' || true
+Template Only Build Steps
+-------------------------
+make get-sources
+make template-modules
+make template
+EOF
+    echo
+    info "${BUILD_TEMPLATES}"
+}
+
+
+# ------------------------------------------------------------------------------
+# Write release version to configuration file
+# ------------------------------------------------------------------------------
+writeReleaseConfiguration() {
+    cat << EOF > "${CONF_RELEASE}"
+RELEASE := $RELEASE
+
+about::
+	@echo "builder-release.conf"
+EOF
+}
+
+
+# ------------------------------------------------------------------------------
+# Run sections
+# ------------------------------------------------------------------------------
+clear
+installDialog
+
+# Link proper config files based on Qubes release picked
+{
+    #--------------------------------------------------------------------------
+    # Get variables from Makefile INCLDING setup.conf Makefile
+    #--------------------------------------------------------------------------
+    SSH_ACCESS="$(GET_VAR=SSH_ACCESS make get-var)"
+    TEMPLATE_ONLY="$(GET_VAR=TEMPLATE_ONLY make get-var)"
+
+    #--------------------------------------------------------------------------
+    # Move setup.conf out of the way if it exists 
+    #--------------------------------------------------------------------------
+    if [ -f "${CONF_FILE}" ]; then
+        SELECTED_DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
+        mv "${CONF_FILE}" "${CONF_FILE_OLD}"
+    fi
+
+    #--------------------------------------------------------------------------
+    # Soft link 'examples/templates.conf' to 'builder.conf'
+    #--------------------------------------------------------------------------
+    if ! [ -f "builder.conf" ]; then
+        # Choose Qubes version to build (2 or 3)
+        chooseVersion && RELEASE=2 || RELEASE=3
+        ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
+        writeReleaseConfiguration
+    else
+        # Parse about to determine version
+        RELEASE=($(make -B release))
+
+        # Choose Qubes version to build (2 or 3)
+        chooseVersion "${RELEASE}" && XRELEASE=2 || XRELEASE=3
+        
+        if [ ${RELEASE} != "${XRELEASE}" ]; then
+            RELEASE="${XRELEASE}"
+            ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
+            writeReleaseConfiguration
+        fi
+    fi
+
+    #--------------------------------------------------------------------------
+    # See if a branch specific override configuration file exists
+    #--------------------------------------------------------------------------
+    BRANCH="$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')"
+    OVERRIDE_TARGET="./override.conf"
+
+    # Check for generic overrides only if 'overrides.conf' does not exist
+    if [ "X${OVERRIDE_SOURCE}" == "X" ]; then
+
+        # Example: example-configs/r3-feature_branch-overrides.conf
+        if [ -e "${CONF_MASTER_DIR}/r${RELEASE}-${BRANCH}-${CONF_OVERRIDE}" ]; then
+            OVERRIDE_SOURCE="${CONF_MASTER_DIR}/r${RELEASE}-${BRANCH}-${CONF_OVERRIDE}"
+
+        # Example: example-configs/feature_branch-overrides.conf
+        elif [ -e "${CONF_MASTER_DIR}/${BRANCH}-${CONF_OVERRIDE}" ]; then
+            OVERRIDE_SOURCE="${CONF_MASTER_DIR}/${BRANCH}-${CONF_OVERRIDE}"
+
+        # Example: example-configs/overrides.conf
+        elif [ -e "${CONF_MASTER_DIR}/${CONF_OVERRIDE}" ]; then
+            OVERRIDE_SOURCE="${CONF_MASTER_DIR}/${CONF_OVERRIDE}"
+        fi
+    fi
+
+    # Check if a branch specific user override configuration file is available
+    if [ -f "${OVERRIDE_SOURCE}" ] && [[ ! -a "${OVERRIDE_TARGET}" || -h "${OVERRIDE_TARGET}" ]]; then
+
+        # Don't do anything is configuration file is already linked
+        if [ "$(readlink -m ${OVERRIDE_SOURCE})" != "$(readlink -m ${CONF_OVERRIDE})" ]; then
+            # Display 'Use Override Dialog'
+            useOverrideConfiguration || unset OVERRIDE_SOURCE
+
+            # Soft link the configuration file
+            if [[ -n "${OVERRIDE_SOURCE}" ]]; then
+                ln -sf "${OVERRIDE_SOURCE}" "${OVERRIDE_TARGET}" || unset OVERRIDE_SOURCE
+                
+                # Some type of linking error
+                if [[ -z "${OVERRIDE_SOURCE}" ]]; then
+                    message="Could not set link to override configuration file!\n\nUsing defaults."
+                    dialog --msgbox "${message}" 8 60
+                fi
+            # Remove stale override link
+            elif [ -h "${CONF_OVERRIDE}" ]; then
+                rm -f "${CONF_OVERRIDE}"
+            fi
+        fi
+
+    else
+        # If a soft-linked override exists, remove it, but don't delete any regular files
+        if [ -h "${CONF_OVERRIDE}" ]; then
+            rm -f "${CONF_OVERRIDE}"
+        fi
+        
+        if [ -f "${CONF_OVERRIDE}" ]; then
+            OVERRIDE_SOURCE="${CONF_OVERRIDE}"
+        else
+            unset OVERRIDE_SOURCE
+        fi
+    fi
+
+    #--------------------------------------------------------------------------
+    # Get variables from Makefile NOT INCLDING setup.conf Makefile
+    #--------------------------------------------------------------------------
+    SELECTED_DISTS_VM=${SELECTED_DISTS_VM-( $(GET_VAR=DIST_DOM0 make get-var) )}
+    DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
+    ABOUT=($(make -B about))
+    DISABLE_OTHER_REPO=($(make -B disable_other_repo))
+}
+
+#------------------------------------------------------------------------------
+# Choose if user has git ssh (commit) or http access to private repos
+#------------------------------------------------------------------------------
+sshAccessDialog ${SSH_ACCESS} && SSH_ACCESS=2 || SSH_ACCESS=1
+
+#------------------------------------------------------------------------------
+# Choose to build a complete system or templates only
+#------------------------------------------------------------------------------
+templateOnlyDialog ${TEMPLATE_ONLY} && TEMPLATE=1 || TEMPLATE=0
+
+#------------------------------------------------------------------------------
+# Verify signing keys and download and verify if required
+#------------------------------------------------------------------------------
+checkKeys
+
+#------------------------------------------------------------------------------
+# Select which templates to build
+#------------------------------------------------------------------------------
+chooseDistsDialog DISTS
+
+#------------------------------------------------------------------------------
+# Write custom setup.conf configuration data
+#------------------------------------------------------------------------------
+writeConfiguration ${DISTS[@]}
+
+#------------------------------------------------------------------------------
+# Display a summary of options selected
+#------------------------------------------------------------------------------
+clear
+summary
+
+#------------------------------------------------------------------------------
+# Display instructions on how to build
+#------------------------------------------------------------------------------
+instructions
+
