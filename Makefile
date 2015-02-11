@@ -10,7 +10,7 @@ DISTS_VM ?= fc20
 VERBOSE ?= 0
 # Beware of build order
 
-COMPONENTS ?= qubes-builder
+COMPONENTS ?= builder
 
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
@@ -38,9 +38,9 @@ NO_CHECK := $(shell echo $(NO_CHECK))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
-GIT_REPOS := $(addprefix $(SRC_DIR)/,$(filter-out qubes-builder,$(COMPONENTS)))
+GIT_REPOS := $(addprefix $(SRC_DIR)/,$(filter-out builder,$(COMPONENTS)))
 
-ifneq (,$(findstring qubes-builder,$(COMPONENTS)))
+ifneq (,$(findstring builder,$(COMPONENTS)))
 GIT_REPOS += .
 endif
 
@@ -107,7 +107,7 @@ check-depend:
 		rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || exit 1; \
 	fi
 
-$(filter-out template linux-template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(COMPONENTS)): % : %-dom0 %-vm
 
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@$(call check_branch,$*)
@@ -223,11 +223,11 @@ sign-all:
 		fi \
 	done
 
-qubes: $(filter-out qubes-builder,$(COMPONENTS))
+qubes: $(filter-out builder,$(COMPONENTS))
 
-qubes-dom0: $(addsuffix -dom0,$(filter-out qubes-builder linux-template-builder,$(COMPONENTS)))
+qubes-dom0: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
-qubes-vm: $(addsuffix -vm,$(filter-out qubes-builder linux-template-builder,$(COMPONENTS)))
+qubes-vm: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
@@ -375,7 +375,7 @@ show-authors:
 	@for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		COMPONENT=`basename $$REPO`; \
-		[ "$$COMPONENT" == "." ] && COMPONENT=qubes-builder; \
+		[ "$$COMPONENT" == "." ] && COMPONENT=builder; \
 		git shortlog -sn | tr -s "\t" ":" | sed "s/^ */$$COMPONENT:/"; \
 	    popd > /dev/null; \
 	done | awk -F: '{ comps[$$3]=comps[$$3] "\n  " $$1 " (" $$2 ")" } END { for (a in comps) { system("tput bold"); printf a ":"; system("tput sgr0"); print comps[a]; } }'
@@ -385,7 +385,7 @@ push:
 		pushd $$REPO > /dev/null; \
 		BRANCH=$(BRANCH); \
 		if [ "$$REPO" == "." ]; then
-			branch_var="BRANCH_qubes_builder"; \
+			branch_var="BRANCH_builder"; \
 		else \
 			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
 		fi; \
