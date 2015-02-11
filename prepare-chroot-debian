@@ -97,7 +97,7 @@ chroot $DIR apt-get -y install $BUILDPACKAGES
 if [ "$DIST" == "wheezy" ]; then
     # Looks like a SID only package is being used to build packages
     # there is a backport available for wheezy
-    source "deb http://http.debian.net/debian wheezy-backports main"
+    source="deb http://http.debian.net/debian wheezy-backports main"
     if ! grep -r -q "$source" "${DIR}/etc/apt/sources.list"*; then
         touch "${DIR}/etc/apt/sources.list"
         echo "$source" >> "${DIR}/etc/apt/sources.list"
