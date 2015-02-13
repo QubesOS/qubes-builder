@@ -340,11 +340,7 @@ def parseControlFile(filename, **args):
     regex = {
         'simple_re':   (r'^{0}:(?P<{1}>.*)$', re.MULTILINE|re.IGNORECASE),
         'folded_re':   (r'',  None),
-        'multiline_re':(r'^{0}:(.*?)^[A-Z].*?:', re.MULTILINE|re.DOTALL|re.IGNORECASE),
-        #'comma_re':    (r'([a-zA-Z]{1}.+?)[,\s\$]', re.MULTILINE|re.DOTALL|re.IGNORECASE),
-
-        #autotools-dev, debhelper (>> 9), dpkg-dev (>= 1.16.0~), lsb-release, python-dev, bcc [i386 amd64], gcc-multilib [i386 amd64], e2fslibs-dev, iasl [i386 amd64], seabios (>= 1.7.4-2~) [i386 amd64], libaio-dev, libfdt-dev [armhf arm64], libglib2.0-dev, liblzma-dev, libncurses5-dev, libyajl-dev, libssl-dev, pkg-config, uuid-dev, zlib1g-dev
-        #'comma_re':    (r'([a-zA-Z]{1}.+?)(?:\[.*?\]|)[,]$', re.MULTILINE|re.DOTALL|re.IGNORECASE),
+        'multiline_re':(r'^{0}:(.*?)^[A-Z#].*?:', re.MULTILINE|re.DOTALL|re.IGNORECASE),
         'comma_re':    (r'([a-zA-Z]{1}.+?)(?:\[.*?\]|)(?:,|\s*?$)', re.MULTILINE|re.IGNORECASE),
         }
 
