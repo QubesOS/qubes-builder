@@ -29,7 +29,7 @@ if ! [ -d $DIR/home/user ]; then
     mkdir -p $DIR
     echo "-> Installing qubuntu build chroot..."
     COMPONENTS="" debootstrap --arch=amd64 \
-                --include=ncurses-term,qubuntu-keyring \
+                --include=ncurses-term,ubuntu-keyring \
                 --keyring=keys_qubuntu/$DIST-qubuntu-archive-keyring.gpg \
                 $DEBIANVERSION $DIR http://archive.ubuntu.com/ubuntu \
                 || { echo "Error in debootstrap"; exit 1; }
