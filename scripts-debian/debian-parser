@@ -47,6 +47,11 @@ def main(argv):
                                  action='store_true',
                                  help='Parse Build-Depends'
                                  )
+    control_parser.add_argument( '--qubes-build-depends',
+                                 action='store',
+                                 nargs='?',
+                                 help='Parse X-Qubes-Build-Depends-<distro> field.  Needs distro as argument.'
+                                 )
     control_parser.add_argument( '--depends',
                                  action='store_true',
                                  help='Parse Depends'
@@ -216,28 +221,29 @@ def main(argv):
 class Control():
     def __init__(self):
         self.control = {}
-        self.add(           'source', 'source', 'simple_re',      None)
-        self.add(       'maintainer', 'source', 'simple_re',      None)
-        self.add(        'uploaders', 'source', 'simple_re',      None)
-        self.add(          'section', 'source', 'simple_re',      None)
-        self.add(         'priority', 'source', 'simple_re',      None)
-        self.add(    'build-depends', 'source', 'multiline_re', 'comma_re')
-        self.add('standards-version', 'source', 'simple_re',      None)
-        self.add(         'homepage', 'source', 'simple_re',      None)
-        self.add(      'vcs-browser', 'source', 'simple_re',      None)
-        self.add(          'vcs-git', 'source', 'simple_re',      None)
+        self.add(             'source', 'source', 'simple_re',      None)
+        self.add(         'maintainer', 'source', 'simple_re',      None)
+        self.add(          'uploaders', 'source', 'simple_re',      None)
+        self.add(            'section', 'source', 'simple_re',      None)
+        self.add(           'priority', 'source', 'simple_re',      None)
+        self.add(      'build-depends', 'source', 'multiline_re', 'comma_re')
+        self.add('qubes-build-depends', 'source', 'multiline_re', 'comma_re')
+        self.add(  'standards-version', 'source', 'simple_re',      None)
+        self.add(           'homepage', 'source', 'simple_re',      None)
+        self.add(        'vcs-browser', 'source', 'simple_re',      None)
+        self.add(            'vcs-git', 'source', 'simple_re',      None)
 
-        self.add(          'package', 'binary', 'simple_re',      None)
-        self.add(     'architecture', 'binary', 'simple_re',      None)
-        self.add(          'section', 'binary', 'simple_re',      None)
-        self.add(         'priority', 'binary', 'simple_re',      None)
-        self.add(        'essential', 'binary', 'simple_re',      None)
-        self.add(          'depends', 'binary', 'multiline_re',   'comma_re')
-        self.add(       'recommends', 'binary', 'multiline_re',   'comma_re')
-        self.add(      'description', 'binary', 'multiline_re',   None)
-        self.add(         'homepage', 'binary', 'simple_re',      None)
-        self.add(      'built-using', 'binary', 'simple_re',      None)
-        self.add(    'package-field', 'binary', 'simple_re',      None)
+        self.add(            'package', 'binary', 'simple_re',      None)
+        self.add(       'architecture', 'binary', 'simple_re',      None)
+        self.add(            'section', 'binary', 'simple_re',      None)
+        self.add(           'priority', 'binary', 'simple_re',      None)
+        self.add(          'essential', 'binary', 'simple_re',      None)
+        self.add(            'depends', 'binary', 'multiline_re',   'comma_re')
+        self.add(         'recommends', 'binary', 'multiline_re',   'comma_re')
+        self.add(        'description', 'binary', 'multiline_re',   None)
+        self.add(           'homepage', 'binary', 'simple_re',      None)
+        self.add(        'built-using', 'binary', 'simple_re',      None)
+        self.add(      'package-field', 'binary', 'simple_re',      None)
 
     def add(self, field, paragraph, field_re, value_re):
         self.control[field] = {'paragraph': paragraph,
@@ -347,8 +353,12 @@ def parseControlFile(filename, **args):
         item = control.get(key)
         if not item.get:
             continue
+
         key_original = key
         key = control.name(key)
+        if key == 'qubes-build-depends':
+            distro = args.get(key_original, '')
+            key = 'x-{0}-{1}'.format(key, distro) if distro else key
 
         paragraph_re = None  # Not implemented yet
 

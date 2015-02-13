@@ -140,7 +140,14 @@ dist-build-dep:
 	fi
 	./update-local-repo.sh $(DIST)
 	sudo chroot $(CHROOT_DIR) apt-get update
+	# Parse debian/control for Build-Depends and install
 	$(PARSER) control --build-depends $(DEBIAN_CHROOT_DIR)/control |\
+		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+	# Parse debian/control for custom X-Qubes-Build-Depends-[qubuntu] depends and install
+	$(PARSER) control --qubes-build-depends $(DISTRIBUTION) $(DEBIAN_CHROOT_DIR)/control |\
+		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+	# Parse debian/control for custom X-Qubes-Build-Depends-[trusty/utopic] depends and install
+	$(PARSER) control --qubes-build-depends $(DIST) $(DEBIAN_CHROOT_DIR)/control |\
 		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
 
 dist-package:
