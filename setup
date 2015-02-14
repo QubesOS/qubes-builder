@@ -555,7 +555,6 @@ installDialog
     SELECTED_DISTS_VM=${SELECTED_DISTS_VM-( $(GET_VAR=DIST_DOM0 make get-var) )}
     DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
     ABOUT=($(make -B about))
-    DISABLE_OTHER_REPO=($(make -B disable_other_repo))
 }
 
 #------------------------------------------------------------------------------
