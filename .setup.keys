@@ -8,13 +8,3 @@ read -r -d '' KEYS[0x36879494] <<'EOF' || true
     [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
 )
 EOF
-read -r -d '' KEYS[0x5A4C6DAD] <<'EOF' || true
-(
-    [key]="E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD"
-    [key_short]=0x5A4C6DAD 
-    [owner]="Jason Mehring (Qubes OS Signing Key) <nrgaway@gmail.com>"
-    [fingerprint]="E0E3 2283 FDCA C1A5 1007  8F27 1BB9 B1FB 5A4C 6DAD"
-    [verify]="fpr:::::::::E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD:"
-    [url]=""
-)
-EOF
