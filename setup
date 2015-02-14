@@ -549,7 +549,7 @@ if [ -e .setup.keys ]; then
     source .setup.keys
 fi
 # set force value to 'force' to force re-download and verify
-force='force'
+force=''
 checkKeys ${force}
 
 
