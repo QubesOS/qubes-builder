@@ -10,3 +10,4 @@ windows-prereqs/
 windows-sources.img
 qubes-rpms-mirror-repo/repodata
 qubes-rpms-mirror-repo/*/repodata/*
+base_rpms_fc21/*

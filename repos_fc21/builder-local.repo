@@ -1,0 +1,6 @@
+[qubes-builder-pkgs]
+name = Qubes OS Builder Repository
+baseurl = file:///tmp/qubes-rpms-mirror-repo
+exclude = qubes-release
+gpgcheck = 0
+cost=10

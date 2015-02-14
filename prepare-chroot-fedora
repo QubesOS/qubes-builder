@@ -1,4 +1,5 @@
 #!/bin/sh
+# vim: set ts=4 sw=4 sts=4 et :
 
 DIR=$1
 DISTRO=$2
@@ -24,6 +25,12 @@ if ! [ -d $DIR/home/user ]; then
     echo "-> Initializing RPM database..."
     rpm --initdb --root=$DIR
     rpm --import --root=$DIR keys_$DISTRO/*
+
+    if [ "$DISTRO" == "fc21" ]; then
+        echo "-> Retreiving core RPM packages..."
+        INITIAL_PACKAGES="filesystem setup fedora-release"
+        yum --disablerepo=\* --enablerepo=fedora -y --installroot="${DIR}" --releasever=${DISTRO/fc/} install --downloadonly --downloaddir="base_rpms_${DISTRO}" ${INITIAL_PACKAGES}
+    fi
 
     echo "-> Installing core RPM packages..."
     rpm -i --root=$DIR base_rpms_$DISTRO/*.rpm
