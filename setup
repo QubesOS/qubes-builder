@@ -560,8 +560,11 @@ installDialog
 
 #------------------------------------------------------------------------------
 # Choose if user has git ssh (commit) or http access to private repos
+# (Only asked is there is an overrides.conf configuration file)
 #------------------------------------------------------------------------------
-sshAccessDialog ${SSH_ACCESS} && SSH_ACCESS=2 || SSH_ACCESS=1
+if [ -e "${CONF_OVERRIDE}" ]; then
+    sshAccessDialog ${SSH_ACCESS} && SSH_ACCESS=2 || SSH_ACCESS=1
+fi
 
 #------------------------------------------------------------------------------
 # Choose to build a complete system or templates only
