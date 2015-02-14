@@ -207,32 +207,6 @@ templateOnlyDialog() {
 }
 
 
-# ------------------------------------------------------------------------------
-# Check / Install Keys
-# ------------------------------------------------------------------------------
-#declare -A KEYS
-read -r -d '' KEYS[0x36879494] <<'EOF' || true
-(
-    [key]="427F11FD0FAA4B080123F01CDDFA1A3E36879494"
-    [key_short]=0x36879494 
-    [owner]="Qubes Master Signing Key" 
-    [fingerprint]="427F 11FD 0FAA 4B08 0123  F01C DDFA 1A3E 3687 9494"
-    [verify]="fpr:::::::::427F11FD0FAA4B080123F01CDDFA1A3E36879494:"
-    [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
-)
-EOF
-read -r -d '' KEYS[0x5A4C6DAD] <<'EOF' || true
-(
-    [key]="E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD"
-    [key_short]=0x5A4C6DAD 
-    [owner]="Jason Mehring (Qubes OS Signing Key) <nrgaway@gmail.com>"
-    [fingerprint]="E0E3 2283 FDCA C1A5 1007  8F27 1BB9 B1FB 5A4C 6DAD"
-    [verify]="fpr:::::::::E0E32283FDCAC1A510078F271BB9B1FB5A4C6DAD:"
-    [url]=""
-)
-EOF
-
-
 gpgListKey() {
     text="$(gpg --list-key $1)" && retval=0 || retval=1
     echo "${text}"
@@ -241,7 +215,7 @@ gpgListKey() {
 
 
 gpgRecvKeys() {
-    text="$(gpg --recv-keys $1)" && retval=0 || retval=1
+    text="$(gpg --keyserver pgp.mit.edu --recv-keys $1)" && retval=0 || retval=1
     echo "${text}"
     return $retval
 }
@@ -265,16 +239,22 @@ gpgVerifyKey() {
 
 
 checkKeys() {
+    force="${1}"
+
     echo "Parsing keys..."
     for key in "${!KEYS[@]}"; do
         eval "declare -A key="${KEYS[key]}
         echo ${key[owner]}
 
-        # Check if key exists
         text="$(gpgListKey ${key[key]})"
-        if [ $? != "0" ]; then
+        retval=$?
+        if [ "${force}" == 'force' ] || [ ${retval} != "0" ]; then
             title="Add Keys"
-            message="${key[owner]} key does not exist.\n\nSelect 'Yes' to add or 'No' to exit"
+            if [ "${force}" == 'force' ]; then
+                message="${key[owner]} forced get.\n\nSelect 'Yes' to re-add or 'No' to exit"
+            else
+                message="${key[owner]} key does not exist.\n\nSelect 'Yes' to add or 'No' to exit"
+            fi
             dialog --default-button yes --title "${title}" --yesno "${message}" 8 60
                 if [ $? != "0" ]; then
                     exit 1
@@ -446,14 +426,8 @@ EOF
 }
 
 
-# ------------------------------------------------------------------------------
-# Run sections
-# ------------------------------------------------------------------------------
-clear
-installDialog
-
 # Link proper config files based on Qubes release picked
-{
+function parseMakefiles {
     #--------------------------------------------------------------------------
     # Get variables from Makefile INCLDING setup.conf Makefile
     #--------------------------------------------------------------------------
@@ -557,6 +531,34 @@ installDialog
     ABOUT=($(make -B about))
 }
 
+# ==============================================================================
+# Run sections
+# ==============================================================================
+clear
+
+#------------------------------------------------------------------------------
+# Prompt to install required depend 'dialog' if it does not exist
+#------------------------------------------------------------------------------
+installDialog
+
+# ------------------------------------------------------------------------------
+# Check / Install Keys
+# ------------------------------------------------------------------------------
+# Load key array for verification from .setup.keys
+if [ -e .setup.keys ]; then
+    source .setup.keys
+fi
+# set force value to 'force' to force re-download and verify
+force='force'
+checkKeys ${force}
+
+
+#------------------------------------------------------------------------------
+# Parse the existing makefiles to obtain values needed for setup to provide
+# required options to build new configuration file
+#------------------------------------------------------------------------------
+parseMakefiles
+
 #------------------------------------------------------------------------------
 # Choose if user has git ssh (commit) or http access to private repos
 # (Only asked is there is an overrides.conf configuration file)
@@ -569,11 +571,6 @@ fi
 # Choose to build a complete system or templates only
 #------------------------------------------------------------------------------
 templateOnlyDialog ${TEMPLATE_ONLY} && TEMPLATE=1 || TEMPLATE=0
-
-#------------------------------------------------------------------------------
-# Verify signing keys and download and verify if required
-#------------------------------------------------------------------------------
-checkKeys
 
 #------------------------------------------------------------------------------
 # Select which templates to build
