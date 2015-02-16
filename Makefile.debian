@@ -1,4 +1,4 @@
-# Makefile for debian package build
+# Makefile for debian based package build
 # 
 # Davíð Steinn Geirsson <david@dsg.is>
 #
@@ -57,40 +57,34 @@ export DEBIANVERSION
 
 ### Local variables
 RUN_AS_USER = user
-REPO_CHROOT_DIR ?= chroot-debian
+REPO_CHROOT_DIR ?= chroot-$(DISTRIBUTION)
 
 DEBIAN_DEPENDENCIES := dpkg-dev debootstrap
 PARSER=./scripts-debian/debian-parser
 
 ifneq (,$(DEBIAN_BUILD_DIRS))
-package_file = $(shell $(PARSER) changelog --package-release-name-full $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
-orig_package_file = $(shell $(PARSER) changelog --package-release-name $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
+  package_file = $(shell $(PARSER) changelog --package-release-name-full $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
+  orig_package_file = $(shell $(PARSER) changelog --package-release-name $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
 endif
 
 listfiles = awk 'section == "Files:" { print $$5 } /^[A-Z].*.$$/ { section=$$1 }'
 
 ifdef UPDATE_REPO
-ifneq (,$(findstring current-testing,$(UPDATE_REPO)))
-REPO_SUFFIX = -testing
-else ifneq (,$(findstring unstable,$(UPDATE_REPO)))
-REPO_SUFFIX = -unstable
-endif
+  ifneq (,$(findstring current-testing,$(UPDATE_REPO)))
+    REPO_SUFFIX = -testing
+  else ifneq (,$(findstring unstable,$(UPDATE_REPO)))
+    REPO_SUFFIX = -unstable
+  endif
 endif
 
+DISTRIBUTION_CAP=$(shell echo $(DISTRIBUTION) | sed -e 's/^./\U&/';)
 define aptdistributions
-Origin: Qubes Debian
-Label: Qubes Debian
-Codename: wheezy
+Origin: Qubes $(DISTRIBUTION_CAP)
+Label: Qubes $(DISTRIBUTION_CAP)
+Codename: $(DIST)
 Architectures: amd64 source
 Components: main
-Description: Apt repository with qubes domU support tools for debian wheezy
-
-Origin: Qubes Debian
-Label: Qubes Debian
-Codename: jessie
-Architectures: amd64 source
-Components: main
-Description: Apt repository with qubes domU support tools for debian jessie
+Description: Apt repository with qubes domU support tools for $(DISTRIBUTION_CAP) $(DIST)
 endef
 export aptdistributions
 
@@ -107,13 +101,13 @@ dist-prepare-chroot: $(CHROOT_DIR)/home/user/.prepared_base
 		sudo mount --bind $(BUILDER_REPO_DIR) $(CHROOT_DIR)/tmp/qubes-deb;\
 	fi
 
-$(CHROOT_DIR)/home/user/.prepared_base: ./prepare-chroot-debian
+$(CHROOT_DIR)/home/user/.prepared_base: ./prepare-chroot-$(DISTRIBUTION)
 	# Make sure repo directory exists
 	@if ! [ -d "$(PWD)/qubes-rpms-mirror-repo/$(DIST)/dists" ]; then\
 	    mkdir -p "$(PWD)/qubes-rpms-mirror-repo/$(DIST)/dists";\
 	fi
 	@echo "-> Preparing $(DIST) build environment"
-	@sudo -E ./prepare-chroot-debian $(CHROOT_DIR) $(DIST)
+	@sudo -E ./prepare-chroot-$(DISTRIBUTION) $(CHROOT_DIR) $(DIST)
 	@touch $(CHROOT_DIR)/home/user/.prepared_base
 
 dist-prep:
@@ -133,12 +127,15 @@ dist-build-dep:
 	fi
 	./update-local-repo.sh $(DIST)
 	sudo chroot $(CHROOT_DIR) apt-get update
+
 	# Parse debian/control for Build-Depends and install
 	$(PARSER) control --build-depends $(DEBIAN_CHROOT_DIR)/control |\
 		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+
 	# Parse debian/control for custom X-Qubes-Build-Depends-[debian] depends and install
 	$(PARSER) control --qubes-build-depends $(DISTRIBUTION) $(DEBIAN_CHROOT_DIR)/control |\
 		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
+
 	# Parse debian/control for custom X-Qubes-Build-Depends-[wheezy/jessie] depends and install
 	$(PARSER) control --qubes-build-depends $(DIST) $(DEBIAN_CHROOT_DIR)/control |\
 		xargs sudo chroot $(CHROOT_DIR) apt-get install -y
@@ -158,13 +155,6 @@ endif
 	mv $(DEBIAN_CHROOT_DIR)/changelog.copy $(DEBIAN_CHROOT_DIR)/changelog
 
 	echo "Building package in $(DIST_SRC)"
-
-	# Hook to see if Makefile has a 'dist' target so it can be run to allow 
-	# "3.0 (quilt) formats to work (will grab remote source package) or create
-	# a local one based on repo
-	#if [ -n "`make -n -s -C $(SRC_DIR)/$(COMPONENT) dist 2> /dev/null`" ]; then \
-	#    sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DIST_SRC); export LC_ALL=C; make -s dist'; \
-	#fi;
 
 	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DEBIAN_DIR)/..; export LC_ALL=C; debchange -l$(DIST) "Build for $(DIST)"; debchange --force-distribution -r -D $(DIST) $(DIST); dpkg-buildpackage -sa -k${SIGN_KEY}';
 
@@ -186,20 +176,23 @@ ifeq (,$(DEBIAN_BUILD_DIRS))
 	@true
 else
 	@mkdir -p $(UPDATE_REPO)/conf
-	[ ! -e $(UPDATE_REPO)/conf/distributions ] && echo "$$aptdistributions" > $(UPDATE_REPO)/conf/distributions || :
-
+	if [ ! -e $(UPDATE_REPO)/conf/distributions ]; then \
+		touch $(UPDATE_REPO)/conf/distributions; \
+	fi
+	grep $(DIST) $(UPDATE_REPO)/conf/distributions > /dev/null; \
+	if [ $$? -ne 0 ]; then \
+		echo "$$aptdistributions" >> $(UPDATE_REPO)/conf/distributions; \
+	fi
 	-sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo $(REPO_CHROOT_DIR)/tmp/qubes-deb 2>/dev/null
 
 	# Softlink to the first distribution called; it will be used to create and store repo
 	if ! [ -L $(REPO_CHROOT_DIR) ]; then \
 	    ln -sf chroot-${DIST} ${REPO_CHROOT_DIR}; \
 	fi
-
 	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-deb/deb ]; then \
 		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
 		sudo mount --bind $(BUILDER_REPO_DIR) $(REPO_CHROOT_DIR)/tmp/qubes-deb ;\
 	fi
-
 	if ! [ -d $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo/dists ]; then \
 		mkdir -p $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
 		sudo mount --bind $(UPDATE_REPO) $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
