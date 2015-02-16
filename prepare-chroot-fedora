@@ -29,7 +29,24 @@ if ! [ -d $DIR/home/user ]; then
     if [ "$DISTRO" == "fc21" ]; then
         echo "-> Retreiving core RPM packages..."
         INITIAL_PACKAGES="filesystem setup fedora-release"
+
         yum --disablerepo=\* --enablerepo=fedora -y --installroot="${DIR}" --releasever=${DISTRO/fc/} install --downloadonly --downloaddir="base_rpms_${DISTRO}" ${INITIAL_PACKAGES}
+
+        for file in base_rpms_${DISTRO}/*; do
+            result=$(rpm --root=$DIR --checksig "${file}") || {
+                echo "Filename: ${file} failed verification.  Exiting!"
+                exit 1
+            }
+            result_status="${result##*:}"
+            echo "${result_status}" | grep -q 'PGP' && {
+                echo "Filename: ${file} contains an invalid PGP signature.  Exiting!"
+                exit 1
+            }
+            echo "${result_status}" | grep -q 'pgp' || {
+                echo "Filename: ${file} is not signed.  Exiting!"
+                exit 1
+            }
+        done
     fi
 
     echo "-> Installing core RPM packages..."
