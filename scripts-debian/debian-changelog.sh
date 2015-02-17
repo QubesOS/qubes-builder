@@ -5,10 +5,14 @@
 
 debchange=`dirname $0`/debchange
 
-v=`dpkg-parsechangelog | sed -n 's/^Version: //p'`
+v=`dpkg-parsechangelog | sed -n 's/^Version: //p'|cut -f 1 -d-`
 
 [ "`git describe --match='v*'`" == "v$v" ] && exit 0
 
+if ! grep -q native debian/source/format; then
+    nonnative=1
+    rel=-1
+fi
 release=0
 if [[ "$v" == `cat version`?(devel*) ]]; then
     export DEBFULLNAME=`git config user.name`
@@ -25,7 +29,7 @@ IFS=%
     while read a_name a_email date sum; do
         export DEBFULLNAME="$a_name"
         export DEBEMAIL="$a_email"
-        $debchange --newversion=`cat version` --no-auto-nmu --nomultimaint-merge --multimaint -- "$sum"
+        $debchange --newversion=`cat version`$rel --no-auto-nmu --nomultimaint-merge --multimaint -- "$sum"
     done
 
 if [ -n "$release" ]; then
