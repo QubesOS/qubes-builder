@@ -291,7 +291,7 @@ def parseChangelog(filename, **args):
     # Split apart epoch and version so one can reference any part
     version_re = re.compile(r'''
         (?P<package_version_epoc> ^[\d]+[:] | )
-        (?P<package_version>[\d.]+)
+        (?P<package_version>[\d.a-z]+)
         #(?:[-]?)(?P<package_revision> (?<=[-]).* | )
         (?:[-]?)(?P<package_revision> .* | )
         $
