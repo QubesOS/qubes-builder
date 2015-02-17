@@ -107,7 +107,7 @@ check-depend:
 		rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || exit 1; \
 	fi
 
-$(filter-out template template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out template linux-template-builder kde-dom0 dom0-updates qubes-builder, $(COMPONENTS)): % : %-dom0 %-vm
 
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@$(call check_branch,$*)
@@ -249,7 +249,7 @@ clean:
 		echo "$$REPO" ;\
 		if ! [ -d $$REPO ]; then \
 			continue; \
-		elif [ $$REPO == "$(SRC_DIR)/template-builder" ]; then \
+		elif [ $$REPO == "$(SRC_DIR)/linux-template-builder" ]; then \
 			for DIST in $(DISTS_VM); do \
 				DIST=$${DIST%%+*} make -s -C $$REPO clean || exit 1; \
 			done ;\

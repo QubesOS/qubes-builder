@@ -1,0 +1,10 @@
+read -r -d '' KEYS[0x36879494] <<'EOF' || true
+(
+    [key]="427F11FD0FAA4B080123F01CDDFA1A3E36879494"
+    [key_short]=0x36879494 
+    [owner]="Qubes Master Signing Key" 
+    [fingerprint]="427F 11FD 0FAA 4B08 0123  F01C DDFA 1A3E 3687 9494"
+    [verify]="fpr:::::::::427F11FD0FAA4B080123F01CDDFA1A3E36879494:"
+    [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
+)
+EOF

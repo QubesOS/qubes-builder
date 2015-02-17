@@ -1,15 +1,10 @@
 #!/bin/bash
 # vim: set ts=4 sw=4 sts=4 et :
 
-# XXX: Changed shebang from /bin/sh to /bin/bash for building on wheezy since
-#      /bin/sh links to /bin/dash and VERBOSE compare will fail
-#      *NOTE* its a good idea to manually link /bin/sh to /bin/bash incase we
-#      run into this sort of issue somewhere else
-
 # ------------------------------------------------------------------------------
 # Configuration
-# $1: chroot directory [chroot-wheezy, chroot-jessie]
-# $2: distribution [wheezy, jessie]
+# $1: chroot directory [chroot-trusty, chroot-utopic]
+# $2: distribution [trusty, utopic]
 # ------------------------------------------------------------------------------
 DIR=$1
 DISTRO=$2
@@ -28,15 +23,15 @@ INITIAL=
 
 if ! [ -d $DIR/home/user ]; then
     # --------------------------------------------------------------------------
-    # Install debian choot if /home/user does not exist (initial run)
+    # Install qubuntu choot if /home/user does not exist (initial run)
     # --------------------------------------------------------------------------
     INITIAL=1
     mkdir -p $DIR
-    echo "-> Installing debian build chroot..."
+    echo "-> Installing qubuntu build chroot..."
     COMPONENTS="" debootstrap --arch=amd64 \
-                --include=ncurses-term,debian-keyring \
-                --keyring=keys_debian/$DIST-debian-archive-keyring.gpg \
-                $DEBIANVERSION $DIR http://http.debian.net/debian \
+                --include=ncurses-term,ubuntu-keyring \
+                --keyring=keys_qubuntu/$DIST-qubuntu-archive-keyring.gpg \
+                $DEBIANVERSION $DIR http://archive.ubuntu.com/ubuntu \
                 || { echo "Error in debootstrap"; exit 1; }
 
     # --------------------------------------------------------------------------
@@ -90,57 +85,44 @@ if ! [ -r $DIR/proc/cpuinfo ]; then
 fi
 
 # ------------------------------------------------------------------------------
+# Add universe to sources.list
+# ------------------------------------------------------------------------------
+sed -i "s/${DIST} main$/${DIST} main universe/g" $DIR/etc/apt/sources.list
+chroot $DIR apt-get update
+
+# ------------------------------------------------------------------------------
 # Install all build packages specified
 # ------------------------------------------------------------------------------
 chroot $DIR apt-get -y install $BUILDPACKAGES
 
-if [ "$DIST" == "wheezy" ]; then
-    # Looks like a SID only package is being used to build packages
-    # there is a backport available for wheezy
-    source="deb http://http.debian.net/debian wheezy-backports main"
-    if ! grep -r -q "$source" "${DIR}/etc/apt/sources.list"*; then
-        touch "${DIR}/etc/apt/sources.list"
-        echo "$source" >> "${DIR}/etc/apt/sources.list"
-    fi
-    chroot $DIR apt-get update
-    chroot $DIR apt-get -t wheezy-backports install -y dh-systemd config-package-dev
-fi
-
-# ------------------------------------------------------------------------------
-# Install Debian source repo
-# ------------------------------------------------------------------------------
-source="deb-src http://http.debian.net/debian ${DEBIANVERSION} main"
-if ! grep -r -q "$source" "${DIR}/etc/apt/sources.list"*; then
-    touch "${DIR}/etc/apt/sources.list"
-    echo "$source" >> "${DIR}/etc/apt/sources.list"
-fi
+# Install pulseaudio5
+chroot $DIR apt-get install -y software-properties-common
+chroot $DIR add-apt-repository -y ppa:ubuntu-audio-dev/pulse-testing
+chroot $DIR apt-get update
+chroot $DIR apt-get install -y libpulse-dev
 
 # ------------------------------------------------------------------------------
 # Install keyring
 # ------------------------------------------------------------------------------
-if ! [ -f keys_debian/$DIST-secring.gpg ]; then
+if ! [ -f keys_qubuntu/$DIST-secring.gpg ]; then
     gpg --gen-key --batch <<EOF
 Key-Type: RSA
 Key-Length: 1024
 Key-Usage: sign
 Name-Real: Qubes builder
 Expire-Date: 0
-%pubring keys_debian/$DIST-pubring.gpg
-%secring keys_debian/$DIST-secring.gpg
+%pubring keys_qubuntu/$DIST-pubring.gpg
+%secring keys_qubuntu/$DIST-secring.gpg
 %commit
 EOF
-    chown --reference=keys_debian/ keys_debian/$DIST-*ring.gpg
+    chown --reference=keys_qubuntu/ keys_qubuntu/$DIST-*ring.gpg
 fi
 
-cp keys_debian/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+echo cp keys_qubuntu/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
+cp keys_qubuntu/$DIST-pubring.gpg $DIR/etc/apt/trusted.gpg.d/qubes-builder.gpg
 
 # ------------------------------------------------------------------------------
-# Refresh package list (but not quebes repo since it does not yet exist)
-# ------------------------------------------------------------------------------
-chroot $DIR apt-get update
-
-# ------------------------------------------------------------------------------
-# Update debian apt sources list to use local qubes repo
+# Update qubuntu apt sources list to use local qubes repo
 # ------------------------------------------------------------------------------
 cat > $DIR/etc/apt/sources.list.d/qubes-builder.list <<EOF
 deb file:/tmp/qubes-deb $DEBIANVERSION main

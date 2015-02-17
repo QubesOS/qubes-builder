@@ -15,6 +15,12 @@ else ifeq (wheezy,$(DIST))
 DISTRIBUTION := debian
 else ifeq (jessie,$(DIST))
 DISTRIBUTION := debian
+else ifeq (trusty,$(DIST))
+DISTRIBUTION := qubuntu
+else ifeq (utopic,$(DIST))
+DISTRIBUTION := qubuntu
+else ifeq (vivid,$(DIST))
+DISTRIBUTION := qubuntu
 else ifneq (,$(findstring win,$(DIST)))
 ifeq ($(OS),Windows_NT)
 DISTRIBUTION := windows
