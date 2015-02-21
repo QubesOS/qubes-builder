@@ -374,10 +374,11 @@ summary() {
 
     # Set SSH mode on/off; will translate git@ to https:// if disabled
     #--------------------------------------------------------------------------
-    comment "Set SSH_ACCESS to 2 if you can connect to repo via git@ otherwise" \
-            "set to 1 for https:// access."
-    echo -e "SSH_ACCESS := ${SSH_ACCESS}" >> "${CONF_FILE}"
-
+    if [ -e "${CONF_OVERRIDE}" ]; then
+        comment "Set SSH_ACCESS to 2 if you can connect to repo via git@ otherwise" \
+                "set to 1 for https:// access."
+        echo -e "SSH_ACCESS := ${SSH_ACCESS}" >> "${CONF_FILE}"
+    fi
 
     # Handle custom branch specific overrides
     #--------------------------------------------------------------------------
@@ -633,7 +634,19 @@ chooseRepoDialog
 
 #------------------------------------------------------------------------------
 # Choose if user has git ssh (commit) or http access to private repos
-# (Only asked is there is an overrides.conf configuration file)
+# - Only asked if there is an override.conf configuration file to prevent
+#   access denied errors
+#
+# Example of override.conf to allow ssh and http access based on user selection:
+#
+# GITHUB_PREFIX = $(word $(SSH_ACCESS), http://github.com/private_repo git@github.com:private_repo)
+# RELEASE_INDEX = $(shell echo "$(RELEASE)-1" | bc)
+#
+# [==- 'gui-agent-linux'==========================================================
+# [==- defaults: [R2:release2, R3:master]
+# [===============================================================================
+# GIT_URL_gui_agent_linux = $(GITHUB_PREFIX)/gui-agent-linux.git
+# BRANCH_gui_agent_linux = $(word $(RELEASE_INDEX), release2 master)
 #------------------------------------------------------------------------------
 if [ -e "${CONF_OVERRIDE}" ]; then
     sshAccessDialog ${SSH_ACCESS} && SSH_ACCESS=2 || SSH_ACCESS=1
