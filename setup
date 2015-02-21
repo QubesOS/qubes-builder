@@ -354,13 +354,12 @@ writeConfiguration() {
 # Summary
 # ------------------------------------------------------------------------------
 comment() {
-
+    IFS=$(echo -en "\n\b")
     echo -e "\n#" >> "${CONF_FILE}"
-    for line in "$@"; do
+    while read -r line; do
         echo -e "# ${line}" >> "${CONF_FILE}"
-    done
+    done <<< "$*"
     echo -e "#" >> "${CONF_FILE}"
-
 }
 
 
@@ -368,8 +367,8 @@ summary() {
     # About - General Information
     #--------------------------------------------------------------------------
     about="${ABOUT[@]}"
-    comment "Qubes Release: ${RELEASE}" "" \
-            "Source Repo: ${GIT_PREFIX}" ""\
+    comment "Qubes Release: ${RELEASE}" \
+        "Source Prefix: ${GIT_PREFIX} (repo)" "" \
             "Master Configuration File(s):" "setup.conf ${about}" "" \
             "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}"
 
@@ -432,6 +431,7 @@ make qubes
 make iso
 EOF
     echo
+    comment "${BUILD_QUBES}"
     info "${BUILD_QUBES}"
     fi
 
@@ -444,6 +444,7 @@ make template-modules
 make template
 EOF
     echo
+    comment "${BUILD_TEMPLATES}"
     info "${BUILD_TEMPLATES}"
 }
 
