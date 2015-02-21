@@ -399,6 +399,14 @@ summary() {
         echo -e 'DIST_DOM0 :=' >> "${CONF_FILE}"
     fi
 
+    # Filter out qubes-builder if not on master branch to prevent branch from
+    # switching to master and merged during 'make get-sources'
+    #--------------------------------------------------------------------------
+    if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
+        comment "Filter out qubes-builder if not on master branch to prevent branch being swithced to master"
+        echo -e 'COMPONENTS := $(filter-out qubes-builder, $(COMPONENTS))' >> "${CONF_FILE}"
+    fi
+
     # Write the file
     #--------------------------------------------------------------------------
     cat >> "${CONF_FILE}" <<'EOF'
