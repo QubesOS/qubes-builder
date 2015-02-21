@@ -281,6 +281,32 @@ checkKeys() {
 
 
 # ------------------------------------------------------------------------------
+# Display 'choose repo' dialog
+# ------------------------------------------------------------------------------
+chooseRepoDialog() {
+    counter=1
+    options=()
+
+    [[ "${GIT_PREFIX}" == "${DEFAULT_PREFIX}" ]] && toggle='on' || toggle='off'
+    options+=("${DEFAULT_PREFIX}" "Stable - Default Repo" "${toggle}")
+
+    for repo in "${!REPOS[@]}"; do
+        eval "declare -A repo="${REPOS[repo]}
+        [[ "${GIT_PREFIX}" == "${repo[prefix]}" ]] && toggle='on' || toggle='off'
+        options+=("${repo[prefix]}" "${repo[description]}" "${toggle}")
+    done
+
+    cmd=($DIALOG --radiolist "Select repo:" 22 76 16)
+    choice=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
+
+    # Exit on cancel
+    if [ $? != 0 ]; then
+        exit 1
+    fi
+
+    GIT_PREFIX="${choice}"
+}
+# ------------------------------------------------------------------------------
 # Display VM's for selction
 # ------------------------------------------------------------------------------
 chooseDistsDialog() {
@@ -343,6 +369,7 @@ summary() {
     #--------------------------------------------------------------------------
     about="${ABOUT[@]}"
     comment "Qubes Release: ${RELEASE}" "" \
+            "Source Repo: ${GIT_PREFIX}" ""\
             "Master Configuration File(s):" "setup.conf ${about}" "" \
             "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}"
 
@@ -418,7 +445,8 @@ EOF
 # ------------------------------------------------------------------------------
 writeReleaseConfiguration() {
     cat << EOF > "${CONF_RELEASE}"
-RELEASE := $RELEASE
+RELEASE := ${RELEASE}
+GIT_PREFIX := ${GIT_PREFIX}
 
 about::
 	@echo "builder-release.conf"
@@ -433,6 +461,12 @@ function parseMakefiles {
     #--------------------------------------------------------------------------
     SSH_ACCESS="$(GET_VAR=SSH_ACCESS make get-var)"
     TEMPLATE_ONLY="$(GET_VAR=TEMPLATE_ONLY make get-var)"
+    GIT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
+
+    # Remove GIT_PREFIX from builder-release.conf so default prefix can be
+    # determined
+    sed -i 's/GIT_PREFIX/#GIT_PREFIX/' "${CONF_RELEASE}"
+    DEFAULT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
 
     #--------------------------------------------------------------------------
     # Move setup.conf out of the way if it exists 
@@ -449,7 +483,6 @@ function parseMakefiles {
         # Choose Qubes version to build (2 or 3)
         chooseVersion && RELEASE=2 || RELEASE=3
         ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
-        writeReleaseConfiguration
     else
         # Parse about to determine version
         RELEASE=($(make -B release))
@@ -460,7 +493,6 @@ function parseMakefiles {
         if [ ${RELEASE} != "${XRELEASE}" ]; then
             RELEASE="${XRELEASE}"
             ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
-            writeReleaseConfiguration
         fi
     fi
 
@@ -531,6 +563,24 @@ function parseMakefiles {
     ABOUT=($(make -B about))
 }
 
+
+# ==============================================================================
+# Cleanup function
+# ==============================================================================
+function cleanup() {
+    errval=$?
+    trap - ERR EXIT
+    trap
+
+    # Replcae original setup.conf
+    mv -f setup.conf.old setup.conf || true
+
+    # Re-enable original GIT_PREFIX
+    sed -i 's/#GIT_PREFIX/GIT_PREFIX/' "${CONF_RELEASE}"
+    exit $errval
+}
+
+
 # ==============================================================================
 # Run sections
 # ==============================================================================
@@ -542,22 +592,35 @@ clear
 installDialog
 
 # ------------------------------------------------------------------------------
+# Load external data such as list of keys and repos
+# ------------------------------------------------------------------------------
+if [ -e .setup.data ]; then
+    source .setup.data
+fi
+
+# ------------------------------------------------------------------------------
 # Check / Install Keys
 # ------------------------------------------------------------------------------
-# Load key array for verification from .setup.keys
-if [ -e .setup.keys ]; then
-    source .setup.keys
-fi
 # set force value to 'force' to force re-download and verify
 force=''
 checkKeys ${force}
-
 
 #------------------------------------------------------------------------------
 # Parse the existing makefiles to obtain values needed for setup to provide
 # required options to build new configuration file
 #------------------------------------------------------------------------------
 parseMakefiles
+
+#------------------------------------------------------------------------------
+# Trap ERR and EXIT signals and replace setup.conf.old back to setup.conf
+#------------------------------------------------------------------------------
+trap cleanup ERR
+trap cleanup EXIT
+
+#------------------------------------------------------------------------------
+# Prompt for selection of base repo to use for build
+#------------------------------------------------------------------------------
+chooseRepoDialog
 
 #------------------------------------------------------------------------------
 # Choose if user has git ssh (commit) or http access to private repos
@@ -578,8 +641,9 @@ templateOnlyDialog ${TEMPLATE_ONLY} && TEMPLATE=1 || TEMPLATE=0
 chooseDistsDialog DISTS
 
 #------------------------------------------------------------------------------
-# Write custom setup.conf configuration data
+# Write custom setup.conf / builder-release.conf configuration data
 #------------------------------------------------------------------------------
+writeReleaseConfiguration
 writeConfiguration ${DISTS[@]}
 
 #------------------------------------------------------------------------------
