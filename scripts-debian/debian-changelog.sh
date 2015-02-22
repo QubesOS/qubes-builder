@@ -82,8 +82,8 @@ if [ "${deb_version}" != $(cat version) ]; then
     # -----------------------------------------------------------------------------
     # Release - changelog name, email and distribution updated
     # -----------------------------------------------------------------------------
-    export DEBFULLNAME="$(git log -n 1 --pretty=format:%an)"
-    export DEBEMAIL="$(git log -n 1 --pretty=format:%ae)"
+    export DEBFULLNAME=$(git config user.name)
+    export DEBEMAIL=$(git config user.email)
     ${debchange} --force-distribution --distribution ${DIST} --release -- ''
 fi
 
