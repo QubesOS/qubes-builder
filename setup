@@ -382,12 +382,10 @@ summary() {
 
     # Handle custom branch specific overrides
     #--------------------------------------------------------------------------
-    INCLUDES=""
-
     if [[ -n "${OVERRIDE_SOURCE}" ]]; then
-        INCLUDES+="-include ${OVERRIDE_TARGET}"
-        comment "Override configuration files to be included"
-        echo -e "${INCLUDES}" >> "${CONF_FILE}"
+        OVERRIDE="-include ${OVERRIDE_TARGET}"
+        comment "Override configuration file to be included:"
+        echo -e "${OVERRIDE}" >> "${CONF_FILE}"
     fi
 
     # Disable some COMPONENTS if template only build
