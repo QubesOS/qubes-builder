@@ -402,7 +402,7 @@ summary() {
     #--------------------------------------------------------------------------
     if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
         comment "Filter out qubes-builder if not on master branch to prevent branch being swithced to master"
-        echo -e 'COMPONENTS := $(filter-out qubes-builder, $(COMPONENTS))' >> "${CONF_FILE}"
+        echo -e 'COMPONENTS := $(filter-out builder, $(COMPONENTS))' >> "${CONF_FILE}"
     fi
 
     # Write the file

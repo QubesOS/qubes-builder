@@ -20,7 +20,7 @@ set -e
 [ -n "$REPO" ] && COMPONENT="`basename $REPO`"
 
 # Special case for qubes-builder itself
-[ "$REPO" == "." ] && COMPONENT="qubes-builder"
+[ "$REPO" == "." ] && COMPONENT="builder"
 
 [ -z "$COMPONENT" ] && { echo "ERROR: COMPONENT not set!"; exit 1; }
 
