@@ -281,6 +281,32 @@ checkKeys() {
 
 
 # ------------------------------------------------------------------------------
+# Display 'choose repo' dialog
+# ------------------------------------------------------------------------------
+chooseRepoDialog() {
+    counter=1
+    options=()
+
+    [[ "${GIT_PREFIX}" == "${DEFAULT_PREFIX}" ]] && toggle='on' || toggle='off'
+    options+=("${DEFAULT_PREFIX}" "Stable - Default Repo" "${toggle}")
+
+    for repo in "${!REPOS[@]}"; do
+        eval "declare -A repo="${REPOS[repo]}
+        [[ "${GIT_PREFIX}" == "${repo[prefix]}" ]] && toggle='on' || toggle='off'
+        options+=("${repo[prefix]}" "${repo[description]}" "${toggle}")
+    done
+
+    cmd=($DIALOG --radiolist "Select repo:" 22 76 16)
+    choice=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
+
+    # Exit on cancel
+    if [ $? != 0 ]; then
+        exit 1
+    fi
+
+    GIT_PREFIX="${choice}"
+}
+# ------------------------------------------------------------------------------
 # Display VM's for selction
 # ------------------------------------------------------------------------------
 chooseDistsDialog() {
@@ -328,13 +354,12 @@ writeConfiguration() {
 # Summary
 # ------------------------------------------------------------------------------
 comment() {
-
+    IFS=$(echo -en "\n\b")
     echo -e "\n#" >> "${CONF_FILE}"
-    for line in "$@"; do
+    while read -r line; do
         echo -e "# ${line}" >> "${CONF_FILE}"
-    done
+    done <<< "$*"
     echo -e "#" >> "${CONF_FILE}"
-
 }
 
 
@@ -342,25 +367,25 @@ summary() {
     # About - General Information
     #--------------------------------------------------------------------------
     about="${ABOUT[@]}"
-    comment "Qubes Release: ${RELEASE}" "" \
+    comment "Qubes Release: ${RELEASE}" \
+        "Source Prefix: ${GIT_PREFIX} (repo)" "" \
             "Master Configuration File(s):" "setup.conf ${about}" "" \
             "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}"
 
     # Set SSH mode on/off; will translate git@ to https:// if disabled
     #--------------------------------------------------------------------------
-    comment "Set SSH_ACCESS to 2 if you can connect to repo via git@ otherwise" \
-            "set to 1 for https:// access."
-    echo -e "SSH_ACCESS := ${SSH_ACCESS}" >> "${CONF_FILE}"
-
+    if [ -e "${CONF_OVERRIDE}" ]; then
+        comment "Set SSH_ACCESS to 2 if you can connect to repo via git@ otherwise" \
+                "set to 1 for https:// access."
+        echo -e "SSH_ACCESS := ${SSH_ACCESS}" >> "${CONF_FILE}"
+    fi
 
     # Handle custom branch specific overrides
     #--------------------------------------------------------------------------
-    INCLUDES=""
-
     if [[ -n "${OVERRIDE_SOURCE}" ]]; then
-        INCLUDES+="-include ${OVERRIDE_TARGET}"
-        comment "Override configuration files to be included"
-        echo -e "${INCLUDES}" >> "${CONF_FILE}"
+        OVERRIDE="-include ${OVERRIDE_TARGET}"
+        comment "Override configuration file to be included:"
+        echo -e "${OVERRIDE}" >> "${CONF_FILE}"
     fi
 
     # Disable some COMPONENTS if template only build
@@ -370,6 +395,14 @@ summary() {
         echo -e "TEMPLATE_ONLY := ${TEMPLATE}" >> "${CONF_FILE}"
         echo -e 'COMPONENTS := $(TEMPLATE)' >> "${CONF_FILE}"
         echo -e 'DIST_DOM0 :=' >> "${CONF_FILE}"
+    fi
+
+    # Filter out qubes-builder if not on master branch to prevent branch from
+    # switching to master and merged during 'make get-sources'
+    #--------------------------------------------------------------------------
+    if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
+        comment "Filter out qubes-builder if not on master branch to prevent branch being swithced to master"
+        echo -e 'COMPONENTS := $(filter-out qubes-builder, $(COMPONENTS))' >> "${CONF_FILE}"
     fi
 
     # Write the file
@@ -397,6 +430,7 @@ make qubes
 make iso
 EOF
     echo
+    comment "${BUILD_QUBES}"
     info "${BUILD_QUBES}"
     fi
 
@@ -409,6 +443,7 @@ make template-modules
 make template
 EOF
     echo
+    comment "${BUILD_TEMPLATES}"
     info "${BUILD_TEMPLATES}"
 }
 
@@ -418,7 +453,8 @@ EOF
 # ------------------------------------------------------------------------------
 writeReleaseConfiguration() {
     cat << EOF > "${CONF_RELEASE}"
-RELEASE := $RELEASE
+RELEASE := ${RELEASE}
+GIT_PREFIX := ${GIT_PREFIX}
 
 about::
 	@echo "builder-release.conf"
@@ -433,6 +469,12 @@ function parseMakefiles {
     #--------------------------------------------------------------------------
     SSH_ACCESS="$(GET_VAR=SSH_ACCESS make get-var)"
     TEMPLATE_ONLY="$(GET_VAR=TEMPLATE_ONLY make get-var)"
+    GIT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
+
+    # Remove GIT_PREFIX from builder-release.conf so default prefix can be
+    # determined
+    sed -i 's/GIT_PREFIX/#GIT_PREFIX/' "${CONF_RELEASE}"
+    DEFAULT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
 
     #--------------------------------------------------------------------------
     # Move setup.conf out of the way if it exists 
@@ -449,7 +491,6 @@ function parseMakefiles {
         # Choose Qubes version to build (2 or 3)
         chooseVersion && RELEASE=2 || RELEASE=3
         ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
-        writeReleaseConfiguration
     else
         # Parse about to determine version
         RELEASE=($(make -B release))
@@ -460,7 +501,6 @@ function parseMakefiles {
         if [ ${RELEASE} != "${XRELEASE}" ]; then
             RELEASE="${XRELEASE}"
             ln -fs "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}" builder.conf
-            writeReleaseConfiguration
         fi
     fi
 
@@ -531,6 +571,24 @@ function parseMakefiles {
     ABOUT=($(make -B about))
 }
 
+
+# ==============================================================================
+# Cleanup function
+# ==============================================================================
+function cleanup() {
+    errval=$?
+    trap - ERR EXIT
+    trap
+
+    # Replcae original setup.conf
+    mv -f setup.conf.old setup.conf || true
+
+    # Re-enable original GIT_PREFIX
+    sed -i 's/#GIT_PREFIX/GIT_PREFIX/' "${CONF_RELEASE}"
+    exit $errval
+}
+
+
 # ==============================================================================
 # Run sections
 # ==============================================================================
@@ -542,16 +600,18 @@ clear
 installDialog
 
 # ------------------------------------------------------------------------------
+# Load external data such as list of keys and repos
+# ------------------------------------------------------------------------------
+if [ -e .setup.data ]; then
+    source .setup.data
+fi
+
+# ------------------------------------------------------------------------------
 # Check / Install Keys
 # ------------------------------------------------------------------------------
-# Load key array for verification from .setup.keys
-if [ -e .setup.keys ]; then
-    source .setup.keys
-fi
 # set force value to 'force' to force re-download and verify
 force=''
 checkKeys ${force}
-
 
 #------------------------------------------------------------------------------
 # Parse the existing makefiles to obtain values needed for setup to provide
@@ -560,8 +620,31 @@ checkKeys ${force}
 parseMakefiles
 
 #------------------------------------------------------------------------------
+# Trap ERR and EXIT signals and replace setup.conf.old back to setup.conf
+#------------------------------------------------------------------------------
+trap cleanup ERR
+trap cleanup EXIT
+
+#------------------------------------------------------------------------------
+# Prompt for selection of base repo to use for build
+#------------------------------------------------------------------------------
+chooseRepoDialog
+
+#------------------------------------------------------------------------------
 # Choose if user has git ssh (commit) or http access to private repos
-# (Only asked is there is an overrides.conf configuration file)
+# - Only asked if there is an override.conf configuration file to prevent
+#   access denied errors
+#
+# Example of override.conf to allow ssh and http access based on user selection:
+#
+# GITHUB_PREFIX = $(word $(SSH_ACCESS), http://github.com/private_repo git@github.com:private_repo)
+# RELEASE_INDEX = $(shell echo "$(RELEASE)-1" | bc)
+#
+# [==- 'gui-agent-linux'==========================================================
+# [==- defaults: [R2:release2, R3:master]
+# [===============================================================================
+# GIT_URL_gui_agent_linux = $(GITHUB_PREFIX)/gui-agent-linux.git
+# BRANCH_gui_agent_linux = $(word $(RELEASE_INDEX), release2 master)
 #------------------------------------------------------------------------------
 if [ -e "${CONF_OVERRIDE}" ]; then
     sshAccessDialog ${SSH_ACCESS} && SSH_ACCESS=2 || SSH_ACCESS=1
@@ -578,8 +661,9 @@ templateOnlyDialog ${TEMPLATE_ONLY} && TEMPLATE=1 || TEMPLATE=0
 chooseDistsDialog DISTS
 
 #------------------------------------------------------------------------------
-# Write custom setup.conf configuration data
+# Write custom setup.conf / builder-release.conf configuration data
 #------------------------------------------------------------------------------
+writeReleaseConfiguration
 writeConfiguration ${DISTS[@]}
 
 #------------------------------------------------------------------------------
@@ -593,3 +677,8 @@ summary
 #------------------------------------------------------------------------------
 instructions
 
+#------------------------------------------------------------------------------
+# Cleanup
+#------------------------------------------------------------------------------
+trap - ERR EXIT
+trap

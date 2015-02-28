@@ -8,3 +8,21 @@ read -r -d '' KEYS[0x36879494] <<'EOF' || true
     [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
 )
 EOF
+read -r -d '' REPOS[0] <<'EOF' || true
+(
+    [description]="Unstable - Bleeding Edge Development"
+    [prefix]="marmarek/"
+)
+EOF
+read -r -d '' REPOS[1] <<'EOF' || true
+(
+    [description]="Unstable - The Big Boss Repo"
+    [prefix]="joanna/"
+)
+EOF
+read -r -d '' REPOS[2] <<'EOF' || true
+(
+    [description]="Unstable - Awesome Developer Repo"
+    [prefix]="wojo/"
+)
+EOF

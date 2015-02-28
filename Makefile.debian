@@ -63,8 +63,7 @@ DEBIAN_DEPENDENCIES := dpkg-dev debootstrap
 PARSER=./scripts-debian/debian-parser
 
 ifneq (,$(DEBIAN_BUILD_DIRS))
-  package_file = $(shell $(PARSER) changelog --package-release-name-full $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
-  orig_package_file = $(shell $(PARSER) changelog --package-release-name $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
+  release_name = $(shell $(PARSER) changelog --package-release-name $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/changelog)
 endif
 
 listfiles = awk 'section == "Files:" { print $$5 } /^[A-Z].*.$$/ { section=$$1 }'
@@ -144,10 +143,26 @@ dist-package:
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
 endif
-	rm -f $(CHROOT_DIR)/$(DIST_SRC)/../$(package_file)*
+ifdef INCREMENT_DEVEL_VERSIONS
+	# Update changelog with -develXX appended to version
+	# Note: INCREMENT_DEVEL_VERSIONS needs to be set to any value in 
+	#       builder configuration to use this feature
+	cd $(DEBIAN_CHROOT_DIR)/..; $(PWD)/scripts-debian/debian-changelog.sh
+
+	cp -fp $(DEBIAN_CHROOT_DIR)/changelog.dist $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/ || true
+	cp -fp $(DEBIAN_CHROOT_DIR)/changelog.$(DIST) $(ORIG_SRC)/$(DEBIAN_BUILD_DIRS)/ || true
+
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DEBIAN_DIR)/..; export LC_ALL=C; dpkg-buildpackage -sa -k${SIGN_KEY}'
+else
+	# Cleanup; delete any old builds, except leave the orig that may have
+	# been created on copy-in build stage
+	cd $(CHROOT_DIR)/$(DIST_SRC)/..; GLOBIGNORE=$(release_name)*orig*; rm -f $(release_name)*; GLOBIGNORE=
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/deb/*
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/rpm/*
 	rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs/*
+
+	# Only used to update changelog to new version since changelog is 
+	# also called below
 	cd $(DEBIAN_CHROOT_DIR)/..; $(PWD)/scripts-debian/debian-changelog.sh
 
 	# Break the hardlink
@@ -155,19 +170,21 @@ endif
 	mv $(DEBIAN_CHROOT_DIR)/changelog.copy $(DEBIAN_CHROOT_DIR)/changelog
 
 	echo "Building package in $(DIST_SRC)"
-
-	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DEBIAN_DIR)/..; export LC_ALL=C; debchange -l$(DIST) "Build for $(DIST)"; debchange --force-distribution -r -D $(DIST) $(DIST); dpkg-buildpackage -sa -k${SIGN_KEY}';
+	sudo $(CHROOT_ENV) chroot $(CHROOT_DIR) su $(RUN_AS_USER) -c 'cd $(DEBIAN_DIR)/..; export LC_ALL=C; debchange -l+$(DIST) "Build for $(DIST)"; debchange --force-distribution -r -D $(DIST) $(DIST); dpkg-buildpackage -sa -k${SIGN_KEY}'
+endif
 
 dist-copy-out:
 	mkdir -p $(BUILDER_REPO_DIR)/deb
 	mkdir -p $(ORIG_SRC)/deb/$(DIST)
 	cd $(DEBIAN_CHROOT_DIR)/../..; \
-		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(package_file)*.changes`
-	cp -t $(BUILDER_REPO_DIR)/deb/ $(DEBIAN_CHROOT_DIR)/../../$(package_file)*.changes
+		cp -t $(BUILDER_REPO_DIR)/deb `$(listfiles) $(release_name)*.changes`
+	cp -t $(BUILDER_REPO_DIR)/deb/ $(DEBIAN_CHROOT_DIR)/../../$(release_name)*.changes
 	cd $(DEBIAN_CHROOT_DIR)/../..; \
-		mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST)  `$(listfiles) $(package_file)*.changes`
-	mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST) $(DEBIAN_CHROOT_DIR)/../../$(package_file)*.changes
+		mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST)  `$(listfiles) $(release_name)*.changes`
+	mv -t $(PWD)/$(ORIG_SRC)/deb/$(DIST) $(DEBIAN_CHROOT_DIR)/../../$(release_name)*.changes
 
+update-repo: release_name_dist = $(shell $(PARSER) changelog --package-release-name-full $(DEBIAN_CHROOT_DIR)/changelog.$(DIST) 2>&-)
+update-repo: release_name_full = $(shell $(PARSER) changelog --package-release-name-full $(DEBIAN_CHROOT_DIR)/changelog)
 update-repo:
 ifndef UPDATE_REPO
 	$(error "You need to specify destination repo in UPDATE_REPO variable")
@@ -198,7 +215,11 @@ else
 		sudo mount --bind $(UPDATE_REPO) $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo ;\
 	fi
 
-	sudo $(CHROOT_ENV) chroot $(REPO_CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(package_file)$(DIST)1_amd64.changes"
+	if [ "X$(release_name_dist)" != "X" ]; then \
+		sudo $(CHROOT_ENV) chroot $(REPO_CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(release_name_dist)_amd64.changes"; \
+	else \
+		sudo $(CHROOT_ENV) chroot $(REPO_CHROOT_DIR) su $(RUN_AS_USER) -c "reprepro -b /tmp/qubes-apt-repo include $(DEBIANVERSION)$(REPO_SUFFIX) /tmp/qubes-deb/deb/$(release_name_full)_amd64.changes"; \
+	fi
 	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-apt-repo
 	sudo umount $(REPO_CHROOT_DIR)/tmp/qubes-deb
 endif

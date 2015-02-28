@@ -11,6 +11,8 @@ Qubes OS
 Parses some Debian package files
 '''
 
+from __future__ import print_function
+
 __author__ = 'Jason Mehring'
 __license__ = 'GPLv2 or later'
 __version__ = '0.2'
@@ -193,7 +195,7 @@ def main(argv):
     args = vars(parser.parse_args())
 
     if not args['filename'] or not os.path.exists(args['filename']):
-        print 'You must provide a proper filename containing debian package file'
+        print('You must provide a proper filename containing debian package file', file=sys.stderr)
         sys.exit(1)
 
     if 'debug' in args.keys():
@@ -283,17 +285,18 @@ def parseChangelog(filename, **args):
     '''
     content = getContent(filename)
 
-    #changelog_re = re.compile(r'^(?P<package_name>.*) \((?P<package_version_full>.*)\) (?P<package_distrib>.*); (?P<package_urgency>.*)$' )
     changelog_re = re.compile(r'^(?P<package_name>.*) \((?P<package_version_full>.*)\) (?P<package_distrib>.*); (?P<package_urgency>.*)$' )
     match = changelog_re.match(content.split('\n')[0].strip())
     info = match.groupdict()
 
     # Split apart epoch and version so one can reference any part
     version_re = re.compile(r'''
-        (?P<package_version_epoc> ^[\d]+[:] | )
-        (?P<package_version>[\d.a-z]+)
-        #(?:[-]?)(?P<package_revision> (?<=[-]).* | )
-        (?:[-]?)(?P<package_revision> .* | )
+        (?P<package_version_epoc> ^[\d]+ |) (:?)
+        (?P<package_version> 
+            [\d][0-9a-zA-Z.+-:~]*(?=[-]) | 
+            [\d][0-9a-zA-Z.+:~]*
+        )
+        ([-] |)(?P<package_revision> .* |)
         $
         ''', re.VERBOSE)
 
@@ -317,10 +320,10 @@ def parseChangelog(filename, **args):
             info.pop(key,  None)
 
     if len(info) == 1:
-        print ' '.join(info.values())
+        print(' '.join(info.values()))
     elif len(info) > 1:
         import json
-        print json.dumps(info)
+        print(json.dumps(info))
 
 
 def parseControlFile(filename, **args):
@@ -385,10 +388,10 @@ def parseControlFile(filename, **args):
             for value in values:
                 debug(value.rsplit(' ')[0].strip())
                 info.append(value.rsplit(' ')[0].strip())
-        print ' '.join(info)
+        print(' '.join(info))
     elif field:
         try:
-            print field.group(key_original).strip()
+            print(field.group(key_original).strip())
         except (IndexError) as msg:
             pass
 
