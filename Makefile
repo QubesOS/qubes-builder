@@ -1,7 +1,4 @@
 # Set defaults
-ifdef GIT_SUBDIR
-GIT_PREFIX ?= $(GIT_SUBDIR)/
-endif
 BRANCH ?= master
 GIT_BASEURL ?= git://git.qubes-os.org
 GIT_SUFFIX ?= .git
@@ -22,6 +19,10 @@ KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
 #Include config file
 -include $(BUILDERCONF)
+
+ifdef GIT_SUBDIR
+GIT_PREFIX ?= $(GIT_SUBDIR)/
+endif
 
 # checking for make from Makefile is pointless
 DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
