@@ -5,7 +5,7 @@
 # IMPORTANT: no spaces around "="
 
 # GIT_BASEURL - base url of git repos
-# Default: git://git.qubes-os.org
+# Default: git://github.com
 
 # GIT_PREFIX - whose repo to clone; can be used either to specify subdir
 # ("qubes-r3/"), or real prefix ("qubes-")
