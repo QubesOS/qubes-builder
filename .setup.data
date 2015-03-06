@@ -11,18 +11,18 @@ EOF
 read -r -d '' REPOS[0] <<'EOF' || true
 (
     [description]="Unstable - Bleeding Edge Development"
-    [prefix]="marmarek/"
+    [prefix]="marmarek/qubes-"
 )
 EOF
-read -r -d '' REPOS[1] <<'EOF' || true
-(
-    [description]="Unstable - The Big Boss Repo"
-    [prefix]="joanna/"
-)
-EOF
-read -r -d '' REPOS[2] <<'EOF' || true
-(
-    [description]="Unstable - Awesome Developer Repo"
-    [prefix]="wojo/"
-)
-EOF
+#read -r -d '' REPOS[1] <<'EOF' || true
+#(
+#    [description]="Unstable - The Big Boss Repo"
+#    [prefix]="joanna/qubes-"
+#)
+#EOF
+#read -r -d '' REPOS[2] <<'EOF' || true
+#(
+#    [description]="Unstable - Awesome Developer Repo"
+#    [prefix]="wojo/qubes-"
+#)
+#EOF

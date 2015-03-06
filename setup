@@ -392,17 +392,7 @@ summary() {
     #--------------------------------------------------------------------------
     if [ "${TEMPLATE}" == "1" ]; then
         comment "Only build templates (comment out to build all of Qubes)"
-        echo -e "TEMPLATE_ONLY := ${TEMPLATE}" >> "${CONF_FILE}"
-        echo -e 'COMPONENTS := $(TEMPLATE)' >> "${CONF_FILE}"
-        echo -e 'DIST_DOM0 :=' >> "${CONF_FILE}"
-    fi
-
-    # Filter out qubes-builder if not on master branch to prevent branch from
-    # switching to master and merged during 'make get-sources'
-    #--------------------------------------------------------------------------
-    if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
-        comment "Filter out qubes-builder if not on master branch to prevent branch being swithced to master"
-        echo -e 'COMPONENTS := $(filter-out builder, $(COMPONENTS))' >> "${CONF_FILE}"
+        echo -e "TEMPLATE_ONLY ?= ${TEMPLATE}" >> "${CONF_FILE}"
     fi
 
     # Write the file
@@ -465,26 +455,6 @@ EOF
 # Link proper config files based on Qubes release picked
 function parseMakefiles {
     #--------------------------------------------------------------------------
-    # Get variables from Makefile INCLDING setup.conf Makefile
-    #--------------------------------------------------------------------------
-    SSH_ACCESS="$(GET_VAR=SSH_ACCESS make get-var)"
-    TEMPLATE_ONLY="$(GET_VAR=TEMPLATE_ONLY make get-var)"
-    GIT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
-
-    # Remove GIT_PREFIX from builder-release.conf so default prefix can be
-    # determined
-    sed -i 's/GIT_PREFIX/#GIT_PREFIX/' "${CONF_RELEASE}"
-    DEFAULT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
-
-    #--------------------------------------------------------------------------
-    # Move setup.conf out of the way if it exists 
-    #--------------------------------------------------------------------------
-    if [ -f "${CONF_FILE}" ]; then
-        SELECTED_DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
-        mv "${CONF_FILE}" "${CONF_FILE_OLD}"
-    fi
-
-    #--------------------------------------------------------------------------
     # Soft link 'examples/templates.conf' to 'builder.conf'
     #--------------------------------------------------------------------------
     if ! [ -f "builder.conf" ]; then
@@ -505,23 +475,45 @@ function parseMakefiles {
     fi
 
     #--------------------------------------------------------------------------
+    # Get variables from Makefile INCLUDING setup.conf Makefile
+    #--------------------------------------------------------------------------
+    SSH_ACCESS="$(GET_VAR=SSH_ACCESS make get-var)"
+    TEMPLATE_ONLY="$(GET_VAR=TEMPLATE_ONLY make get-var)"
+    GIT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
+
+    # Remove GIT_PREFIX from builder-release.conf so default prefix can be
+    # determined
+    if [ -e "${CONF_RELEASE}" ]; then
+        sed -i 's/GIT_PREFIX/#GIT_PREFIX/' "${CONF_RELEASE}"
+    fi
+    DEFAULT_PREFIX="$(GET_VAR=GIT_PREFIX make get-var)"
+
+    #--------------------------------------------------------------------------
+    # Move setup.conf out of the way if it exists 
+    #--------------------------------------------------------------------------
+    if [ -f "${CONF_FILE}" ]; then
+        SELECTED_DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
+        mv "${CONF_FILE}" "${CONF_FILE_OLD}"
+    fi
+
+    #--------------------------------------------------------------------------
     # See if a branch specific override configuration file exists
     #--------------------------------------------------------------------------
-    BRANCH="$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')"
-    OVERRIDE_TARGET="./override.conf"
+    BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    OVERRIDE_TARGET="./${CONF_OVERRIDE}"
 
-    # Check for generic overrides only if 'overrides.conf' does not exist
+    # Check for generic overrides only if 'override.conf' does not exist
     if [ "X${OVERRIDE_SOURCE}" == "X" ]; then
 
-        # Example: example-configs/r3-feature_branch-overrides.conf
+        # Example: example-configs/r3-feature_branch-override.conf
         if [ -e "${CONF_MASTER_DIR}/r${RELEASE}-${BRANCH}-${CONF_OVERRIDE}" ]; then
             OVERRIDE_SOURCE="${CONF_MASTER_DIR}/r${RELEASE}-${BRANCH}-${CONF_OVERRIDE}"
 
-        # Example: example-configs/feature_branch-overrides.conf
+        # Example: example-configs/feature_branch-override.conf
         elif [ -e "${CONF_MASTER_DIR}/${BRANCH}-${CONF_OVERRIDE}" ]; then
             OVERRIDE_SOURCE="${CONF_MASTER_DIR}/${BRANCH}-${CONF_OVERRIDE}"
 
-        # Example: example-configs/overrides.conf
+        # Example: example-configs/override.conf
         elif [ -e "${CONF_MASTER_DIR}/${CONF_OVERRIDE}" ]; then
             OVERRIDE_SOURCE="${CONF_MASTER_DIR}/${CONF_OVERRIDE}"
         fi
@@ -580,11 +572,16 @@ function cleanup() {
     trap - ERR EXIT
     trap
 
-    # Replcae original setup.conf
-    mv -f setup.conf.old setup.conf || true
+    # Restore original setup.conf
+    if [ -e  "${CONF_FILE_OLD}" ]; then
+        mv -f "${CONF_FILE_OLD}" "${CONF_FILE}" || true
+    fi
 
-    # Re-enable original GIT_PREFIX
-    sed -i 's/#GIT_PREFIX/GIT_PREFIX/' "${CONF_RELEASE}"
+    # Restore original GIT_PREFIX
+    if [ -e "${CONF_RELEASE}" ]; then
+        sed -i 's/#GIT_PREFIX/GIT_PREFIX/' "${CONF_RELEASE}"
+    fi
+
     exit $errval
 }
 
@@ -637,7 +634,7 @@ chooseRepoDialog
 #
 # Example of override.conf to allow ssh and http access based on user selection:
 #
-# GITHUB_PREFIX = $(word $(SSH_ACCESS), http://github.com/private_repo git@github.com:private_repo)
+# GITHUB_PREFIX = $(word $(SSH_ACCESS), http://github.com/private_repo/qubes- git@github.com:private_repo/qubes-)
 # RELEASE_INDEX = $(shell echo "$(RELEASE)-1" | bc)
 #
 # [==- 'gui-agent-linux'==========================================================
