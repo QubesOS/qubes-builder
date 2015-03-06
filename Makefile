@@ -227,7 +227,7 @@ qubes: $(filter-out builder,$(COMPONENTS))
 
 qubes-dom0: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
-qubes-vm: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
+qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
