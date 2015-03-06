@@ -24,6 +24,6 @@ source-debian-quilt-copy-in:
 	rm -f Makefile; \
 	ln -s Makefile.builder Makefile
 	-$(shell $(ORIG_SRC)/debian-quilt $(ORIG_SRC)/series-debian-vm.conf $(CHROOT_DIR)/$(DIST_SRC)/debian/patches)
-	tar cvfz $(ORIG_FILE) --exclude-vcs --exclude=debian -C $(CHROOT_DIR)/$(DIST_SRC) .
+	tar cfz $(ORIG_FILE) --exclude-vcs --exclude=debian -C $(CHROOT_DIR)/$(DIST_SRC) .
 
 # vim: filetype=make

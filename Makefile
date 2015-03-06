@@ -1,3 +1,7 @@
+#Include config file
+BUILDERCONF ?= builder.conf
+-include $(BUILDERCONF)
+
 # Set defaults
 BRANCH ?= master
 GIT_BASEURL ?= git://github.com
@@ -5,30 +9,24 @@ GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
 VERBOSE ?= 0
+
 # Beware of build order
-
 COMPONENTS ?= builder
-
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
-BUILDERCONF ?= builder.conf
 KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
-
-#Include config file
--include $(BUILDERCONF)
-
 ifdef GIT_SUBDIR
-GIT_PREFIX ?= $(GIT_SUBDIR)/
+  GIT_PREFIX ?= $(GIT_SUBDIR)/
 endif
 
 # checking for make from Makefile is pointless
 DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
 
 ifneq (1,$(NO_SIGN))
-DEPENDENCIES += rpm-sign
+  DEPENDENCIES += rpm-sign
 endif
 
 SRC_DIR := qubes-src
@@ -143,8 +141,7 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-linux-template-builder: template
-template:: 
+template linux-template-builder::
 	@for DIST in $(DISTS_VM); do
 	    # Allow template flavors to be declared within the DISTS_VM declaration
 	    # <distro>+<template flavor>+<template options>+<template options>...
@@ -228,7 +225,7 @@ qubes: $(filter-out builder,$(COMPONENTS))
 
 qubes-dom0: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
-qubes-vm: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
+qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
@@ -355,7 +352,7 @@ show-vtags:
 		echo -n '('; \
 		BRANCH=$(BRANCH); \
 		if [ "$$REPO" == "." ]; then
-			branch_var="BRANCH_qubes_builder"; \
+			branch_var="BRANCH_builder"; \
 		else \
 			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
 		fi; \
