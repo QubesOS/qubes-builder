@@ -1,3 +1,7 @@
+#Include config file
+BUILDERCONF ?= builder.conf
+-include $(BUILDERCONF)
+
 # Set defaults
 BRANCH ?= master
 GIT_BASEURL ?= git://github.com
@@ -5,30 +9,24 @@ GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
 VERBOSE ?= 0
+
 # Beware of build order
-
 COMPONENTS ?= builder
-
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
-BUILDERCONF ?= builder.conf
 KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
-
-#Include config file
--include $(BUILDERCONF)
-
 ifdef GIT_SUBDIR
-GIT_PREFIX ?= $(GIT_SUBDIR)/
+  GIT_PREFIX ?= $(GIT_SUBDIR)/
 endif
 
 # checking for make from Makefile is pointless
 DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
 
 ifneq (1,$(NO_SIGN))
-DEPENDENCIES += rpm-sign
+  DEPENDENCIES += rpm-sign
 endif
 
 SRC_DIR := qubes-src
