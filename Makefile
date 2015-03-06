@@ -354,7 +354,7 @@ show-vtags:
 		echo -n '('; \
 		BRANCH=$(BRANCH); \
 		if [ "$$REPO" == "." ]; then
-			branch_var="BRANCH_qubes_builder"; \
+			branch_var="BRANCH_builder"; \
 		else \
 			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
 		fi; \
