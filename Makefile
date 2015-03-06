@@ -143,8 +143,7 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-linux-template-builder: template
-template:: 
+template linux-template-builder::
 	@for DIST in $(DISTS_VM); do
 	    # Allow template flavors to be declared within the DISTS_VM declaration
 	    # <distro>+<template flavor>+<template options>+<template options>...
