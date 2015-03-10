@@ -56,9 +56,22 @@
 # Default: fc20
 
 # DISTS_VM - distributions for VM packages (can be list - separate with space)
-# Supported distros: fc15 fc17 fc18 fc19 fc20
+# Supported distros: fc15 fc17 fc18 fc19 fc20 (depends on enabled plugins, see below)
 # Windows: win7x64 win7x86 winVistax64 winVistax86 winXPx64 winXPx86
 # Default: fc20
+
+# BUILDER_PLUGINS - qubes-builder and template-builder plugins (can be a list
+# - separate with space). You need to set the plugin(s) to be able to produce
+# any package - all the distribution-specific code is now in the plugins. For
+# base Qubes OS build you probably want to enable 'builder-fedora' plugin.
+# Note: you need to also add the plugin(s) to COMPONENTS, to have it
+# downloaded.
+# Default: no value
+
+# BUILDER_PLUGINS_<dist> - plugins enabled only for particular
+# distribution/version. For example:
+# BUILDER_PLUGINS_fc20 = builder-fedora
+# Default: no value
 
 # QUBES_RELEASE - set release version of result iso
 # Default: test-build
