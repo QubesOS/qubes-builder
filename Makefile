@@ -149,6 +149,12 @@ template linux-template-builder::
 	    DIST=$${dist_array[0]}
 	    TEMPLATE_FLAVOR=$${dist_array[1]}
 	    TEMPLATE_OPTIONS="$${dist_array[@]:2}"
+	    plugins_var="BUILDER_PLUGINS_$$DIST"
+	    BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"
+	    BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(CURDIR)/$(SRC_DIR)/$$d"; done`
+	    export BUILDER_PLUGINS_DIRS
+	    CACHEDIR=$(CURDIR)/cache/$$DIST
+	    export CACHEDIR
 
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
@@ -162,7 +168,7 @@ template linux-template-builder::
 				make --no-print-directory -f Makefile.generic \
 					PACKAGE_SET=vm \
 					COMPONENT=`basename $$repo` \
-					UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/yum_repo_qubes/$$DIST \
+					UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
 					update-repo || exit 1
 	        elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 	            make -s -C $$repo update-repo-template || exit 1

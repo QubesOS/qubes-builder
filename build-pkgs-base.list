@@ -1,9 +1,0 @@
-@development-tools
-python
-MAKEDEV
-yum
-yum-utils
-tar
-rpm-build
-redhat-rpm-config
-which
