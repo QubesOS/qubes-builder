@@ -348,6 +348,31 @@ grep:
 	    popd > /dev/null; \
 	done
 
+switch-branch:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		echo -n "$$REPO: "; \
+		BRANCH=$(BRANCH); \
+		if [ "$$REPO" == "." ]; then
+			branch_var="BRANCH_builder"; \
+		else \
+			branch_var="BRANCH_`basename $${REPO//-/_}`"; \
+		fi; \
+		[ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
+		CURRENT_BRANCH=`git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'`; \
+		if [ "$$BRANCH" != "$$CURRENT_BRANCH" ]; then \
+			git config --get-color color.decorate.tag "red bold"; \
+			echo -n "$$CURRENT_BRANCH -> "; \
+			git config --get-color "" "reset"; \
+			git checkout "$$BRANCH"; \
+		else \
+			git config --get-color color.decorate.branch "green bold"; \
+			echo "$$CURRENT_BRANCH"; \
+		fi; \
+		git config --get-color "" "reset"; \
+	    popd > /dev/null; \
+	done
+
 show-vtags:
 	@for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
