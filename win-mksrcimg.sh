@@ -3,7 +3,7 @@
 IMG=$PWD/windows-sources.img
 IMG_MAXSZ=4g
 MNT=mnt
-SRC=qubes-src
+SRC=$SRC_DIR
 
 NEW_IMAGE=no
 WINDOWS_BUILDER_CONTENT="Makefile Makefile.generic Makefile.windows builder.conf.default

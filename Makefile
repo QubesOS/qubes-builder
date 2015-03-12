@@ -205,7 +205,7 @@ sign-all:
 		sudo rpm --import qubes-release-*-signing-key.asc ; \
 		echo "--> Checking which packages need to be signed (to avoid double signatures)..." ; \
 		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm) windows-tools/rpm/noarch/*.rpm; do \
-			if ! qubes-src/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
+			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
 		done ; \
@@ -236,7 +236,7 @@ qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONE
 qubes-os-iso: get-sources qubes sign-all iso
 
 clean-installer-rpms:
-	(cd qubes-src/$(INSTALLER_COMPONENT)/yum || cd qubes-src/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
+	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
 clean-rpms:: clean-installer-rpms
 	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
@@ -244,8 +244,8 @@ clean-rpms:: clean-installer-rpms
 		sudo rm -rf qubes-rpms-mirror-repo/$$dist/rpm/*.rpm || true ;\
 		createrepo -q --update qubes-rpms-mirror-repo || true; \
 	done
-	@echo 'Cleaning up rpms in qubes-src/*/rpm/*/*...'; \
-	sudo rm -fr qubes-src/*/rpm/*/*.rpm || true; \
+	@echo 'Cleaning up rpms in $(SRC_DIR)/*/rpm/*/*...'; \
+	sudo rm -fr $(SRC_DIR)/*/rpm/*/*.rpm || true; \
 
 
 clean:
