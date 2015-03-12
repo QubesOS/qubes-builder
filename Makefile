@@ -1,3 +1,5 @@
+SRC_DIR := qubes-src
+
 #Include config file
 BUILDERCONF ?= builder.conf
 -include $(BUILDERCONF)
@@ -28,8 +30,6 @@ DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
 endif
-
-SRC_DIR := qubes-src
 
 # Get rid of quotes
 DISTS_VM := $(shell echo $(DISTS_VM))
