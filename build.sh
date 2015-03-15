@@ -33,16 +33,15 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -e chroot-$DIST/home/user/.prepared_base ]; then
-    echo "-> Preparing $DIST build environment"
-    sudo -E ./prepare-chroot-fedora $PWD/chroot-$DIST $DIST
-    touch chroot-$DIST/home/user/.prepared_base
+if ! [ -d chroot-$DIST ]; then
+    echo "ERROR: You need to have build environment prepared first,"
+    echo "compile any other component (for the same target distribution) first"
 fi
 
 if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
     sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
-    sudo -E ./prepare-chroot-fedora $PWD/chroot-$DIST $DIST build-pkgs-temp.list
+    sudo chroot $PWD/chroot-$DIST yum install -y `cat build-pkgs-temp.list`
     rm -f build-pkgs-temp.list
     touch chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
 fi
