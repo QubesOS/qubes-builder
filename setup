@@ -343,10 +343,23 @@ chooseDistsDialog() {
 writeConfiguration() {
     dists=($@)
 
+    # Enable all the selected DISTS_VMs
+    #--------------------------------------------------------------------------
     echo "DISTS_VM :=" > ${CONF_FILE}
     for dist in ${dists[@]}; do
         echo "DISTS_VM += ${dist}" >> "${CONF_FILE}"
     done
+    
+    # Set 'DISTS_DEFINED ?= 1' to allow aliases to function.  The setup.conf
+    # configuration file is not loaded during setup which prevent this value
+    # from being set during the setup process and therefore allows the
+    # reading of all the default DISTS_VMs to be able to provide in the
+    # chooseDistsDialog.  Setup clears this value when running.
+    #--------------------------------------------------------------------------
+    if [ -e "${CONF_OVERRIDE}" ]; then
+        comment 'DISTS_DEFINED enables the alias parsing functions when set.'
+        echo -e "DISTS_DEFINED ?= 1" >> "${CONF_FILE}"
+    fi
 }
 
 
@@ -370,7 +383,7 @@ summary() {
     comment "Qubes Release: ${RELEASE}" \
         "Source Prefix: ${GIT_PREFIX} (repo)" "" \
             "Master Configuration File(s):" "setup.conf ${about}" "" \
-            "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}"
+            "builder.conf linked to:" "${CONF_MASTER_DIR}/${CONF_MASTER_FILE}."
 
     # Set SSH mode on/off; will translate git@ to https:// if disabled
     #--------------------------------------------------------------------------
@@ -391,7 +404,7 @@ summary() {
     # Disable some COMPONENTS if template only build
     #--------------------------------------------------------------------------
     if [ "${TEMPLATE}" == "1" ]; then
-        comment "Only build templates (comment out to build all of Qubes)"
+        comment "Only build templates (comment out to build all of Qubes)."
         echo -e "TEMPLATE_ONLY ?= ${TEMPLATE}" >> "${CONF_FILE}"
     fi
 
@@ -403,7 +416,7 @@ about::
 	@echo "setup.conf"
 EOF
 
-    info "New configuration file written to: ${CONF_FILE}"
+    info "New configuration file written to: ${CONF_FILE}."
     debug "$(cat ${CONF_FILE})"
     info
 }
@@ -411,6 +424,7 @@ EOF
 
 instructions() {
     # Qubes build info
+    #--------------------------------------------------------------------------
     if [ "${TEMPLATE}" != "1" ]; then
         read -r -d '' BUILD_QUBES <<'EOF' || true
 Complete Qubes Build Steps
@@ -425,6 +439,7 @@ EOF
     fi
 
     # Template build info
+    #--------------------------------------------------------------------------
     read -r -d '' BUILD_TEMPLATES <<'EOF' || true
 Template Only Build Steps
 -------------------------
@@ -492,7 +507,7 @@ function parseMakefiles {
     # Move setup.conf out of the way if it exists 
     #--------------------------------------------------------------------------
     if [ -f "${CONF_FILE}" ]; then
-        SELECTED_DISTS_VM=( $(GET_VAR=DISTS_VM make get-var) )
+        SELECTED_DISTS_VM=( $(DISTS_DEFINED= GET_VAR=DISTS_VM make get-var) )
         mv "${CONF_FILE}" "${CONF_FILE_OLD}"
     fi
 
