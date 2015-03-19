@@ -28,7 +28,9 @@ set -e
 
 url_var="GIT_URL_${COMPONENT//-/_}"
 
-if [ -n "${!url_var}" ]; then
+if [ -n "$GIT_URL" ]; then
+    GIT_URL="$GIT_URL"
+elif [ -n "${!url_var}" ]; then
     GIT_URL="${!url_var}"
 else
     GIT_URL=$GIT_BASEURL/$GIT_PREFIX$COMPONENT$GIT_SUFFIX
