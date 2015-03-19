@@ -183,21 +183,6 @@ template linux-template-builder::
 	    fi
 	done
 
-kde-dom0:
-	@set -e
-	@MAKE_TARGET="rpms_stage_completed1" ./build.sh $(DIST_DOM0) kde-dom0
-	@MAKE_TARGET="rpms_stage_completed2" ./build.sh $(DIST_DOM0) kde-dom0
-	@MAKE_TARGET="rpms_stage_completed3" ./build.sh $(DIST_DOM0) kde-dom0
-	@MAKE_TARGET="rpms_stage_completed4" ./build.sh $(DIST_DOM0) kde-dom0
-
-dom0-updates:
-	@set -e
-	@MAKE_TARGET="stage0" ./build.sh $(DIST_DOM0) dom0-updates
-	@MAKE_TARGET="stage1" ./build.sh $(DIST_DOM0) dom0-updates
-	@MAKE_TARGET="stage2" ./build.sh $(DIST_DOM0) dom0-updates
-	@MAKE_TARGET="stage3" ./build.sh $(DIST_DOM0) dom0-updates
-	@MAKE_TARGET="stage4" ./build.sh $(DIST_DOM0) dom0-updates
-
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:
 	@echo "-> Signing packages..."
