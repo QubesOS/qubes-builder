@@ -105,7 +105,7 @@ generic-prep:
 
 .PHONY: generic-prepare-chroot
 generic-prepare-chroot:
-	mkdir -p "$(CACHEDIR)"
+	@mkdir -p "$(CACHEDIR)"
 
 .PHONY: prepare-chroot
 prepare-chroot: generic-prepare-chroot dist-prepare-chroot
