@@ -551,3 +551,14 @@ windows-image-extract:
 		fi; \
 	done; \
 	./win-mountsrc.sh umount
+
+# Returns variable value
+# Example usage: GET_VAR=DISTS_VM make get-var
+.PHONY: get-var
+get-var::
+	@GET_VAR=$${!GET_VAR}; \
+	echo "$${GET_VAR}"
+
+.PHONY: install-deps
+install-deps::
+	@sudo yum install -y $(DEPENDENCIES)
