@@ -7,7 +7,7 @@ SRC=$SRC_DIR
 
 NEW_IMAGE=no
 WINDOWS_BUILDER_CONTENT="Makefile Makefile.generic Makefile.windows builder.conf.default
-                        get-sources.sh verify-git-tag.sh
+                        scripts
                         scripts-windows windows-build-files
                         windows-prepare.bat"
 

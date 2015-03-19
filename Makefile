@@ -89,10 +89,10 @@ help:
 
 get-sources::
 	@set -a; \
-	SCRIPT_DIR=$(CURDIR); \
+	SCRIPT_DIR=$(CURDIR)/scripts; \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
 	for REPO in $(GIT_REPOS); do \
-		$$SCRIPT_DIR/get-sources.sh || exit 1; \
+		$$SCRIPT_DIR/get-sources || exit 1; \
 	done
 
 .PHONY: check-depend
@@ -118,7 +118,7 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM); do \
 		DIST=$${DIST%%+*}; \
-	        MAKE_TARGET="rpms-vm" ./build.sh $$DIST $* || exit 1; \
+	        MAKE_TARGET="rpms-vm" ./scripts/build $$DIST $* || exit 1; \
 	    done; \
 	fi
 
@@ -127,7 +127,7 @@ $(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depe
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
-	    MAKE_TARGET="rpms-dom0" ./build.sh $(DIST_DOM0) $* || exit 1; \
+	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
@@ -307,7 +307,7 @@ iso:
 		ln -f $(SRC_DIR)/linux-kernel*/rpm/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
 	@make -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) update-repo || exit 1
-	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./build.sh $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
+	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
 	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
@@ -440,14 +440,14 @@ push:
 SHELL = /bin/bash
 -prepare-merge:
 	@set -a; \
-	SCRIPT_DIR=$(CURDIR); \
+	SCRIPT_DIR=$(CURDIR)/scripts; \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
 	FETCH_ONLY=1; \
 	REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
-		$$SCRIPT_DIR/get-sources.sh || exit 1; \
+		$$SCRIPT_DIR/get-sources || exit 1; \
 	done;
 
 prepare-merge: -prepare-merge show-unmerged
