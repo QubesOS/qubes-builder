@@ -1,0 +1,12 @@
+#!/bin/sh
+
+exec 2>/tmp/log
+set -x
+
+read attach_key
+
+while read key path; do
+	if [ "x$attach_key" == "x$key" ]; then
+		qvm-block --force-root -A "$QREXEC_REMOTE_DOMAIN" "$path"
+	fi
+done < /var/run/qubesbuilder.shareddisks

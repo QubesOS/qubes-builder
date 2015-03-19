@@ -1,0 +1,138 @@
+#!/bin/bash
+
+set -e
+
+export DIST=$1
+TEMPLATE_CONF="$2"
+IMAGE_SIZE=20G
+IMAGE_NAME="untrusted-builder-env-$$.img"
+TEMPLATE_BUILDER_COMPONENT=linux-template-builder
+TEMPLATE_NAME="`make --no-print-directory -C $SRC_DIR/$TEMPLATE_BUILDER_COMPONENT DIST=$DIST template-name`"
+TEMPLATE_DIR=$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME
+
+prepareAndMountImage() {
+    umountImage
+    if [ -e "${IMAGE_NAME}" ]; then
+        echo "ERROR: Image file ${IMAGE_NAME} already exists!"
+        exit 1
+    fi
+    truncate -s ${IMAGE_SIZE} "${IMAGE_NAME}"
+    mkfs.ext4 -F -L BUILDER "${IMAGE_NAME}"
+    sudo mount "${IMAGE_NAME}" mnt/ -o loop,discard
+    sudo chown ${UID} mnt/
+}
+
+# image needs to be mounted at this stage
+parseConfigLocation() {
+    CONF="$1"
+
+    GET_CONF_SCRIPT=
+    if echo "$CONF" | grep -q :; then
+        TEMPLATE_CONF_URL=`echo $CONF | cut -f 1 -d,`
+        TEMPLATE_CONF_BRANCH=`echo $CONF | cut -f 2 -d,`
+        TEMPLATE_CONF_KEY=`echo $CONF | cut -f 3 -d,`
+        cp "$TEMPLATE_CONF_KEY" mnt/builder-conf-repo-key.asc
+        GET_CONF_SCRIPT="export GNUPGHOME=\$PWD/keyrings/git;
+        mkdir -m 0700 -p \$GNUPGHOME;
+        for fpr in \$(gpg --with-fingerprint builder-conf-repo-key.asc | grep fingerprint | cut -f 2 -d= | tr -d ' '); do
+            echo \$fpr:6: | gpg --import-ownertrust;
+        done;
+        gpg --import builder-conf-repo-key.asc;
+        SCRIPT_DIR=\$PWD GIT_URL=\"$TEMPLATE_CONF_URL\" REPO=/tmp/builder-conf-repo BRANCH=\"$TEMPLATE_CONF_BRANCH\" ./get-sources.sh || exit 1;
+        rm -rf \$GNUPGHOME; unset GNUPGHOME;
+        cp /tmp/builder-conf-repo/config/builder.conf ./builder.conf;
+        "
+    elif [ -r "$CONF" ]; then
+        cp "$CONF" mnt/builder.conf
+    else
+        echo "ERROR: Cannot resolve config location: $CONF" >&2
+        exit 1
+    fi 
+}
+
+umountImage() {
+    if grep -q ${PWD}/mnt /proc/mounts; then
+        sudo umount -R ${PWD}/mnt
+    fi
+}
+
+copyBuilder() {
+    sudo rsync -a --sparse --delete --one-file-system \
+        --exclude "/rpm/" \
+        --exclude "/rpmbuild/" \
+        --exclude "/chroot-*/" \
+        --exclude "/lost+found/" \
+        --exclude "/*.img" \
+        --exclude-from .gitignore \
+        --include "/*.conf" \
+        "${PWD}/" mnt/
+}
+
+allowIncomingTemplateCopy() {
+    key=$1
+    dir=$2
+
+    echo "$key $dir" >> /tmp/qubesbuilder.allowedtransfers
+}
+
+disallowIncomingTemplateCopy() {
+    key=$1
+    sed -i -e "/^$key/d" /tmp/qubesbuilder.allowedtransfers
+}
+
+runBuild() {
+    mkdir -p "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
+    key=`head -c 20 /dev/random | xxd -p`
+    allowIncomingTemplateCopy "$key" "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
+    trap "disallowIncomingTemplateCopy $key" ERR
+    /usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.ExportDisk /bin/echo -e "$key\n${PWD}/${IMAGE_NAME}"
+    qvm-run --dispvm "/usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.AttachDisk /bin/echo $key;
+        exec 2>&1;
+        echo Waiting for /dev/xvdi;
+        set -x -e;
+        while ! [ -b /dev/xvdi ]; do sleep 0.1; done;
+        pkexec sh -c 'echo Defaults !requiretty >> /etc/sudoers';
+        sudo mount /dev/xvdi /mnt/removable -o discard;
+        cd /mnt/removable;
+        $GET_CONF_SCRIPT
+        make get-sources COMPONENTS='builder \$(BUILDER_PLUGINS)';
+        make get-sources;
+        make install-deps DISTS_VM=$DIST;
+        make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
+        cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
+        rm -rf untrusted_appmenus;
+        ln -s ../../appmenus untrusted_appmenus;
+        ls -l . ../../ untrusted_appmenus/;
+        echo \"Build done, sending image back to the $HOSTNAME VM\";
+        /usr/lib/qubes/qrexec-client-vm $HOSTNAME qubesbuilder.CopyTemplateBack /bin/sh -c 'echo $key; exec tar chSz untrusted_appmenus root.img';
+        cd /;
+        sudo umount /mnt/removable"
+    disallowIncomingTemplateCopy "$key"
+}
+
+verifyReceivedFiles() {
+    # block any non-normal files
+    find $TEMPLATE_DIR \! \( -type d -o -type f \) -delete
+    if [ ! -r $TEMPLATE_DIR/root.img ]; then
+        echo "ERROR: Didn't received root.img, build failed" >&2
+        exit 1
+    fi
+}
+
+echo "--> Preparing the image"
+prepareAndMountImage
+echo "--> Installing template-builder in the image"
+copyBuilder
+if [ -n "$TEMPLATE_CONF" ]; then
+    parseConfigLocation "$TEMPLATE_CONF"
+fi
+umountImage
+# Remove old image
+rm -rf $TEMPLATE_DIR/root.img $TEMPLATE_DIR/untrusted_appmenus
+echo "--> Starting build process"
+runBuild
+rm -f $IMAGE_NAME
+echo "--> Generating the package"
+verifyReceivedFiles
+cd $SRC_DIR/$TEMPLATE_BUILDER_COMPONENT
+make prepare package DIST=$DIST

@@ -155,6 +155,10 @@ template linux-template-builder::
 	    export BUILDER_PLUGINS_DIRS
 	    CACHEDIR=$(CURDIR)/cache/$$DIST
 	    export CACHEDIR
+	    MAKE_TARGET=rpms
+	    if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then
+	        MAKE_TARGET=rootimg-build
+	    fi
 
 	    # some sources can be downloaded and verified during template building
 	    # process - e.g. archlinux template
@@ -176,12 +180,20 @@ template linux-template-builder::
 	    done
 	    if [ "$(VERBOSE)" -eq 0 ]; then
 	        echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
-	        make -s -C $(SRC_DIR)/linux-template-builder rpms > build-logs/template-$$DIST.log 2>&1 || exit 1
+	        make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
 			echo "--> Done."
 	    else
-	        make -s -C $(SRC_DIR)/linux-template-builder rpms || exit 1
+	        make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
 	    fi
 	done
+
+template-in-dispvm: $(addprefix template-in-dispvm-,$(DISTS_VM))
+
+template-in-dispvm-%: DIST=$*
+template-in-dispvm-%:
+	BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF)))
+	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."
+	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 sign-all:

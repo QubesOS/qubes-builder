@@ -10,3 +10,4 @@ keyrings/
 rpm/
 windows-prereqs/
 windows-sources.img
+untrusted-builder-env-*

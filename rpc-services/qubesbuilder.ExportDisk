@@ -1,0 +1,7 @@
+#!/bin/sh
+
+read key
+read path
+
+umask 000
+echo "$key $QREXEC_REMOTE_DOMAIN:$path" >> /var/run/qubesbuilder.shareddisks

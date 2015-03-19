@@ -73,6 +73,24 @@
 # BUILDER_PLUGINS_fc20 = builder-fedora
 # Default: no value
 
+# BUILDER_TEMPLATE_CONF - location of builder.conf to build a template. The
+# value is list of pairs <dist>:<location>, where <dist> can include a flavor
+# (e.g. fc20+minimal or wheezy+whonix-workstation). Location can be either local file path, or three parameters:
+#  - GIT_URL - full URL to some git repo
+#  - BRANCH - branch name
+#  - KEY - path to local file with key(s) to verify tag on that repo
+# Those three parameters should be separated by comas. Example:
+# BUILDER_TEMPLATE_CONF = fc20+minimal:https://github.com/username/reponame,master,/home/user/keys/username.asc
+#
+# Repo should contain (at least) "config/builder.conf" file. This file (only)
+# will be copied to qubes-builder, so it shouldn't rely directly on other files
+# in that repo. But can set for example URL to download builder plugins, or
+# even main builder modifications.
+#
+# This setting is used only when building the template in DispVM
+# (template-in-dispvm target)
+# Default: no value
+
 # QUBES_RELEASE - set release version of result iso
 # Default: test-build
 

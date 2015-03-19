@@ -1,0 +1,14 @@
+#!/bin/sh
+
+exec 2>/tmp/log
+set -x
+
+read attach_key
+
+dir=
+while read key path; do
+    if [ "x$attach_key" == "x$key" ]; then
+        dir="$path"
+    fi
+done < /tmp/qubesbuilder.allowedtransfers
+[ -n "$dir" ] && exec tar xkzS -C "$dir" root.img untrusted_appmenus
