@@ -1,3 +1,5 @@
+.DEFAULT_GOAL = help
+
 SRC_DIR := qubes-src
 
 #Include config file
