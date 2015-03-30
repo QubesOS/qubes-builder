@@ -498,7 +498,7 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 					COMPONENT=`basename $$REPO` \
 					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 					update-repo; \
-			fi \
+			fi; \
 			for DIST in $(DISTS_VM); do \
 				DIST=$${DIST%%+*}; \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
