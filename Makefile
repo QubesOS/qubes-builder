@@ -126,11 +126,13 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 
 $(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depend
 	@$(call check_branch,$*)
+ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
 	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
+endif
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
 # from xfce4 repo...). "Empty" rule because real package are built by above
@@ -490,11 +492,13 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
 			echo "Updating $$REPO..."; \
-			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-				UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
-				COMPONENT=`basename $$REPO` \
-				SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
-				update-repo; \
+			if [ -n "$(DIST_DOM0)" ]; then \
+				make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
+					UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
+					COMPONENT=`basename $$REPO` \
+					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
+					update-repo; \
+			fi \
 			for DIST in $(DISTS_VM); do \
 				DIST=$${DIST%%+*}; \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
