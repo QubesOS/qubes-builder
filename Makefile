@@ -521,7 +521,7 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
-		(cd $$repo/.. && ./update_repo-$*.sh); \
+		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
 
 update-repo-current:
@@ -538,7 +538,7 @@ update-repo-current:
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
-		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)"); \
+		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)" `basename $$repo`); \
 	done
 
 windows-image:
