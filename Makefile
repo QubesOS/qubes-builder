@@ -526,8 +526,10 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 
 update-repo-current:
 	dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
-	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
-	repos_to_update="$$repo_dom0_basedir"; \
+	if [ -n "$(DIST_DOM0)" ]; then \
+		[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
+		repos_to_update="$$repo_dom0_basedir"; \
+	fi; \
 	for DIST in $(DISTS_VM); do \
 		DIST=$${DIST%%+*}; \
 		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
