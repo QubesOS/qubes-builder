@@ -486,8 +486,10 @@ do-merge:
 
 update-repo-current-testing update-repo-security-testing update-repo-unstable: update-repo-%:
 	@dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
-	[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
-	repos_to_update="$$repo_dom0_basedir"; \
+	if [ -n "$(DIST_DOM0)" ]; then \
+		[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
+		repos_to_update="$$repo_dom0_basedir"; \
+	fi; \
 	for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
