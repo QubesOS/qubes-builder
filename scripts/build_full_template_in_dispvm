@@ -18,6 +18,7 @@ prepareAndMountImage() {
     fi
     truncate -s ${IMAGE_SIZE} "${IMAGE_NAME}"
     mkfs.ext4 -F -L BUILDER "${IMAGE_NAME}"
+    mkdir -p mnt
     sudo mount "${IMAGE_NAME}" mnt/ -o loop,discard
     sudo chown ${UID} mnt/
 }
@@ -58,13 +59,13 @@ umountImage() {
 
 copyBuilder() {
     sudo rsync -a --sparse --delete --one-file-system \
+        --include "/*.conf" \
         --exclude "/rpm/" \
         --exclude "/rpmbuild/" \
         --exclude "/chroot-*/" \
         --exclude "/lost+found/" \
         --exclude "/*.img" \
         --exclude-from .gitignore \
-        --include "/*.conf" \
         "${PWD}/" mnt/
 }
 
@@ -96,8 +97,8 @@ runBuild() {
         cd /mnt/removable;
         $GET_CONF_SCRIPT
         make get-sources COMPONENTS='builder \$(BUILDER_PLUGINS)';
-        make get-sources;
         make install-deps DISTS_VM=$DIST;
+        make get-sources;
         make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
         cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
         rm -rf untrusted_appmenus;
