@@ -195,7 +195,7 @@ template-in-dispvm: $(addprefix template-in-dispvm-,$(DISTS_VM))
 
 template-in-dispvm-%: DIST=$*
 template-in-dispvm-%:
-	BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF)))
+	@BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF)))
 	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."
 	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
