@@ -141,7 +141,13 @@ packages:
 		fi;\
 		if [ $$BUILD_RETCODE -gt 0 ]; then\
 			echo "--> build failed!";\
-			[ $(VERBOSE) -eq 0 ] && tail "$(BUILD_LOG)";\
+			if [ $(VERBOSE) -eq 0 ]; then\
+				if [ -e /etc/this-is-dvm ]; then\
+					cat "$(BUILD_LOG)";\
+				else\
+					tail "$(BUILD_LOG)";\
+				fi;\
+			fi;\
 			exit 1;\
 		fi;\
 	done
