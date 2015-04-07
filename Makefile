@@ -204,6 +204,57 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
+$(addsuffix -sign,$(COMPONENTS)): %-sign : %-dom0-sign %-vm-sign
+
+$(filter-out qubes-dom0-sign, $(addsuffix -dom0-sign,$(COMPONENTS))) : %-dom0-sign : check-depend
+	@$(call check_branch,$*)
+ifneq ($(DIST_DOM0),)
+	@SIGN_KEY=$(SIGN_KEY); \
+	sign_key_var="SIGN_KEY_$(DIST_DOM0)"; \
+	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
+	if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* SIGN_KEY=$$SIGN_KEY sign || exit 1; \
+	else \
+		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/rpm/*/*.rpm 2>/dev/null); do \
+			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
+				FILE_LIST="$$FILE_LIST $$RPM" ;\
+			fi ;\
+		done ; \
+		echo "--> Signing..."; \
+		RPMSIGN_OPTS=; \
+		if [ -n "$$SIGN_KEY" ]; then \
+			RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
+			echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+		fi; \
+		setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
+	fi
+endif
+
+$(filter-out qubes-vm-sign, $(addsuffix -vm-sign,$(COMPONENTS))) : %-vm-sign : check-depend
+	@$(call check_branch,$*)
+	@for DIST in $(DISTS_VM); do \
+		DIST=$${DIST%%+*}; \
+		SIGN_KEY=$(SIGN_KEY); \
+		sign_key_var="SIGN_KEY_$$DIST"; \
+		[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
+		if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* SIGN_KEY=$$SIGN_KEY -f Makefile.generic sign || exit 1; \
+		else \
+			FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/rpm/*/*.rpm 2>/dev/null); do \
+				if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
+					FILE_LIST="$$FILE_LIST $$RPM" ;\
+				fi ;\
+			done; \
+			echo "--> Signing..."; \
+			RPMSIGN_OPTS=; \
+			if [ -n "$$SIGN_KEY" ]; then \
+				RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
+				echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+			fi; \
+			setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
+		fi; \
+	done
+
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
 # from xfce4 repo...). "Empty" rule because real package are built by above
 # generic rule as xfce4-dom0-dom0
@@ -270,33 +321,12 @@ template-in-dispvm-%:
 	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
-sign-all:
-	@echo "-> Signing packages..."
-	@if ! [ $(NO_SIGN) ] ; then \
-		sudo rpm --import qubes-release-*-signing-key.asc ; \
-		echo "--> Checking which packages need to be signed (to avoid double signatures)..." ; \
-		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/*/rpm/*/*.rpm) windows-tools/rpm/noarch/*.rpm; do \
-			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
-				FILE_LIST="$$FILE_LIST $$RPM" ;\
-			fi ;\
-		done ; \
-		echo "--> Singing..."; \
-		RPMSIGN_OPTS=; \
-		if [ -n "$$SIGN_KEY" ]; then \
-			RPMSIGN_OPTS="--define=%_gpg_name $$SIGN_KEY"; \
-			echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
-		fi; \
-		sudo chmod go-rw /dev/tty ;\
-		echo | rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST ;\
-		sudo chmod go+rw /dev/tty ;\
-	else \
-		echo  "--> NO_SIGN given, skipping package signing!" ;\
-	fi; \
-	for dist in $(shell ls qubes-packages-mirror-repo/); do \
-		if [ -d qubes-packages-mirror-repo/$$dist/rpm ]; then \
-			sudo ./update-local-repo.sh $$dist; \
-		fi \
-	done
+ifeq (,$(NO_SIGN))
+sign-all:: $(addsuffix -sign,$(COMPONENTS))
+else
+sign-all::
+	@true
+endif
 
 qubes:: umount build-info
 qubes:: $(filter-out builder,$(COMPONENTS))

@@ -71,7 +71,7 @@ include $(ORIG_SRC)/Makefile.builder
 #   process with stdout+stderr redirected to log file. If you want to print
 #   some message, use 3-rd file descriptor
 #
-# This file can specify additional targets (like update-repo-*)
+# This file can specify additional targets (like update-repo-*, sign)
 include $(BUILDER_MAKEFILE)
 
 
