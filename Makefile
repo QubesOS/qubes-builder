@@ -215,7 +215,7 @@ ifneq ($(DIST_DOM0),)
 	if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* SIGN_KEY=$$SIGN_KEY sign || exit 1; \
 	else \
-		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/rpm/*/*.rpm 2>/dev/null); do \
+		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/pkgs/dom0-fc*/*/*.rpm 2>/dev/null); do \
 			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
@@ -240,7 +240,7 @@ $(filter-out qubes-vm-sign, $(addsuffix -vm-sign,$(COMPONENTS))) : %-vm-sign : c
 		if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* SIGN_KEY=$$SIGN_KEY -f Makefile.generic sign || exit 1; \
 		else \
-			FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/rpm/*/*.rpm 2>/dev/null); do \
+			FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/pkgs/vm-fc*/*/*.rpm 2>/dev/null); do \
 				if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
 					FILE_LIST="$$FILE_LIST $$RPM" ;\
 				fi ;\
@@ -344,11 +344,11 @@ clean-installer-rpms:
 
 clean-rpms:: clean-installer-rpms
 	@for dist in $(DISTS_ALL); do \
-		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/rpm/..."; \
+		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/..."; \
 		sudo rm -rf qubes-packages-mirror-repo/$$dist || true ;\
 	done
-	@echo 'Cleaning up rpms in $(SRC_DIR)/*/rpm/*/*...'; \
-	sudo rm -fr $(SRC_DIR)/*/rpm/*/*.rpm || true; \
+	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'; \
+	sudo rm -fr $(SRC_DIR)/*/pkgs/*/*/*.rpm || true; \
 
 .PHONY: clean
 clean::
@@ -442,7 +442,7 @@ iso:
 		fi \
 	done
 	if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
-		ln -f $(SRC_DIR)/linux-kernel*/rpm/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
+		ln -f $(SRC_DIR)/linux-kernel*/pkgs/dom0-fc*/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
 	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
 	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
