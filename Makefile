@@ -343,10 +343,9 @@ clean-installer-rpms:
 	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
 clean-rpms:: clean-installer-rpms
-	@for dist in $(shell ls qubes-packages-mirror-repo/); do \
+	@for dist in $(DISTS_ALL); do \
 		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/rpm/..."; \
-		sudo rm -rf qubes-packages-mirror-repo/$$dist/rpm/*.rpm || true ;\
-		createrepo -q --update qubes-packages-mirror-repo || true; \
+		sudo rm -rf qubes-packages-mirror-repo/$$dist || true ;\
 	done
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/rpm/*/*...'; \
 	sudo rm -fr $(SRC_DIR)/*/rpm/*/*.rpm || true; \
