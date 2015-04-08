@@ -1,4 +1,4 @@
-# Generic makfile to build Qubes component package
+# Generic makefile to build Qubes component package
 #
 # Variables used as "parameters":
 #  DIST
@@ -11,12 +11,14 @@
 .EXPORT_ALL_VARIABLES:
 # Load "builder.config" from every plugin
 
+LOADING_PLUGINS = 1
 undefine BUILDER_MAKEFILE 
 BUILDER_PLUGINS_COMBINED = $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_$(DIST))
 -include $(addsuffix /Makefile.builder,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS_COMBINED)))
 ifeq ($(BUILDER_MAKEFILE),)
 $(error Building packages for $(DIST) not supported by any of configured plugins)
 endif
+undefine LOADING_PLUGINS
 
 THIS_MAKEFILE = Makefile.generic
 
@@ -141,13 +143,7 @@ packages:
 		fi;\
 		if [ $$BUILD_RETCODE -gt 0 ]; then\
 			echo "--> build failed!";\
-			if [ $(VERBOSE) -eq 0 ]; then\
-				if [ -e /etc/this-is-dvm ]; then\
-					cat "$(BUILD_LOG)";\
-				else\
-					tail "$(BUILD_LOG)";\
-				fi;\
-			fi;\
+			[ $(VERBOSE) -eq 0 ] && tail "$(BUILD_LOG)";\
 			exit 1;\
 		fi;\
 	done
