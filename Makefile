@@ -1,6 +1,7 @@
 .DEFAULT_GOAL = help
 
 SRC_DIR := qubes-src
+BUILDER_DIR := $(shell readlink -m $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 #Include config file
 BUILDERCONF ?= builder.conf
@@ -33,9 +34,61 @@ ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
 endif
 
+BUILDER_PLUGINS_DISTS :=
+_dist = $(word 1,$(subst +, ,$(_dist_vm)))
+_plugin = $(BUILDER_PLUGINS_$(_dist))
+BUILDER_PLUGINS_DISTS += $(strip $(foreach _dist_vm, $(DISTS_VM), $(_plugin)))
+
+# Used to track automatically modified values
+_ORIGINAL_DISTS_VM := $(DISTS_VM)
+_ORIGINAL_DISTS_ALL := $(DISTS_ALL)
+_ORIGINAL_BUILDER_PLUGINS := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
+_ORIGINAL_COMPONENTS := $(COMPONENTS)
+_ORIGINAL_TEMPLATE := $(TEMPLATE)
+_ORIGINAL_TEMPLATE_FLAVOR := $(TEMPLATE_FLAVOR)
+_ORIGINAL_TEMPLATE_ALIAS := $(TEMPLATE_ALIAS)
+_ORIGINAL_TEMPLATE_LABEL := $(TEMPLATE_LABEL)
+_ORIGINAL_TEMPLATE_FLAVOR_DIR := $(TEMPLATE_FLAVOR_DIR)
+
+# Apply aliases and add TEMPLATE_LABEL if it does not already exist
+_alias_name = $(word 1,$(subst :, ,$(_alias)))
+_alias_flavor = $(word 2,$(subst :, ,$(_alias)))
+_template_name = $(subst +,-,$(_alias_name))
+_aliases = $(eval DISTS_VM := $(patsubst $(_alias_name), $(_alias_flavor), $(DISTS_VM))) \
+          $(if $(filter $(_alias_flavor):$(_template_name), $(TEMPLATE_LABEL)),, \
+              $(eval TEMPLATE_LABEL += $(_alias_flavor):$(_template_name)) \
+          )
+$(strip $(foreach _alias, $(TEMPLATE_ALIAS), $(_aliases)))
+
+# Add BUILDER_PLUGINS COMPONENTS automatically if they do not already exist
+_component = $(if $(filter $(_plugin), $(COMPONENTS)),, $(_plugin))
+_components += $(foreach _plugin, $(BUILDER_PLUGINS), $(_component))
+COMPONENTS := $(COMPONENTS) $(_components)
+
+# Sets the COMPONENTS to only what is needed to build the template
+ifeq ($(TEMPLATE_ONLY), 1)
+  COMPONENTS := $(TEMPLATE)
+  DIST_DOM0 :=
+endif
+
+# Include any BUILDER_PLUGINS builder.conf configurations
+BUILDER_PLUGINS_ALL := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
+-include $(addsuffix /builder.conf,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS)))
+-include $(addsuffix /builder.conf,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS_DISTS)))
+
+# Remove any unused labels
+ifneq "$(SETUP_MODE)" "1"
+  _template_flavor = $(word 1,$(subst :, ,$(_LABEL)))
+  _template_name = $(word 2,$(subst :, ,$(_LABEL)))
+  _labels = $(filter $(filter $(_template_flavor), $(DISTS_VM)):$(_template_name), $(_LABEL))
+  TEMPLATE_LABEL := $(strip $(foreach _LABEL, $(TEMPLATE_LABEL), $(_labels)))
+endif
+
 # Get rid of quotes
 DISTS_VM := $(shell echo $(DISTS_VM))
 NO_CHECK := $(shell echo $(NO_CHECK))
+TEMPLATE_FLAVOR := $(shell echo $(TEMPLATE_FLAVOR))
+DEPENDENCIES := $(shell echo $(DEPENDENCIES))
 
 DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
 
@@ -58,7 +111,6 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 				   popd > /dev/null; \
 			   fi; 
 
-
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:
 help:
@@ -66,10 +118,15 @@ help:
 	@echo "make qubes-dom0       -- download and build all dom0 components"
 	@echo "make qubes-vm         -- download and build all VM components"
 	@echo "make get-sources      -- download/update all sources"
+	@echo "make iso              -- update installer repos, make iso"
+	@echo "make build-info       -- show current build options"
+	@echo "make about            -- show all included Makefiles"
 	@echo "make sign-all         -- sign all packages"
 	@echo "make clean-all        -- remove any downloaded sources and built packages"
 	@echo "make clean-rpms       -- remove any built packages"
-	@echo "make iso              -- update installer repos, make iso"
+	@echo "make clean-chroot     -- remove all chroot directories"
+	@echo "make mostlyclean      -- remove built packages and built templates"
+	@echo "make distclean        -- remove all files and directories built or added"
 	@echo "make check            -- check for any uncommited changes and unsigned tags"
 	@echo "make check-depend     -- check for build dependencies ($(DEPENDENCIES))"
 	@echo "make diff             -- show diffs for any uncommitted changes"
@@ -89,6 +146,11 @@ help:
 	@echo "You can also specify COMPONENTS=\"c1 c2 c3 ...\" on command line"
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
+.PHONY: get-sources
+get-sources:: COMPONENTS := $(filter-out builder $(BUILDER_PLUGINS), $(COMPONENTS))
+get-sources:: COMPONENTS := $(BUILDER_PLUGINS) $(COMPONENTS)
+get-sources:: GIT_REPOS := $(addprefix $(SRC_DIR)/, $(COMPONENTS))
+get-sources:: build-info
 get-sources::
 	@set -a; \
 	SCRIPT_DIR=$(CURDIR)/scripts; \
@@ -222,16 +284,19 @@ sign-all:
 	else \
 		echo  "--> NO_SIGN given, skipping package signing!" ;\
 	fi; \
-	for dist in $(shell ls qubes-rpms-mirror-repo/); do \
-		if [ -d qubes-rpms-mirror-repo/$$dist/rpm ]; then \
+	for dist in $(shell ls qubes-packages-mirror-repo/); do \
+		if [ -d qubes-packages-mirror-repo/$$dist/rpm ]; then \
 			sudo ./update-local-repo.sh $$dist; \
 		fi \
 	done
 
-qubes: $(filter-out builder,$(COMPONENTS))
+qubes:: umount build-info
+qubes:: $(filter-out builder,$(COMPONENTS))
 
-qubes-dom0: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
+qubes-dom0:: umount build-info
+qubes-dom0:: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
+qubes-vm:: umount build-info
 qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
 
 qubes-os-iso: get-sources qubes sign-all iso
@@ -240,16 +305,16 @@ clean-installer-rpms:
 	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
 clean-rpms:: clean-installer-rpms
-	@for dist in $(shell ls qubes-rpms-mirror-repo/); do \
-		echo "Cleaning up rpms in qubes-rpms-mirror-repo/$$dist/rpm/..."; \
-		sudo rm -rf qubes-rpms-mirror-repo/$$dist/rpm/*.rpm || true ;\
-		createrepo -q --update qubes-rpms-mirror-repo || true; \
+	@for dist in $(shell ls qubes-packages-mirror-repo/); do \
+		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/rpm/..."; \
+		sudo rm -rf qubes-packages-mirror-repo/$$dist/rpm/*.rpm || true ;\
+		createrepo -q --update qubes-packages-mirror-repo || true; \
 	done
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/rpm/*/*...'; \
 	sudo rm -fr $(SRC_DIR)/*/rpm/*/*.rpm || true; \
 
-
-clean:
+.PHONY: clean
+clean::
 	@for REPO in $(GIT_REPOS); do \
 		echo "$$REPO" ;\
 		if ! [ -d $$REPO ]; then \
@@ -267,6 +332,16 @@ clean:
 		fi ;\
 	done;
 
+.PHONY: clean-chroot
+clean-chroot:: 
+	@dists="$(shell ls -d $(BUILDER_DIR)/chroot-*)"; \
+	for dist in $$dists; do \
+	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$$dist"; \
+	    sudo rm -rf "$$dist"; \
+	done
+
+.PHONY: clean-all
+clean-all:: umount clean-chroot
 clean-all:: clean-rpms clean
 	for dir in $${DISTS_ALL[@]%%+*}; do \
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
@@ -275,6 +350,31 @@ clean-all:: clean-rpms clean
 	done || true
 	sudo rm -rf $(addprefix chroot-,$${DISTS_ALL[@]%%+*}) || true
 	sudo rm -rf $(SRC_DIR) || true
+
+.PHONY: distclean
+distclean:: umount clean-all
+	sudo rm -rf $(BUILDER_DIR)/cache/*
+	sudo rm -rf $(BUILDER_DIR)/iso/*
+	sudo rm -rf $(BUILDER_DIR)/build-logs/*
+	sudo rm -rf $(BUILDER_DIR)/repo-latest-snapshot/*
+	sudo rm -rf $(BUILDER_DIR)/builder.conf*
+	sudo rm -rf $(BUILDER_DIR)/keyrings
+	$(shell find $(BUILDER_DIR)/qubes-packages-mirror-repo/* -maxdepth 0 -type d -exec rm -rf {} \;)
+
+# Does a regular clean as well as removes all prepared and created tempalte
+# images as well as chroot-* while leave source repos in qubes-src
+.PHONY: mostlyclean
+mostlyclean:: _linux_template_builder := $(BUILDER_DIR)/$(SRC_DIR)/linux-template-builder
+mostlyclean:: umount clean clean-rpms clean-chroot
+	if [ -d "$(_linux_template_builder)" ] ; then \
+	    pushd "$(_linux_template_builder)"; \
+	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh mnt; \
+	    sudo rm -rf prepared_images/*  || true; \
+	    sudo rm -rf qubeized_images/*  || true; \
+	    sudo rm -rf rpm/noarch/*  || true; \
+	    sudo rm -rf pkgs-for-template/* || true; \
+	    popd; \
+	fi;
 
 .PHONY: iso
 iso:
@@ -559,6 +659,54 @@ windows-image-extract:
 	done; \
 	./win-mountsrc.sh umount
 
+.PHONY: build-info
+build-info:: bold   = $$(tput bold    || tput md)
+build-info:: normal = $$(tput sgr0    || tput me)
+build-info:: black  = $$(tput setaf 0 || tput AF 0)
+build-info:: red    = $$(tput setaf 1 || tput AF 1)
+build-info:: green  = $$(tput setaf 2 || tput AF 2)
+build-info:: blue   = $$(tput setaf 4 || tput AF 4)
+build-info:: white  = $$(tput setaf 7 || tput AF 7)
+build-info:: label  = $(bold)$(blue)
+build-info:: text   = $(normal)
+build-info:: _item_added     = $(red)$(_ITEM)$(normal)
+build-info:: _item_unchanged = $(1)$(_ITEM)$(normal)
+build-info:: _item_removed   = $(white)$(_ITEM)$(normal)
+build-info:: _item = $(strip $(if $(filter $(_ITEM), $(if $(4), $(4), $(_ITEM))), $(_item_unchanged), $(_item_added)))
+build-info:: _items = $(strip $(foreach _ITEM, $(3), $(strip $(_item),))) $(_items_removed)
+build-info:: _items_removed = $(foreach _ITEM, $(filter-out $(3), $(4)), $(_item_removed))
+build-info:: _data = "$(1)$(strip $(_items))" | fmt -w110  | sed -e 's/^/    /'
+build-info:: _info = echo -e "$(label)$(strip $(2)):$(normal)"; echo -e $(_data)
+build-info::
+	@$(if $(findstring $(VERBOSE), 0),,
+	  @echo "================================================================================"
+	  @echo "                           B U I L D   I N F O                                  "
+	  @echo -e "Items in $(red)red$(normal) indicate it was automatically generated by configuration file(s)"
+	  @echo -e "Items in $(white)white$(normal) indicate it was automatically removed by configuration file(s)"
+	  @echo "================================================================================"
+	  # (1): Item Color, (2): Label, (3): Item, (4): Original item used to compare if changed
+	  @$(call _info, $(text), DISTS_VM,        $(DISTS_VM), $(_ORIGINAL_DISTS_VM))
+	  @$(call _info, $(text), DISTS_ALL,       $(DISTS_ALL), $(_ORIGINAL_DISTS_ALL))
+	  @$(call _info, $(text), DIST_DOM0,       $(DIST_DOM0))
+	  @$(call _info, $(text), BUILDER_PLUGINS, $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS), $(_ORIGINAL_BUILDER_PLUGINS))
+	  @$(call _info, $(text), COMPONENTS,      $(COMPONENTS), $(_ORIGINAL_COMPONENTS))
+	  @$(call _info, $(text), GIT_REPOS,       $(GIT_REPOS))
+	  @$(call _info, $(text), TEMPLATE,        $(TEMPLATE), $(_ORIGINAL_TEMPLATE))
+	  @$(call _info, $(text), TEMPLATE_FLAVOR_DIR,  $(TEMPLATE_FLAVOR_DIR), $(_ORIGINAL_TEMPLATE_FLAVOR_DIR))
+	  @$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
+	  @$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
+	)
+
+# TODO: Consider changing umount_kill script to the following:
+# "fuser -kmM" && umount -R
+.PHONY: umount
+umount:
+	-@sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/$(SRC_DIR)/"; \
+	for dist in $(DISTS_VM) $(DIST_DOM0); do \
+	    dist=$${dist%%+*}; \
+	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/chroot-$$dist"; \
+	done;
+
 # Returns variable value
 # Example usage: GET_VAR=DISTS_VM make get-var
 .PHONY: get-var
@@ -569,3 +717,8 @@ get-var::
 .PHONY: install-deps
 install-deps::
 	@sudo yum install -y $(DEPENDENCIES)
+
+.PHONY: about
+about::
+	@echo "Makefile"
+
