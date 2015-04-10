@@ -44,12 +44,19 @@ def exit(*varargs, **kwargs):
     '''Function to exit.  Maybe restoring some files before exiting.
     '''
     kwargs['title'] = 'System Exit!'
-    DefaultUI.ui.infobox(*varargs, **kwargs)
+
+    try:
+        DefaultUI.ui.infobox(*varargs, **kwargs)
+    except AttributeError:
+        pass
 
     # Restore original template.conf
-    config = Config(None)
-    if os.path.exists(config.conf_builder + '.bak'):
-        shutil.move(config.conf_builder + '.bak', config.conf_builder)
+    try:
+        config = Config(None)
+        if os.path.exists(config.conf_builder + '.bak'):
+            shutil.move(config.conf_builder + '.bak', config.conf_builder)
+    except NameError:
+        pass
 
     sys.exit()
 
