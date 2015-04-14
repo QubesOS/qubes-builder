@@ -220,13 +220,15 @@ ifneq ($(DIST_DOM0),)
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
 		done ; \
-		echo "--> Signing..."; \
-		RPMSIGN_OPTS=; \
-		if [ -n "$$SIGN_KEY" ]; then \
-			RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
-			echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+		if [ -n "$$FILE_LIST" ]; then \
+			echo "--> Signing..."; \
+			RPMSIGN_OPTS=; \
+			if [ -n "$$SIGN_KEY" ]; then \
+				RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
+				echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+			fi; \
+			setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
 		fi; \
-		setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
 	fi
 endif
 
@@ -245,13 +247,15 @@ $(filter-out qubes-vm-sign, $(addsuffix -vm-sign,$(COMPONENTS))) : %-vm-sign : c
 					FILE_LIST="$$FILE_LIST $$RPM" ;\
 				fi ;\
 			done; \
-			echo "--> Signing..."; \
-			RPMSIGN_OPTS=; \
-			if [ -n "$$SIGN_KEY" ]; then \
-				RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
-				echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+			if [ -n "$$FILE_LIST" ]; then \
+				echo "--> Signing..."; \
+				RPMSIGN_OPTS=; \
+				if [ -n "$$SIGN_KEY" ]; then \
+					RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
+					echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
+				fi; \
+				setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
 			fi; \
-			setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
 		fi; \
 	done
 
