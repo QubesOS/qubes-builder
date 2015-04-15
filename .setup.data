@@ -1,28 +1,71 @@
-read -r -d '' KEYS[0x36879494] <<'EOF' || true
-(
-    [key]="427F11FD0FAA4B080123F01CDDFA1A3E36879494"
-    [key_short]=0x36879494 
-    [owner]="Qubes Master Signing Key" 
-    [fingerprint]="427F 11FD 0FAA 4B08 0123  F01C DDFA 1A3E 3687 9494"
-    [verify]="fpr:::::::::427F11FD0FAA4B080123F01CDDFA1A3E36879494:"
-    [url]="https://wiki.qubes-os.org/wiki/VerifyingSignatures"
-)
-EOF
-read -r -d '' REPOS[0] <<'EOF' || true
-(
-    [description]="Unstable - Bleeding Edge Development"
-    [prefix]="marmarek/qubes-"
-)
-EOF
-#read -r -d '' REPOS[1] <<'EOF' || true
-#(
-#    [description]="Unstable - The Big Boss Repo"
-#    [prefix]="joanna/qubes-"
-#)
-#EOF
-#read -r -d '' REPOS[2] <<'EOF' || true
-#(
-#    [description]="Unstable - Awesome Developer Repo"
-#    [prefix]="wojo/qubes-"
-#)
-#EOF
+[0x36879494]
+type        : gpg
+key         : 427F11FD0FAA4B080123F01CDDFA1A3E36879494
+owner       : Qubes Master Signing Key
+fingerprint : 427F 11FD 0FAA 4B08 0123  F01C DDFA 1A3E 3687 9494
+verify      : fpr:::::::::427F11FD0FAA4B080123F01CDDFA1A3E36879494:
+url         : https://wiki.qubes-os.org/wiki/VerifyingSignatures
+
+[0x42CFA724]
+type        : gpg
+key         : 0064428F455451B3EBE78A7F063938BA42CFA724
+owner       : Marek Marczykowski-Górecki (Qubes OS signing key) <marmarek@invisiblethingslab.com>
+fingerprint : 0064 428F 4554 51B3 EBE7  8A7F 0639 38BA 42CF A724
+verify      : fpr:::::::::0064428F455451B3EBE78A7F063938BA42CFA724:
+url         :
+
+[repo-0]
+type        : repo
+description : Unstable - Bleeding Edge Development
+prefix      : marmarek/qubes-
+
+[repo-1]
+type        : repo
+description : Unstable - The Big Boss Repo
+prefix      : joanna/qubes-
+
+[repo-2]
+type        : repo
+description : Unstable - Awesome Developer Repo
+prefix      : wojo/qubes-
+
+[builder-fedora]
+id          : builder-fedora
+type        : builder
+description : Fedora Builder - Contains all Makefiles to build Fefora based templates
+require     : None
+require_in  : fc
+
+[builder-debian]
+id          : builder-debian
+type        : builder
+description : Debian Builder - Contains all Makefiles to build Debian based templates
+require     : None
+require_in  : wheezy jessie whonix trusty utopic vivid
+
+[builder-archlinux]
+id          : builder-archlinux
+type        : builder
+description : Archlinux Builder - Contains all Makefiles to build Archlinux based templates
+require     : None
+require_in  : archlinux
+
+[template-whonix]
+id          : template-whonix
+type        : builder
+description : Whonix Builder - Template flavor to build Whonix Gateway and Workstation
+require     : builder-debian
+require_in  : whonix
+
+# require is a dependancy to use
+# require_in forces the named component to be required (not optional)
+# optional: lists dists compatible options
+# If 'development' is 'True' it will not be shown unless setup is started with --development
+[app-salt-config]
+id          : app-salt-config
+type        : builder
+description : Salt Configuration Flavor - Adds Qubes management and configuration files
+optional    : fc wheezy jessie trusty utopic vivid
+require     : None
+require_in  : None
+development : True

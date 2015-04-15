@@ -19,9 +19,9 @@
 # Build Steps
 # -----------
 # cp example-configs/whonix.conf builder.conf
-# make clean-all  # Will delete all existing images; use with caution
+# make install-deps
 # make get-sources
-# make template-modules
+# make qubes-vm
 # make template
 #
 # ==============================================================================
@@ -61,7 +61,7 @@ fi
 make get-sources || exit 1
 
 # Build qubes modules
-make template-modules || exit 1
+make qubes-vm || exit 1
 
 # Build templates
 make template || exit 1
