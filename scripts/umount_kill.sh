@@ -37,7 +37,7 @@ umount_kill() {
     MOUNTDIR=$(echo "$MOUNTDIR" | sed s#//*#/#g)
 
     echo "-> Attempting to kill any processes still running in '$MOUNTDIR' before un-mounting"
-    for dir in $(sudo grep "$MOUNTDIR" /proc/mounts | cut -f2 -d" " | sort -r | grep "^$MOUNTDIR")
+    for dir in $(grep "$MOUNTDIR" /proc/mounts | cut -f2 -d" " | sort -r | grep "^$MOUNTDIR")
     do
         sudo lsof "$dir" 2> /dev/null | \
             grep "$dir" | \
