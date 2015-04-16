@@ -29,8 +29,10 @@ Gpg binary to be used instead of `gpg`. Currently supported only by
 Configuring git to use Split GPG
 --------------------------------
 
-TODO
-
+You need to set `gpg.program` git config option to use `qubes-gpg-client-wrapper` there:
+```
+git --global config gpg.program qubes-gpg-client-wrapper
+```
 
 Configuring rpm --addsign to use Split GPG
 ---------------------------------------
