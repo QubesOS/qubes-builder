@@ -519,7 +519,7 @@ show-vtags:
 		pushd $$REPO > /dev/null; \
 		echo -n "$$REPO: "; \
 		git config --get-color color.decorate.tag "red bold"; \
-		git tag --contains HEAD | grep "^[Rv]" | tr '\n' ' '; \
+		git tag --points-at HEAD | grep "^[Rv]" | tr '\n' ' '; \
 		git config --get-color "" "reset"; \
 		echo -n '('; \
 		BRANCH=$(BRANCH); \
