@@ -67,6 +67,9 @@ This makefile should define following targets:
  * `update-repo` - copy/hardlink packages of given component to repository
    pointed by `UPDATE_REPO` variable; it should maintain metadata suitable for
    given distribution package manager
+ * `check-repo` (optional) - similar to `update-repo` but only check if package
+   is already included in repository pointed by `UPDATE_REPO` variable; it
+   should fail if package is not included
 
 Targets `dist-build-dep`, `dist-package` and `dist-copy-out` will be executed
 for each element of `PACKAGE_LIST` variable, with current element available in
