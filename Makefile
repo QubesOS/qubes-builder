@@ -138,6 +138,7 @@ help:
 	@echo "make grep RE=regexp   -- grep for regexp in all components"
 	@echo "make push             -- do git push for all repos, including tags"
 	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
+	@echo "make check-release-status -- check whether packages are included in updates repository"
 	@echo "make show-authors     -- list authors of Qubes code based on commit log of each component"
 	@echo "make prepare-merge    -- fetch the sources from git, but only show new commits instead of merging"
 	@echo "make show-unmerged    -- list fetched but unmerged commits (see make prepare-merge)"
@@ -680,6 +681,86 @@ update-repo-current:
 		[ -z "$$repo" ] && continue; \
 		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)" `basename $$repo`); \
 	done
+
+check-release-status: check-release-status-dom0 $(addprefix check-release-status-vm-,$(DISTS_VM))
+	@true
+
+ifeq (,$(DIST_DOM0))
+check-release-status-dom0:
+	@true
+else
+check-release-status-dom0: PACKAGE_SET=dom0
+check-release-status-dom0: check-release-status-dist-$(DIST_DOM0)
+	@true
+endif
+
+check-release-status-vm-%: PACKAGE_SET=vm
+check-release-status-vm-%: check-release-status-dist-%
+	@true
+
+check-release-status-dist-%: bold   = $$(tput bold    || tput md)
+check-release-status-dist-%: normal = $$(tput sgr0    || tput me)
+check-release-status-dist-%: black  = $$(tput setaf 0 || tput AF 0)
+check-release-status-dist-%: red    = $$(tput setaf 1 || tput AF 1)
+check-release-status-dist-%: green  = $$(tput setaf 2 || tput AF 2)
+check-release-status-dist-%: yellow = $$(tput setaf 3 || tput AF 3)
+check-release-status-dist-%: blue   = $$(tput setaf 4 || tput AF 4)
+check-release-status-dist-%:
+	@echo "-> Checking packages for $(bold)$* $(PACKAGE_SET)$(normal)"
+	not_released=; \
+	testing=; \
+	repo_var="LINUX_REPO_$*_BASEDIR"; \
+	[ -n "$${!repo_var}" ] && repo_basedir="`echo $${!repo_var}`" || repo_basedir="$(LINUX_REPO_BASEDIR)"; \
+	for C in $(filter-out builder $(BUILDER_PLUGINS_ALL),$(COMPONENTS)); do \
+		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
+			# Old style components not supported
+			continue; \
+		fi; \
+		if [ -z "`make -s -f Makefile.generic \
+				DIST=$* \
+				PACKAGE_SET=$(PACKAGE_SET) \
+				COMPONENT=$$C \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
+				get-var GET_VAR=PACKAGE_LIST 2>/dev/null`" ]; then \
+			continue; \
+		fi
+		echo -n "$$C: "; \
+		vtag=`git -C $(SRC_DIR)/$$C tag --points-at HEAD --list v*`; \
+		if [ -z "$$vtag" ]; then \
+			echo "$(bold)$(red)no version tag$(normal)"; \
+			continue; \
+		else \
+			echo -n $$vtag ""; \
+		fi; \
+		if make -s -f Makefile.generic \
+				DIST=$* \
+				PACKAGE_SET=$(PACKAGE_SET) \
+				COMPONENT=$$C \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
+				check-repo >/dev/null 2>&1; then \
+			echo $(green)current$(normal); \
+		elif make -s -f Makefile.generic \
+				DIST=$* \
+				PACKAGE_SET=$(PACKAGE_SET) \
+				COMPONENT=$$C \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$* \
+				check-repo >/dev/null 2>&1; then \
+			echo $(yellow)testing$(normal); \
+			testing="$$testing $$C"; \
+		elif make -s -f Makefile.generic \
+				DIST=$* \
+				PACKAGE_SET=$(PACKAGE_SET) \
+				COMPONENT=$$C \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$* \
+				check-repo >/dev/null 2>&1; then \
+			echo $(blue)unstable$(normal); \
+		else \
+			echo $(red)not released$(normal); \
+			not_released="$$not_released $$C"; \
+		fi; \
+	done; \
+	echo "--> Not released:$$not_released"; \
+	echo "--> Testing:$$testing"
 
 windows-image:
 	./win-mksrcimg.sh

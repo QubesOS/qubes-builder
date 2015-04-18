@@ -152,3 +152,10 @@ packages:
 
 .PHONY: package
 package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
+
+# Returns variable value
+# Example usage: GET_VAR=DISTS_VM make get-var
+.PHONY: get-var
+get-var::
+	@GET_VAR=$${!GET_VAR}; \
+	echo "$${GET_VAR}"
