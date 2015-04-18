@@ -29,6 +29,8 @@ endif
 
 # checking for make from Makefile is pointless
 DEPENDENCIES ?= git rpmdevtools rpm-build createrepo #make
+# for ./setup
+DEPENDENCIES += python-sh
 
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
