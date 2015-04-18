@@ -175,7 +175,7 @@ check-depend:
 		echo "currently installed dependencies:"; \
 		rpm -q $(DEPENDENCIES) || exit 1; \
 	else \
-		rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || exit 1; \
+		rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || { echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }; \
 	fi
 
 $(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(COMPONENTS)): % : %-dom0 %-vm
