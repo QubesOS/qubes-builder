@@ -271,51 +271,55 @@ yum-dom0 yum-vm:
 	@true
 
 # Some components requires custom rules
-template linux-template-builder::
-	@for DIST in $(DISTS_VM); do
-	    # Allow template flavors to be declared within the DISTS_VM declaration
-	    # <distro>+<template flavor>+<template options>+<template options>...
-	    dist_array=($${DIST//+/ })
-	    DIST=$${dist_array[0]}
-	    TEMPLATE_FLAVOR=$${dist_array[1]}
-	    TEMPLATE_OPTIONS="$${dist_array[@]:2}"
-	    plugins_var="BUILDER_PLUGINS_$$DIST"
-	    BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"
-	    BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(CURDIR)/$(SRC_DIR)/$$d"; done`
-	    export BUILDER_PLUGINS_DIRS
-	    CACHEDIR=$(CURDIR)/cache/$$DIST
-	    export CACHEDIR
-	    MAKE_TARGET=rpms
-	    if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then
-	        MAKE_TARGET=rootimg-build
-	    fi
 
-	    # some sources can be downloaded and verified during template building
-	    # process - e.g. archlinux template
-	    export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
-	    mkdir -p "$$GNUPGHOME"
-	    chmod 700 "$$GNUPGHOME"
-	    export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
-	    make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
-	    for repo in $(GIT_REPOS); do \
-	        if [ -r $$repo/Makefile.builder ]; then
-				make --no-print-directory -f Makefile.generic \
-					PACKAGE_SET=vm \
-					COMPONENT=`basename $$repo` \
-					UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
-					update-repo || exit 1
-	        elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
-	            make -s -C $$repo update-repo-template || exit 1
-	        fi
-	    done
-	    if [ "$(VERBOSE)" -eq 0 ]; then
-	        echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
-	        make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
-			echo "--> Done."
-	    else
-	        make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
-	    fi
+linux-template-builder:: template
+
+template:: $(addprefix template-,$(DISTS_VM))
+
+template-%::
+	@DIST=$*
+	# Allow template flavors to be declared within the DISTS_VM declaration
+	# <distro>+<template flavor>+<template options>+<template options>...
+	dist_array=($${DIST//+/ })
+	DIST=$${dist_array[0]}
+	TEMPLATE_FLAVOR=$${dist_array[1]}
+	TEMPLATE_OPTIONS="$${dist_array[@]:2}"
+	plugins_var="BUILDER_PLUGINS_$$DIST"
+	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"
+	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(CURDIR)/$(SRC_DIR)/$$d"; done`
+	export BUILDER_PLUGINS_DIRS
+	CACHEDIR=$(CURDIR)/cache/$$DIST
+	export CACHEDIR
+	MAKE_TARGET=rpms
+	if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then
+		MAKE_TARGET=rootimg-build
+	fi
+
+	# some sources can be downloaded and verified during template building
+	# process - e.g. archlinux template
+	export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
+	mkdir -p "$$GNUPGHOME"
+	chmod 700 "$$GNUPGHOME"
+	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
+	make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
+	for repo in $(GIT_REPOS); do \
+		if [ -r $$repo/Makefile.builder ]; then
+			make --no-print-directory -f Makefile.generic \
+				PACKAGE_SET=vm \
+				COMPONENT=`basename $$repo` \
+				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
+				update-repo || exit 1
+		elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
+			make -s -C $$repo update-repo-template || exit 1
+		fi
 	done
+	if [ "$(VERBOSE)" -eq 0 ]; then
+		echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
+		make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
+		echo "--> Done."
+	else
+		make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
+	fi
 
 template-in-dispvm: $(addprefix template-in-dispvm-,$(DISTS_VM))
 
