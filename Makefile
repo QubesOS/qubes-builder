@@ -92,7 +92,10 @@ NO_CHECK := $(shell echo $(NO_CHECK))
 TEMPLATE_FLAVOR := $(shell echo $(TEMPLATE_FLAVOR))
 DEPENDENCIES := $(shell echo $(DEPENDENCIES))
 
-DISTS_ALL := $(filter-out $(DIST_DOM0),$(DISTS_VM)) $(DIST_DOM0)
+DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
+	$(firstword $(subst +, ,$(_dist)))))
+
+DISTS_ALL := $(sort $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR))
 
 GIT_REPOS := $(addprefix $(SRC_DIR)/,$(filter-out builder,$(COMPONENTS)))
 
@@ -184,13 +187,11 @@ $(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(CO
 $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-		for DIST in $(DISTS_VM); do \
-			DIST=$${DIST%%+*}; \
+		for DIST in $(DISTS_VM_NO_FLAVOR); do \
 			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
 		done; \
 	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
-	    for DIST in $(DISTS_VM); do \
-		DIST=$${DIST%%+*}; \
+	    for DIST in $(DISTS_VM_NO_FLAVOR); do \
 	        MAKE_TARGET="rpms-vm" ./scripts/build $$DIST $* || exit 1; \
 	    done; \
 	fi
@@ -235,8 +236,7 @@ endif
 
 $(filter-out qubes-vm-sign, $(addsuffix -vm-sign,$(COMPONENTS))) : %-vm-sign : check-depend
 	@$(call check_branch,$*)
-	@for DIST in $(DISTS_VM); do \
-		DIST=$${DIST%%+*}; \
+	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
 		SIGN_KEY=$(SIGN_KEY); \
 		sign_key_var="SIGN_KEY_$$DIST"; \
 		[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
@@ -362,8 +362,8 @@ clean::
 		if ! [ -d $$REPO ]; then \
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/linux-template-builder" ]; then \
-			for DIST in $(DISTS_VM); do \
-				DIST=$${DIST%%+*} make -s -C $$REPO clean || exit 1; \
+			for DIST in $(DISTS_VM_NO_FLAVOR); do \
+				make -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
@@ -438,8 +438,7 @@ iso:
 			fi \
 	    fi; \
 	done
-	@for DIST in $(DISTS_VM); do \
-		DIST=$${DIST%%+*}; \
+	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
 		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
@@ -642,8 +641,7 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
 					update-repo; \
 			fi; \
-			for DIST in $(DISTS_VM); do \
-				DIST=$${DIST%%+*}; \
+			for DIST in $(DISTS_VM_NO_FLAVOR); do \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 				[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 				repos_to_update+=" $$repo_vm_basedir"; \
@@ -671,8 +669,7 @@ update-repo-current:
 		[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
 		repos_to_update="$$repo_dom0_basedir"; \
 	fi; \
-	for DIST in $(DISTS_VM); do \
-		DIST=$${DIST%%+*}; \
+	for DIST in $(DISTS_VM_NO_FLAVOR); do \
 		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
 		[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
 		repos_to_update+=" $$repo_vm_basedir"; \
@@ -682,7 +679,7 @@ update-repo-current:
 		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)" `basename $$repo`); \
 	done
 
-check-release-status: check-release-status-dom0 $(addprefix check-release-status-vm-,$(DISTS_VM))
+check-release-status: check-release-status-dom0 $(addprefix check-release-status-vm-,$(DISTS_VM_NO_FLAVOR))
 	@true
 
 ifeq (,$(DIST_DOM0))
@@ -823,8 +820,7 @@ build-info::
 .PHONY: umount
 umount:
 	-@sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/$(SRC_DIR)/"; \
-	for dist in $(DISTS_VM) $(DIST_DOM0); do \
-	    dist=$${dist%%+*}; \
+	for dist in $(DISTS_ALL); do \
 	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/chroot-$$dist"; \
 	done;
 
