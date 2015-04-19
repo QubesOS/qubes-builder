@@ -675,34 +675,28 @@ update-repo-current:
 		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)" `basename $$repo`); \
 	done
 
-check-release-status: check-release-status-dom0 $(addprefix check-release-status-vm-,$(DISTS_VM_NO_FLAVOR))
-	@true
+check-release-status: $(addprefix check-release-status-vm-,$(DISTS_VM_NO_FLAVOR))
 
-ifeq (,$(DIST_DOM0))
-check-release-status-dom0:
-	@true
-else
-check-release-status-dom0: PACKAGE_SET=dom0
-check-release-status-dom0: check-release-status-dist-$(DIST_DOM0)
+ifneq (,$(DIST_DOM0))
+check-release-status: check-release-status-dom0-$(DIST_DOM0)
 	@true
 endif
 
-check-release-status-vm-%: PACKAGE_SET=vm
-check-release-status-vm-%: check-release-status-dist-%
-	@true
-
-check-release-status-dist-%: bold   = $$(tput bold    || tput md)
-check-release-status-dist-%: normal = $$(tput sgr0    || tput me)
-check-release-status-dist-%: black  = $$(tput setaf 0 || tput AF 0)
-check-release-status-dist-%: red    = $$(tput setaf 1 || tput AF 1)
-check-release-status-dist-%: green  = $$(tput setaf 2 || tput AF 2)
-check-release-status-dist-%: yellow = $$(tput setaf 3 || tput AF 3)
-check-release-status-dist-%: blue   = $$(tput setaf 4 || tput AF 4)
-check-release-status-dist-%:
-	@echo "-> Checking packages for $(bold)$* $(PACKAGE_SET)$(normal)"
+check-release-status-%: bold   = $$(tput bold    || tput md)
+check-release-status-%: normal = $$(tput sgr0    || tput me)
+check-release-status-%: black  = $$(tput setaf 0 || tput AF 0)
+check-release-status-%: red    = $$(tput setaf 1 || tput AF 1)
+check-release-status-%: green  = $$(tput setaf 2 || tput AF 2)
+check-release-status-%: yellow = $$(tput setaf 3 || tput AF 3)
+check-release-status-%: blue   = $$(tput setaf 4 || tput AF 4)
+check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
+check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
+check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
+check-release-status-%:
+	@echo "-> Checking packages for $(bold)$(DIST) $(PACKAGE_SET)$(normal)"
 	not_released=; \
 	testing=; \
-	repo_var="LINUX_REPO_$*_BASEDIR"; \
+	repo_var="LINUX_REPO_$(DIST)_BASEDIR"; \
 	[ -n "$${!repo_var}" ] && repo_basedir="`echo $${!repo_var}`" || repo_basedir="$(LINUX_REPO_BASEDIR)"; \
 	for C in $(filter-out builder $(BUILDER_PLUGINS_ALL),$(COMPONENTS)); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
@@ -710,7 +704,7 @@ check-release-status-dist-%:
 			continue; \
 		fi; \
 		if [ -z "`make -s -f Makefile.generic \
-				DIST=$* \
+				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=$$C \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
@@ -725,25 +719,16 @@ check-release-status-dist-%:
 		else \
 			echo -n $$vtag ""; \
 		fi; \
-		if make -s -f Makefile.generic \
-				DIST=$* \
-				PACKAGE_SET=$(PACKAGE_SET) \
-				COMPONENT=$$C \
+		if make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
 				check-repo >/dev/null 2>&1; then \
 			echo $(green)current$(normal); \
-		elif make -s -f Makefile.generic \
-				DIST=$* \
-				PACKAGE_SET=$(PACKAGE_SET) \
-				COMPONENT=$$C \
+		elif make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$* \
 				check-repo >/dev/null 2>&1; then \
 			echo $(yellow)testing$(normal); \
 			testing="$$testing $$C"; \
-		elif make -s -f Makefile.generic \
-				DIST=$* \
-				PACKAGE_SET=$(PACKAGE_SET) \
-				COMPONENT=$$C \
+		elif make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$* \
 				check-repo >/dev/null 2>&1; then \
 			echo $(blue)unstable$(normal); \
