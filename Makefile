@@ -206,18 +206,38 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
-$(addsuffix -sign,$(COMPONENTS)): %-sign : %-dom0-sign %-vm-sign
+$(addprefix sign-,$(COMPONENTS)): sign-% : sign-dom0-% sign-vm-%
 
-$(filter-out qubes-dom0-sign, $(addsuffix -dom0-sign,$(COMPONENTS))) : %-dom0-sign : check-depend
-	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
+$(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
+else
+$(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% :
+	@true
+endif
+
+$(addprefix sign-vm-,$(COMPONENTS)): sign-vm-% : $(addsuffix -%, $(addprefix sign-vm-, $(DISTS_VM_NO_FLAVOR)))
+	@true
+
+sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
+sign-%: DIST        = $(word 2, $(subst -, ,$*))
+sign-%: _space      = $(_empty) $(_empty)
+sign-%: COMPONENT   = $(subst $(_space),-,$(strip $(wordlist 3, 10, $(subst -, ,$*))))
+sign-%: $(SRC_DIR)/$(COMPONENT)
+sign-%:
+	@$(call check_branch,$(COMPONENT))
 	@SIGN_KEY=$(SIGN_KEY); \
-	sign_key_var="SIGN_KEY_$(DIST_DOM0)"; \
+	sign_key_var="SIGN_KEY_$(DIST)"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
-	if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* SIGN_KEY=$$SIGN_KEY sign || exit 1; \
+	if [ -r $(SRC_DIR)/$(COMPONENT)/Makefile.builder ]; then \
+		make --no-print-directory -f Makefile.generic \
+			DIST=$(DIST) \
+			PACKAGE_SET=$(PACKAGE_SET) \
+			COMPONENT=$(COMPONENT) \
+			SIGN_KEY=$$SIGN_KEY \
+			sign || exit 1; \
 	else \
-		FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/pkgs/dom0-fc*/*/*.rpm 2>/dev/null); do \
+		# Old mechanism supported only for RPM
+		FILE_LIST=""; for RPM in $(SRC_DIR)/$(COMPONENT)/pkgs/$(PACKAGE_SET)-fc*/*/*.rpm; do \
 			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
 				FILE_LIST="$$FILE_LIST $$RPM" ;\
 			fi ;\
@@ -227,38 +247,10 @@ ifneq ($(DIST_DOM0),)
 			RPMSIGN_OPTS=; \
 			if [ -n "$$SIGN_KEY" ]; then \
 				RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
-				echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
 			fi; \
 			setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
 		fi; \
 	fi
-endif
-
-$(filter-out qubes-vm-sign, $(addsuffix -vm-sign,$(COMPONENTS))) : %-vm-sign : check-depend
-	@$(call check_branch,$*)
-	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
-		SIGN_KEY=$(SIGN_KEY); \
-		sign_key_var="SIGN_KEY_$$DIST"; \
-		[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
-		if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* SIGN_KEY=$$SIGN_KEY -f Makefile.generic sign || exit 1; \
-		else \
-			FILE_LIST=""; for RPM in $(shell ls $(SRC_DIR)/$*/pkgs/vm-fc*/*/*.rpm 2>/dev/null); do \
-				if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
-					FILE_LIST="$$FILE_LIST $$RPM" ;\
-				fi ;\
-			done; \
-			if [ -n "$$FILE_LIST" ]; then \
-				echo "--> Signing..."; \
-				RPMSIGN_OPTS=; \
-				if [ -n "$$SIGN_KEY" ]; then \
-					RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
-					echo "RPMSIGN_OPTS = $$RPMSIGN_OPTS"; \
-				fi; \
-				setsid -w rpmsign "$$RPMSIGN_OPTS" --addsign $$FILE_LIST </dev/null ;\
-			fi; \
-		fi; \
-	done
 
 # With generic rule it isn't handled correctly (xfce4-dom0 target isn't built
 # from xfce4 repo...). "Empty" rule because real package are built by above
@@ -331,7 +323,7 @@ template-in-dispvm-%:
 
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 ifeq (,$(NO_SIGN))
-sign-all:: $(addsuffix -sign,$(COMPONENTS))
+sign-all:: $(addprefix sign-,$(COMPONENTS))
 else
 sign-all::
 	@true
