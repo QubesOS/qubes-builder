@@ -715,7 +715,6 @@ check-release-status-%:
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=$$C \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
 				get-var GET_VAR=PACKAGE_LIST 2>/dev/null`" ]; then \
 			continue; \
 		fi
@@ -728,16 +727,16 @@ check-release-status-%:
 			echo -n $$vtag ""; \
 		fi; \
 		if make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$* \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$(DIST) \
 				check-repo >/dev/null 2>&1; then \
 			echo $(green)current$(normal); \
 		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$* \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$(DIST) \
 				check-repo >/dev/null 2>&1; then \
 			echo $(yellow)testing$(normal); \
 			testing="$$testing $$C"; \
 		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$* \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$(DIST) \
 				check-repo >/dev/null 2>&1; then \
 			echo $(blue)unstable$(normal); \
 		else \
