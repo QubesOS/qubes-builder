@@ -1,3 +1,7 @@
+This repository contains an automated build system for Qubes, that downloads,
+builds and packages all the Qubes components, and finally should spit out a
+ready-to-use installation ISO.
+
 In order to use it one should use an rpm-based distro, like Fedora,
 and should ensure the following packages are installed:
 
@@ -7,10 +11,11 @@ and should ensure the following packages are installed:
 * rpm-sign (if signing of build packages is enabled)
 * rpmdevtools
 * make 
+* python-sh
 
 Unusually one can install those packages by just issuing:
 
-    $ sudo yum install git createrepo rpm-build make 
+    $ sudo yum install git createrepo rpm-build make rpm-build make python-sh
 
 Or just install them automatically by issuing:
 
@@ -23,7 +28,7 @@ requires some 25GB of free space, so keep that in mind when deciding
 where to place this directory.
 
 The build system is configured via builder.conf file -- one should
-copy selected one from example-configs/, and modify it as needed,
+copy selected file from example-configs/, and modify it as needed,
 e.g.:
 
     cp example-configs/qubes-os-master.conf builder.conf 
@@ -39,12 +44,7 @@ times during the build process (mainly to preform chroot). But do not call make
 directly as root.
 
 Additionally, if building with signing enabled (so NO\_SIGN is not
-set), one must adjust `~/.rpmmacro` file so that it point to the GPG key
-used for package signing, e.g.:
-
-    %\_signature gpg
-    %\_gpg\_path /home/user/.gnupg
-    %\_gpg\_name AC1BF9B3  # <-- Key ID used for signing
+set), one must set `SIGN\_KEY` in builder.conf.
 
 It is also recommended to use an empty passphrase for the private key
 used for signing. Contrary to a popular belief, this doesn't affect
@@ -54,11 +54,7 @@ key or not.
 
 To build all Qubes packages one would do:
 
-    $ make qubes 
-
-... and then to build the ISO:
-
-    $ make iso 
+    $ make qubes-os-iso
 
 And this should produce a shiny new ISO.
 
