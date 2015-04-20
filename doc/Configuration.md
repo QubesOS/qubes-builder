@@ -161,6 +161,12 @@ Disable signing of builded rpms - set "1" to use it
 
 set key used to sign packages
 
+### UPDATE_REPO_CHECK_VTAG
+> Default: no value
+
+Set to "1" to enforce only version-tagged packages copied to updates repo
+(update-repo-* targets).
+
 ### DEBUG
 > Default: no value
 

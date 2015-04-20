@@ -629,7 +629,14 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 	for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
-			echo "Updating $$REPO..."; \
+			echo -n "Updating $$REPO... "; \
+			if [ "0$(UPDATE_REPO_CHECK_VTAG)" -eq 1 ]; then \
+				vtag=`git -C $$REPO tag --points-at HEAD --list v*`; \
+				if [ -z "$$vtag" ]; then \
+					echo "`tput bold``tput setaf 1`no version tag`tput sgr0`"; \
+					continue; \
+				fi; \
+			fi; \
 			if [ -n "$(DIST_DOM0)" ]; then \
 				make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
 					UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
@@ -651,8 +658,9 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 			echo "Updating $$REPO... "; \
 			make -s -C $$REPO update-repo-$* || echo; \
 		else \
-			echo "Updating $$REPO... skipping."; \
+			echo -n "Updating $$REPO... skipping."; \
 		fi; \
+		echo; \
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
