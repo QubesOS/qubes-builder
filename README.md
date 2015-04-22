@@ -36,6 +36,9 @@ e.g.:
     # GIT_PREFIX="marmarek/qubes-" 
     # NO_SIGN="1"
 
+Alternatively you can use `setup` script, which will help you to create the
+configuration interactively.
+
 One additional useful requirement is that 'sudo root' work without any
 prompt, which is default on most distros (e.g. 'sudo bash' brings you
 the root shell without asking for any password). This is important as
