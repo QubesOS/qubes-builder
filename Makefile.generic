@@ -27,7 +27,7 @@ ORIG_SRC = $(SRC_DIR)/$(COMPONENT)
 # repository for ready packages; directory content is distro-specific
 BUILDER_REPO_DIR = $(PWD)/qubes-packages-mirror-repo/$(DIST)
 
-OUTPUT_DIR = pkgs/$(PACKAGE_SET)-$(DIST)
+OUTPUT_DIR = pkgs/$(DIST)
 
 # build environment
 CHROOT_DIR = $(PWD)/chroot-$(DIST)
