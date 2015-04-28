@@ -129,6 +129,8 @@ help:
 	@echo "make build-info       -- show current build options"
 	@echo "make about            -- show all included Makefiles"
 	@echo "make sign-all         -- sign all packages"
+	@echo "make sign-vm          -- sign all VM packages"
+	@echo "make sign-dom0        -- sign all Dom0 packages"
 	@echo "make clean-all        -- remove any downloaded sources and built packages"
 	@echo "make clean-rpms       -- remove any built packages"
 	@echo "make clean-chroot     -- remove all chroot directories"
@@ -207,6 +209,7 @@ ifneq ($(DIST_DOM0),)
 endif
 
 $(addprefix sign-,$(COMPONENTS)): sign-% : sign-dom0-% sign-vm-%
+	@true
 
 ifneq ($(DIST_DOM0),)
 $(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
@@ -324,8 +327,13 @@ template-in-dispvm-%:
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 ifeq (,$(NO_SIGN))
 sign-all:: $(addprefix sign-,$(COMPONENTS))
+sign-dom0:: $(addprefix sign-vm-,$(COMPONENTS))
+sign-vm:: $(addprefix sign-dom0-,$(COMPONENTS))
+	@true
 else
 sign-all::
+sign-dom0::
+sign-vm::
 	@true
 endif
 
