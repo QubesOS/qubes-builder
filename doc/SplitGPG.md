@@ -39,6 +39,11 @@ Configuring rpm --addsign to use Split GPG
 
 You need the following lines in `~/.rpmmacros`:
 ```
+%__gpg /usr/bin/qubes-gpg-client-wrapper
+
+%__gpg_check_password_cmd   %{__gpg} \
+        gpg --batch --no-verbose -u "%{_gpg_name}" -s
+
 %__gpg_sign_cmd                 /bin/sh sh -c '/usr/bin/qubes-gpg-client-wrapper \\\
         --batch --no-verbose \\\
         %{?_gpg_digest_algo:--digest-algo %{_gpg_digest_algo}} \\\
