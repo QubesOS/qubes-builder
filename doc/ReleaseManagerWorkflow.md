@@ -124,7 +124,7 @@ Example usage:
 Transferring the commits
 ------------------------
 
-Most straightforward way is just to use git for that. Qubes builder provides
+The most straightforward way is just to use git for that. Qubes builder provides
 convenient scripts for that.
 
 ### make prepare-merge
@@ -183,7 +183,7 @@ you which repository (current, current-testing, unstable). Note that the check
 requires the builder plugin to support optional `check-repo` target.
 
 **Warning:** plugin for Debian and for Fedora checks only in local repository
-directory, it does not check what is really present on updates server.
+directory, it does not check what is really present on the updates server.
 
 Example usage:
 
@@ -222,7 +222,7 @@ for dom0 and VM). Then you can use those lists to really build (and sign) the pa
 The above command will build the packages only for dom0 (empty `DISTS_VM`), then sign them.
 
 
-Uploading the packages to 'current-testing' repository
+Uploading the packages to the 'current-testing' repository
 ----------------------------------------------------
 
 Same as above, you can specify desired components and distributions, then call
