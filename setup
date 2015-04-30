@@ -846,14 +846,13 @@ class Config(object):
             'text': r'TEMPLATE_ONLY ?= {0}'.format(self.template_only),
             })
 
-        # OVERRIDE
+        # INCLUDE_OVERRIDE_CONF
         if self.override_source:
-            override = r'-include override.conf'
+            override = r'INCLUDE_OVERRIDE_CONF ?= true'
         else:
-            override = r'-include override.conf'
-
+            override = r'#INCLUDE_OVERRIDE_CONF ?= true'
         replace.add(**{
-            'replace': r'.*-include[ ]+override.conf',
+            'replace': r'^.*INCLUDE_OVERRIDE_CONF[ ]+[?]?[=].*$',
             'text': r'{0}'.format(override),
             })
 
