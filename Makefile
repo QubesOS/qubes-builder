@@ -367,7 +367,7 @@ clean::
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/linux-template-builder" ]; then \
 			for DIST in $(DISTS_VM_NO_FLAVOR); do \
-				make -s -C $$REPO clean || exit 1; \
+				DIST=$$DIST make -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
