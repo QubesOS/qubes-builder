@@ -23,6 +23,8 @@ INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
 KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
 
+TESTING_DAYS = 7
+
 ifdef GIT_SUBDIR
   GIT_PREFIX ?= $(GIT_SUBDIR)/
 endif
@@ -741,7 +743,14 @@ check-release-status-%:
 		elif make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$(DIST) \
 				check-repo >/dev/null 2>&1; then \
-			echo $(yellow)testing$(normal); \
+			echo -n $(yellow)testing$(normal); \
+			date_snap=`date -r $(CURDIR)/repo-latest-snapshot/current-testing-$(PACKAGE_SET)-$(DIST)-$$C +%s`; \
+			days=$$(( ( `date +%s` - $$date_snap ) / (24 * 60 * 60) )); \
+			if [ $$days -ge $(TESTING_DAYS) ]; then \
+				echo " $(green)($$days days ago)$(normal)"; \
+			else \
+				echo " $(yellow)($$days days ago)$(normal)"; \
+			fi; \
 			testing="$$testing $$C"; \
 		elif make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$(DIST) \
