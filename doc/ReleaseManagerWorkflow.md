@@ -80,6 +80,7 @@ is directly based on upstream version.  Those files should be changed in
 separate 'version commit'.
 
 To streamline the task, this script can be used:
+
     #!/bin/sh
     set -e
     set -x
