@@ -215,6 +215,7 @@ $(addprefix sign-,$(COMPONENTS)): sign-% : sign-dom0-% sign-vm-%
 
 ifneq ($(DIST_DOM0),)
 $(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
+	@true
 else
 $(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% :
 	@true
