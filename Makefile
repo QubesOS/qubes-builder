@@ -129,6 +129,7 @@ help:
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make qubes-os-iso     -- same as \"make get-sources qubes sign-all iso\""
 	@echo "make build-info       -- show current build options"
+	@echo "make build-id         -- show current sources (output suitable for builder.conf to repeat the same build)"
 	@echo "make about            -- show all included Makefiles"
 	@echo "make sign-all         -- sign all packages"
 	@echo "make sign-vm          -- sign all VM packages"
@@ -820,6 +821,25 @@ build-info::
 	  @$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
 	  @$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
 	)
+
+build-id::
+	@echo "################################################################################"
+	@echo "### The following settings copied to builder.conf will make builder use      ###"
+	@echo "### exactly the same sources                                                 ###"
+	@echo "################################################################################"
+	@for component in $(COMPONENTS); do \
+		dir="$(SRC_DIR)/$$component"; \
+		if [ "$$component" = "builder" ]; then dir="."; fi; \
+		if [ -n "`git -C "$$dir" status --porcelain`" ]; then
+			echo "*** ERROR: Component $$component not clean - commit or stash the changes!"; \
+			exit 1; \
+		fi; \
+		id=`git -C "$$dir" tag -l --points-at HEAD "v*"`; \
+		if [ -z "$$id" ]; then \
+			id=`git -C "$$dir" rev-parse HEAD`; \
+		fi; \
+		echo "BRANCH_$${component//-/_} = $$id"; \
+	done
 
 # TODO: Consider changing umount_kill script to the following:
 # "fuser -kmM" && umount -R
