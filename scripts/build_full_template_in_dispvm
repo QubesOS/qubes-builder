@@ -101,7 +101,7 @@ runBuild() {
         make get-sources COMPONENTS='builder \$(BUILDER_PLUGINS)';
         make install-deps DISTS_VM=$DIST;
         make get-sources;
-        make build-id;
+        make build-id DISTS_VM=$DIST;
         make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
         cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
         rm -rf untrusted_appmenus;
