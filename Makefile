@@ -397,8 +397,8 @@ clean-all:: clean-rpms clean
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
 		sudo umount chroot-$$dir/proc; \
 		sudo umount chroot-$$dir/tmp/qubes-rpms-mirror-repo; \
+		sudo rm -rf chroot-$$dir || true; \
 	done || true
-	sudo rm -rf $(addprefix chroot-,$${DISTS_ALL[@]%%+*}) || true
 	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: distclean
