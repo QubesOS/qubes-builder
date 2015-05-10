@@ -625,6 +625,8 @@ show-unmerged:
 do-merge:
 	@set -a; \
 	REPOS="$(GIT_REPOS)"; \
+	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
+	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
