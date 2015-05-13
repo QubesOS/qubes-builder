@@ -149,7 +149,7 @@ use your default keyring, set this to empty string.
 ### CLEAN
 > Default: no value
 
-Remove previous sources before getting new (use git up vs git clone) - set "1" to use it
+Remove previous sources before getting new (use git pull vs git clone) - set "1" to use it
 
 ### NO_SIGN
 > Default: no value
