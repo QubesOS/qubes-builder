@@ -180,6 +180,13 @@ verbosity level of build process
 * 1 - print (almost) only warnings
 * 2 - full output
 
+### BUILDER_TURBO_MODE
+> Default: 0
+
+Speed up build process, can be at cost of data integrity if system fails during
+build process (for example because of power failure). Currently supported only
+by `builder-debian` plugin and it get rid of most fsync() calls.
+
 Windows specific settings
 -------------------------
 
