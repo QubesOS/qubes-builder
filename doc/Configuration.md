@@ -187,6 +187,13 @@ Speed up build process, can be at cost of data integrity if system fails during
 build process (for example because of power failure). Currently supported only
 by `builder-debian` plugin and it get rid of most fsync() calls.
 
+### REPO_PROXY
+> Default: no value
+
+Use specified http proxy for downloading packages from the network. This can be
+used to speedup the process when build environment is frequently recreated. It
+should be set to full URL of the proxy.
+
 Windows specific settings
 -------------------------
 
