@@ -273,9 +273,9 @@ yum-dom0 yum-vm:
 
 linux-template-builder:: template
 
-template:: $(addprefix template-,$(DISTS_VM))
+template:: $(addprefix template-local-,$(DISTS_VM))
 
-template-%::
+template-local-%::
 	@DIST=$*
 	# Allow template flavors to be declared within the DISTS_VM declaration
 	# <distro>+<template flavor>+<template options>+<template options>...
