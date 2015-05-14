@@ -98,9 +98,9 @@ runBuild() {
         cd /mnt/removable;
         umask 022;
         $GET_CONF_SCRIPT
-        make get-sources COMPONENTS='builder \$(BUILDER_PLUGINS)';
+        make get-sources DISTS_VM=$DIST COMPONENTS='builder \$(BUILDER_PLUGINS_ALL)';
         make install-deps DISTS_VM=$DIST;
-        make get-sources;
+        make get-sources DISTS_VM=$DIST;
         make build-id DISTS_VM=$DIST;
         make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
         cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
