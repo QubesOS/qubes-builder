@@ -829,14 +829,17 @@ build-id::
 	@echo "### The following settings copied to builder.conf will make builder use      ###"
 	@echo "### exactly the same sources                                                 ###"
 	@echo "################################################################################"
-	@for component in $(COMPONENTS); do \
+	@for component in $(sort $(COMPONENTS) builder $(BUILDER_PLUGINS_ALL)); do \
 		dir="$(SRC_DIR)/$$component"; \
 		if [ "$$component" = "builder" ]; then dir="."; fi; \
 		if [ -n "`git -C "$$dir" status --porcelain`" ]; then
 			echo "*** ERROR: Component $$component not clean - commit or stash the changes!"; \
 			exit 1; \
 		fi; \
-		id=`git -C "$$dir" tag -l --points-at HEAD "v*"`; \
+		id=`git -C "$$dir" tag -l --points-at HEAD "v*" | head -n 1`; \
+		[ -z "$$id" ] && id=`git -C "$$dir" tag -l --points-at HEAD "R*" | head -n 1`; \
+		[ -z "$$id" ] && id=`git -C "$$dir" tag -l --points-at HEAD "*-stable" | head -n 1`; \
+		[ -z "$$id" ] && id=`git -C "$$dir" tag -l --points-at HEAD "[0-9]*" | head -n 1`; \
 		if [ -z "$$id" ]; then \
 			id=`git -C "$$dir" rev-parse HEAD`; \
 		fi; \
