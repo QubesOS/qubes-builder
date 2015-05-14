@@ -65,7 +65,7 @@ copyBuilder() {
         --exclude "/chroot-*/" \
         --exclude "/lost+found/" \
         --exclude "/*.img" \
-        --exclude "/iso/" \
+        --exclude "/iso/*.iso" \
         --exclude-from .gitignore \
         "${PWD}/" mnt/
 }
