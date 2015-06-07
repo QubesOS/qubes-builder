@@ -13,28 +13,43 @@
 
 from __future__ import unicode_literals
 
-import sys
-import os
-import locale
-import codecs
 import argparse
+import codecs
 import collections
-import shutil
-import re
-import types
 import copy
+import locale
+import os
+import re
 import shlex
+import shutil
+import sys
+import types
 
 from ConfigParser import ConfigParser
 from textwrap import dedent, wrap
 
+# Global file locations
+CONFIG_DIR       = 'example-configs'
+OVERRIDE_CONF    = 'override.conf'
+OVERRIDE_DATA    = 'override.data'
+MASTER_TEMPLATE  = 'templates.conf'
+BUILDER_CONF     = 'builder.conf'
+BACKUP_EXTENSION =  '.bak'
+QUBES_DEVELOPERS_KEYS = 'qubes-developers-keys.asc'
+
+# Globals
+DIALOG = 'dialog'
+GPG_KEY_SERVER = 'pgp.mit.edu'
+DEVELOPMENT_MODE = True
+SETUP_DEPENDENCIES = ['dialog']
+
+# Add 'qubes-builder/libs' directory to sys.path
 BASE_DIR = os.getcwd()
 LIBS_DIR = os.path.join(BASE_DIR, 'libs')
 if os.path.exists(LIBS_DIR) and os.path.isdir(LIBS_DIR):
     if LIBS_DIR not in sys.path:
         sys.path.insert(1, LIBS_DIR)
 
-import sh
 from ansi import ANSIColor
 
 locale.setlocale(locale.LC_ALL, '')
@@ -53,8 +68,8 @@ def exit(*varargs, **kwargs):
     # Restore original template.conf
     try:
         config = Config(None)
-        if os.path.exists(config.conf_builder + '.bak'):
-            shutil.move(config.conf_builder + '.bak', config.conf_builder)
+        if os.path.exists(config.conf_builder + BACKUP_EXTENSION):
+            shutil.move(config.conf_builder + BACKUP_EXTENSION, config.conf_builder)
     except NameError:
         pass
 
@@ -79,6 +94,68 @@ def getchar():
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return char
     return _getchar()
+
+
+def install_deps(depends):
+    if not depends:
+        return
+
+    import os
+    import subprocess
+    import time
+
+    from subprocess import (Popen, STDOUT)
+    try:
+        from subprocess import DEVNULL # py3k
+    except ImportError:
+        import os
+        DEVNULL = open(os.devnull, 'wb')
+
+    ansi = ANSIColor()
+    env = os.environ.copy()
+
+    if SETUP_DEPENDENCIES:
+        env['DEPENDENCIES'] = ' '.join(SETUP_DEPENDENCIES)
+    if not os.path.exists(BUILDER_CONF):
+        env['BUILDERCONF'] = MASTER_TEMPLATE
+
+    try:
+        print 'exec'
+        env['GET_VAR'] = 'DEPENDENCIES'
+        build_depends = subprocess.check_output(['make', '--always-make', '--quiet', 'get-var'], env=env).strip()
+        env.pop('GET_VAR')
+    except (subprocess.CalledProcessError):
+        print '\nAn error occured trying to determine dependencies and therefore setup must now exit'
+        print 'Exiting!'
+        exit()
+
+    os.system('clear')
+    message1 = 'The following dependencies may not have been met:\n'
+    message2 = '\nThe following {ansi[bold]}build dependencies{ansi[normal]}{ansi[blue]} will be installed:\n'.format(ansi=ansi)
+    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message1, depends, ansi=ansi)
+    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message2, build_depends, ansi=ansi)
+    print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} build dependencies now, or anything else to quit [YyNnQq]: '.format(ansi=ansi)
+    char =  getchar()
+    if char.lower() != 'y':
+        print '\nYou selected not to install the dependencies and therefore setup must now exit'.format(ansi=ansi)
+        print 'Exiting!'
+        exit()
+
+    os.system('clear')
+    sys.stdout.write('Waiting for {ansi[red]}{0}{ansi[normal]} to install\n'.format(build_depends, ansi=ansi))
+    sys.stdout.flush()
+
+    proc = Popen(['make', 'install-deps'], stdout=DEVNULL, stderr=STDOUT, env=env)
+    while proc.poll() is None:
+        sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
+        sys.stdout.flush()
+        time.sleep(1)
+    print
+
+    if proc.returncode:
+        print '\nThere was an error installing dependencies!{ansi[blue]}{ansi[normal]} and therefore setup must now exit'.format(ansi=ansi)
+        print 'Exiting!'
+        exit()
 
 
 def write_file(filename, text):
@@ -141,7 +218,6 @@ def display_configuration(filename):
                     if match.groupdict()['text']:
                         var = re.match(r'(?P<var>.*)(?P<text>[?:]?=.*)', text)
                         target = re.match(r'(?P<target>.*[:]+)(?P<text>.*)', text)
-                        #text = re.sub(r'(\$[(].*[)])', r'{ansi[blue]}\1{ansi[normal]}'.format(ansi=ansi), text)
                         text = parse_parentheses(text)
 
                         if var:
@@ -190,7 +266,7 @@ class DefaultUI(object):
 class DialogUI(DefaultUI):
     '''UI Interface to `dialog` API.
     '''
-    DIALOG = 'dialog'
+    from dialog import (Dialog, ExecutableNotFound)
 
     try:
         from textwrap import indent
@@ -198,49 +274,24 @@ class DialogUI(DefaultUI):
         @staticmethod
         def indent(text, prefix, predicate=None):
             l = []
-
             for line in text.splitlines(True):
                 if (callable(predicate) and predicate(line)) \
                    or (not callable(predicate) and predicate) \
                    or (predicate is None and line.strip()):
                     line = prefix + line
                 l.append(line)
-
             return ''.join(l)
 
-    # Prompt to install required depend 'dialog' if it does not exist
-    if not sh.which(DIALOG):
-        import time
-        from sh import sudo
-
-        ansi = ANSIColor()
-        os.system('clear')
-
-        print '{ansi[red]}{0}{ansi[blue]} is not installed and required for setup.{ansi[normal]}\r\r'.format(DIALOG, ansi=ansi)
-        print '\nEnter \'Y\' to install now or anything else to quit [YyNnQq]: '
-        char =  getchar()
-        if char.lower() != 'y':
-            print '\nYou selected not to install {ansi[blue]}{0}{ansi[normal]} and therefore setup must now exit'.format(DIALOG, ansi=ansi)
-            print 'Exiting!'
-            exit()
-
-        os.system('clear')
-        runnning = sudo.yum('-y', 'install', 'dialog', _bg=True)
-        sys.stdout.write('Waiting for {ansi[red]}{0}{ansi[normal]} to install'.format(DIALOG, ansi=ansi))
-        sys.stdout.flush()
-        while os.path.exists('/proc/{0}'.format(runnning.pid)):
-            sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
-            sys.stdout.flush()
-            time.sleep(1)
-        print
-
     # Initialize a dialog.Dialog instance
-    from dialog import Dialog
-    dialog = Dialog(dialog='dialog')
-    dialog.set_background_title("Qubes Builder Configuration Utility")
+    try:
+        dialog = Dialog(dialog=DIALOG)
+    except (ExecutableNotFound):
+        install_deps('dialog')
+        dialog = Dialog(dialog=DIALOG)
 
     @classmethod
     def __init__(cls):
+        cls.dialog.set_background_title("Qubes Builder Configuration Utility")
         super(DialogUI, cls).__init__(cls)
 
     @classmethod
@@ -251,7 +302,7 @@ class DialogUI(DefaultUI):
             'colors': True,
             'width': 60,
             'height': 8,
-            }
+        }
 
         default.update(info)
         code = cls.dialog.yesno(**default)
@@ -464,33 +515,33 @@ class Config(object):
         'template_aliases_reversed': [],
         'template_labels':           [],
         'template_labels_reversed':  [],
-        }
+    }
 
     _defaults_builder = {
         'id'          : '',
-	'type'        : '',
+        'type'        : '',
         'description' : '',
         'optional'    : [],
         'require'     : [],
         'require_in'  : [],
         'development' : False,
-        }
+    }
 
     _defaults_key = {
         'id'          : '',
-	'type'        : '',
+        'type'        : '',
         'key'         : '',
         'owner'       : '',
         'fingerprint' : None,
         'verify'      : '',
         'url'         : '',
-        }
+    }
 
     _defaults_repo = {
-	'type'        : '',
+        'type'        : '',
         'description' : '',
         'prefix'      : '',
-        }
+    }
 
     def __init__(self, filename, **options):
         '''Init.
@@ -503,10 +554,10 @@ class Config(object):
         self.options = options
 
         self.dir_builder = self.options.get('dir_builder') or os.path.abspath(os.path.curdir)
-        self.dir_configurations = os.path.join(self.dir_builder, 'example-configs')
+        self.dir_configurations = os.path.join(self.dir_builder, CONFIG_DIR)
 
         # Override configuration filename will override and merge into .setup.data
-        self.conf_override_data = os.path.join(self.dir_builder, 'override.data')
+        self.conf_override_data = os.path.join(self.dir_builder, OVERRIDE_DATA)
 
         self.parser = ConfigParser()
         self.parser.add_section('makefile')
@@ -517,9 +568,9 @@ class Config(object):
 
         self._init_makefile_vars()
 
-        self.conf_template = os.path.join(self.dir_configurations, 'templates.conf')
-        self.conf_override = os.path.join(self.dir_builder, 'override.conf')
-        self.conf_builder = os.path.join(self.dir_builder, 'builder.conf')
+        self.conf_template = os.path.join(self.dir_configurations, MASTER_TEMPLATE)
+        self.conf_override = os.path.join(self.dir_builder, OVERRIDE_CONF)
+        self.conf_builder = os.path.join(self.dir_builder, BUILDER_CONF)
 
         # Copy example-configs/template.conf to builder.conf if
         # the configuration file does not yet exist
@@ -554,9 +605,9 @@ class Config(object):
                 # ABOUT
                 replace = ReplaceInplace(self.conf_builder)
                 replace.add(**{
-                    'replace': r'@echo "templates.conf"',
-                    'text': r'@echo "builder.conf"',
-                    })
+                    'replace': r'@echo "{0}"'.format(MASTER_TEMPLATE),
+                    'text': r'@echo "{0}"'.format(BUILDER_CONF),
+                })
                 replace.start()
             except IOError, err:
                 exit(err)
@@ -565,25 +616,25 @@ class Config(object):
     #    return super(Config, self).__getattribute__(name)
 
     def _coerce_value(self, default, value):
-            if type(value) != type(default):
-                try:
-                    if isinstance(default, types.BooleanType):
-                        value = bool(value)
-                    elif isinstance(default, types.IntType):
-                        value = int(value)
-                    elif isinstance(default, types.FloatType):
-                        value = float(value)
-                    elif isinstance(default, types.ListType):
-                        if isinstance(value, types.StringTypes):
-                            if value.strip().lower() in ['none', 'null']:
-                                value = []
-                            else:
-                                value = value.strip().split()
-                    elif isinstance(default, types.NoneType):
-                        value = None
-                except ValueError:
-                    value = default
-            return value
+        if type(value) != type(default):
+            try:
+                if isinstance(default, types.BooleanType):
+                    value = bool(value)
+                elif isinstance(default, types.IntType):
+                    value = int(value)
+                elif isinstance(default, types.FloatType):
+                    value = float(value)
+                elif isinstance(default, types.ListType):
+                    if isinstance(value, types.StringTypes):
+                        if value.strip().lower() in ['none', 'null']:
+                            value = []
+                        else:
+                            value = value.strip().split()
+                elif isinstance(default, types.NoneType):
+                    value = None
+            except ValueError:
+                value = default
+        return value
 
     def _coerce_values(self, defaults, values):
         if not isinstance(defaults, collections.Mapping):
@@ -623,16 +674,16 @@ class Config(object):
             if not section:
                 continue
             section_type = section.get('type')
-	    if section_type == 'gpg':
+            if section_type == 'gpg':
                 config = copy.deepcopy(self._defaults_key)
                 section['id'] = section_name
                 config.update(section)
                 self.keys[section_name] = config
-	    elif section_type == 'repo':
+            elif section_type == 'repo':
                 config = copy.deepcopy(self._defaults_repo)
                 config.update(section)
                 self.repos[section_name] = config
-	    elif section_type == 'builder':
+            elif section_type == 'builder':
                 config = copy.deepcopy(self._defaults_builder)
                 config.update(section)
                 self.builders[section_name] = self._coerce_values(self._defaults_builder, config)
@@ -800,51 +851,51 @@ class Config(object):
             'insert_after': r'.*[[]=setup info start=[]]',
             'insert_until': r'.*[[]=setup info stop=[]]',
             'text': dedent(info).rstrip('\n'),
-            })
+        })
 
         # DISTS_VM
         replace.add(**{
             'insert_after': r'.*[[]=setup dists start=[]]',
             'insert_until': r'.*[[]=setup dists stop=[]]',
             'text': dedent(dists).rstrip('\n'),
-            })
+        })
 
         # BUILDER_PLUGINS
         replace.add(**{
             'insert_after': r'.*[[]=setup plugins start=[]]',
             'insert_until': r'.*[[]=setup plugins stop=[]]',
             'text': dedent(plugins),
-            })
+        })
 
         # RELEASE
         replace.add(**{
             'replace': r'RELEASE[ ]*[?:]?=[ ]*[\d]',
             'text': r'RELEASE := {0}'.format(self.release),
-            })
+        })
 
         # SSH_ACCESS
         replace.add(**{
             'replace': r'SSH_ACCESS[ ]*[?:]?=[ ]*[\d]',
             'text': r'SSH_ACCESS := {0}'.format(self.ssh_access),
-            })
+        })
 
         # GIT_BASEURL
         replace.add(**{
             'replace': r'GIT_BASEURL[ ]*[?:]?=[ ]*.*',
             'text': r'GIT_BASEURL := {0}'.format(self.git_baseurl),
-            })
+        })
 
         # GIT_PREFIX
         replace.add(**{
             'replace': r'GIT_PREFIX[ ]*[?:]?=[ ]*.*',
             'text': r'GIT_PREFIX := {0}'.format(self.git_prefix),
-            })
+        })
 
         # TEMPLATE_ONLY
         replace.add(**{
             'replace': r'TEMPLATE_ONLY[ ]*[?:]?=[ ]*.*',
             'text': r'TEMPLATE_ONLY ?= {0}'.format(self.template_only),
-            })
+        })
 
         # INCLUDE_OVERRIDE_CONF
         if self.override_source:
@@ -854,7 +905,7 @@ class Config(object):
         replace.add(**{
             'replace': r'^.*INCLUDE_OVERRIDE_CONF[ ]+[?]?[=].*$',
             'text': r'{0}'.format(override),
-            })
+        })
 
         # Start the search and replace process on the configuration file
         replace.start()
@@ -866,7 +917,7 @@ class Config(object):
         install_qubes = '''
             Complete Qubes Build Steps
             --------------------------
-	    make install-deps
+            make install-deps
             make get-sources
             make qubes
             make iso
@@ -875,7 +926,7 @@ class Config(object):
         install_qubes_vm = '''
             Template Only Build Steps
             -------------------------
-	    make install-deps
+            make install-deps
             make get-sources
             make qubes-vm
             make template
@@ -903,28 +954,22 @@ class Wizard(Config):
 
         ## Choose release version
         ## Soft link 'examples/templates.conf' to 'builder.conf'
-        #self.release = self.set_release(force=True)
         self.set_release(force=True)
 
         ## Prompt for selection of base repo to use for build
-        #self.git_prefix = self.set_repo()
         self.set_repo()
 
         ## Choose if user has git ssh (commit) or http access to private repos
         if os.path.exists(self.conf_override):
-            #self.ssh_access = self.set_ssh_access()
             self.set_ssh_access()
 
         ## Choose to build a complete system or templates only
-        #self.template_only = self.set_template_only()
         self.set_template_only()
 
         ## Select which templates to build (DISTS_VM)
-        #self.dists_vm_selected = self.set_dists()
         self.set_dists()
 
         ## Enable builders
-        #self.dists_builders = self.set_builders()
         self.set_builders()
 
         ## TODO: Prompt after DISTS_VM selected to prompt for BUILDER-debian, etc
@@ -981,7 +1026,7 @@ class Wizard(Config):
                 # Receive key from keyserver
                 else:
                     try:
-                        text = sh.gpg('--keyserver', 'pgp.mit.edu', '--recv-keys', key)
+                        text = sh.gpg('--keyserver', GPG_KEY_SERVER, '--recv-keys', key)
                     except sh.ErrorReturnCode, err:
                         exit('Unable to receive keys from keyserver.  Try again later or install them manually')
 
@@ -989,13 +1034,13 @@ class Wizard(Config):
             result = self.gpg_verify_key(key)
             if not result:
                 exit({'title':  '{key[owner]} fingerprint failed!'.format(key=self.keys[key]),
-                       'text': '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(key=self.keys[key]),})
+                      'text': '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(key=self.keys[key]),})
 
         # Add developers keys
         try:
-            sh.gpg('--import', 'qubes-developers-keys.asc')
+            sh.gpg('--import', QUBES_DEVELOPERS_KEYS)
         except sh.ErrorReturnCode, err:
-            exit('Unable to import Qubes developer keys (qubes-developers-keys.asc). Please install them manually.\n{0}'.format(err))
+            exit('Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(QUBES_DEVELOPERS_KEYS, err))
 
         return True
 
@@ -1177,7 +1222,7 @@ class Wizard(Config):
             requires = {}
             for builder_name in self.builders_selected:
                 builder = self.builders.get(builder_name, {})
-		for plugin in builder.get('require', []):
+                for plugin in builder.get('require', []):
                     if plugin not in self.builders_selected:
                         requires.setdefault(builder_name, [])
                         requires[builder_name].append(plugin)
@@ -1199,7 +1244,7 @@ class Wizard(Config):
             requires = _requires()
 
             for builder in self.builders.values():
-                # Skip development plugins in development mode was not enabled (--development)
+                # Skip development plugins if development mode was not enabled (--development)
                 if builder.get('development', None) and not self.cli_args.get('development', None):
                     continue
 
@@ -1300,7 +1345,7 @@ class ReplaceInplace(object):
         'find': None,
         'start_line': None,
         'stop_line': None,
-        }
+    }
 
     def add(self, **kwargs):
         default = copy.deepcopy(self.defaults)
@@ -1325,7 +1370,7 @@ class ReplaceInplace(object):
         insert_mode = False
         stop = []
 
-        for line in fileinput.input(self.filename, inplace=True, backup='.bak'):
+        for line in fileinput.input(self.filename, inplace=True, backup=BACKUP_EXTENSION):
             line =  line.rstrip('\n')
             for rule in self.rules:
                 if rule.search(line):
@@ -1376,6 +1421,7 @@ def set_default_subparser(self, name, args=None):
                 sys.argv.insert(1, name)
             else:
                 args.insert(0, name)
+
 argparse.ArgumentParser.set_default_subparser = set_default_subparser
 
 def main(argv):
@@ -1388,26 +1434,38 @@ def main(argv):
                          help='Location path of qubes-builder base directory' )
     wizard.add_argument( '-c', dest='config_filename', action='store', default='.setup.data',
                          help='Setup configuration file' )
-    wizard.add_argument( '--development', action='store_true', default=False,
+    wizard.add_argument( '--development', action='store_true', default=DEVELOPMENT_MODE,
                          help='include in-progress development configuration options' )
 
     info = mode.add_parser('info', help='Display builder configuration')
-    info.add_argument( '-c', dest='config_filename', action='store', default='builder.conf',
-                         help='configuration file (builder.conf)' )
+    info.add_argument( '-c', dest='config_filename', action='store', default=BUILDER_CONF,
+                       help='configuration file ({0})'.format(BUILDER_CONF) )
+
+    depends = mode.add_parser('install-deps', help='Install build dependencies')
 
     parser.set_default_subparser('wizard')
     args = vars(parser.parse_args())
     mode = args['mode']
 
-    # XXX: TEMP for debugging
-    args['development'] =  True
-
     if mode == 'wizard':
         Wizard(DialogUI(), **args)()
-    if mode == 'info':
+    elif mode == 'info':
         display_configuration(args['config_filename'])
+    elif mode == 'install-deps':
+        install_deps()
+
+
+try:
+    import sh
+except ImportError:
+    install_deps('python-sh')
+    import sh
 
 
 if __name__ == '__main__':
+    # If no builder.conf is present; assume install-deps has not been run
+    if not os.path.exists(BUILDER_CONF):
+        install_deps('qubes-builder dependencies')
+
     main(sys.argv)
     sys.exit(0)
