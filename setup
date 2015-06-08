@@ -491,6 +491,50 @@ class DialogUI(DefaultUI):
         '''
         return cls.yesno(**info)
 
+    @classmethod
+    def get_sources(cls, **info):
+        '''Display get-sources dialog.
+        '''
+        result = cls.yesno(**info)
+        get_sources = 1 if result else 0
+
+        # Download sources
+        if get_sources:
+            import subprocess
+            try:
+                from subprocess import DEVNULL # py3k
+            except ImportError:
+                DEVNULL = open(os.devnull, 'wb')
+
+            env = os.environ.copy()
+            env['bold'] = ''
+            env['normal'] = ''
+            env['black'] = ''
+            env['red'] = ''
+            env['green'] = ''
+            env['blue'] = ''
+            env['white'] = ''
+
+            args = ['make', 'get-sources']
+            p = subprocess.Popen(args, stdout=subprocess.PIPE,
+                stderr=DEVNULL, close_fds=True, env=env)
+
+            default = {
+                #'colors': True,
+                #'scrollbar': True,
+                'height': 40,
+                'width': 120,
+            }
+
+            cls.dialog.programbox(fd=p.stdout.fileno(),
+                text="Get sources", **default)
+            retcode = p.wait()
+
+            # Context manager support for subprocess.Popen objects requires
+            # Python 3.2 or later.
+            p.stdout.close()
+            return retcode
+
 
 class Config(object):
     '''Configuration objects holds all config data.
@@ -910,6 +954,7 @@ class Config(object):
         # Start the search and replace process on the configuration file
         replace.start()
 
+    def display_configuration(self):
         ansi =  ANSIColor()
         display_configuration(self.conf_builder)
         info = '\nNew configuration file written to: {0}\n'.format(self.conf_builder)
@@ -966,17 +1011,17 @@ class Wizard(Config):
         ## Choose to build a complete system or templates only
         self.set_template_only()
 
-        ## Select which templates to build (DISTS_VM)
-        self.set_dists()
-
         ## Enable builders
         self.set_builders()
 
-        ## TODO: Prompt after DISTS_VM selected to prompt for BUILDER-debian, etc
-        ## Choose BUILDER_PLUGINS
+        ## Select which templates to build (DISTS_VM)
+        self.set_dists()
 
         ## Write builder.conf
         self.write_configuration()
+
+        ## Display builder.conf
+        self.display_configuration()
 
     def gpg_verify_key(self, key):
         key_data = self.keys.get(key, None)
@@ -1187,6 +1232,29 @@ class Wizard(Config):
 
         self.dists_vm_selected = self.ui.dists(**info)
 
+    def get_sources(self):
+        '''Prompt user to get sources.
+        '''
+        default_button = 'yes'
+        info = {
+            'title':  'Get sources',
+            'default_button': 'yes',
+            'height': 0,
+            'width': 0,
+            'text': dedent('''\
+                Either a BUILDER_PLUGIN has been added or Qubes sources have not
+                yet been downloaded.
+
+                Would you like to get Qubes source files now? If you choose no you
+                may need to run set again after getting sources manually to be able
+                to select some VMs for building.
+
+                Select 'Yes' to download and merge sources or 'No' to skip"
+            '''),
+        }
+        retcode = self.ui.get_sources(**info)
+
+
     def set_builders(self):
         ''''''
         # Build required depends list
@@ -1207,7 +1275,7 @@ class Wizard(Config):
         def _missing():
             missing = {}
             for builder in self.builders.values():
-                # Check to see if a disabled builder has dist vms selected and warna
+                # Check to see if a disabled builder has dist vms selected and warn
                 if builder['id'] not in self.builders_selected:
                     for dist in self.dists_vm_selected:
                         alias = self.template_aliases.get(dist, dist)
@@ -1304,7 +1372,19 @@ class Wizard(Config):
                 '''),
             }
 
+            builders_selected = self.builders_selected
             self.builders_selected = self.ui.builders(**info)
+
+            # Selected builders changed; write and reload config file to reflect
+            # changes
+            if builders_selected !=  self.builders_selected:
+                self.write_configuration()
+                self._parse_makefiles()
+
+                # Download sources
+                # TODO: determine if BUILDER_PLUGIN has previously been downloaded
+                self.get_sources()
+
             missing = _missing()
             requires = _requires()
             if requires:
