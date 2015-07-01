@@ -6,10 +6,8 @@ MNT=mnt
 SRC=$SRC_DIR
 
 NEW_IMAGE=no
-WINDOWS_BUILDER_CONTENT="Makefile Makefile.generic Makefile.windows builder.conf.default
-                        scripts
-                        scripts-windows windows-build-files
-                        windows-prepare.bat"
+WINDOWS_BUILDER_CONTENT="Makefile Makefile.generic
+                        scripts"
 
 if [ -z "$COMPONENTS" ]; then
     echo "Empty COMPONENTS setting, nothing to copy"
@@ -45,7 +43,10 @@ cp $BUILDERCONF $MNT/builder.conf || exit 1
 mkdir -p $MNT/qubes-src
 
 for C in $COMPONENTS; do
-    rsync --delete --exclude-from windows-build-files/win-src.exclude -rlt $SRC/$C $MNT/qubes-src/ || exit 1
+    if [ $C = builder ]; then
+        continue
+    fi
+    rsync --delete --exclude-from $SRC/builder-windows/windows-build-files/win-src.exclude -rlt $SRC/$C $MNT/qubes-src/ || exit 1
 done
 
 sudo umount -d $MNT
