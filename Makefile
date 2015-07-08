@@ -616,7 +616,7 @@ show-unmerged:
 				MERGE_TYPE="$${MERGE_TYPE}fast-forward"; \
 			fi; \
 			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"; \
-			echo "> $$REPO $$MERGE_TYPE: git merge FETCH_HEAD"; \
+			echo "> $${REPO#$(SRC_DIR)/} $$MERGE_TYPE: git merge FETCH_HEAD"; \
 			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD; \
 		fi; \
 		popd > /dev/null; \
