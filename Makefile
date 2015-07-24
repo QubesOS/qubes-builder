@@ -787,13 +787,13 @@ windows-image-extract:
 	./win-mountsrc.sh umount
 
 .PHONY: build-info
-build-info:: bold   = $$(tput bold    || tput md 2>/dev/null)
-build-info:: normal = $$(tput sgr0    || tput me 2>/dev/null)
-build-info:: black  = $$(tput setaf 0 || tput AF 0 2>/dev/null)
-build-info:: red    = $$(tput setaf 1 || tput AF 1 2>/dev/null)
-build-info:: green  = $$(tput setaf 2 || tput AF 2 2>/dev/null)
-build-info:: blue   = $$(tput setaf 4 || tput AF 4 2>/dev/null)
-build-info:: white  = $$(tput setaf 7 || tput AF 7 2>/dev/null)
+build-info:: bold   = $$(tput bold    2>/dev/null || tput md 2>/dev/null)
+build-info:: normal = $$(tput sgr0    2>/dev/null || tput me 2>/dev/null)
+build-info:: black  = $$(tput setaf 0 2>/dev/null || tput AF 0 2>/dev/null)
+build-info:: red    = $$(tput setaf 1 2>/dev/null || tput AF 1 2>/dev/null)
+build-info:: green  = $$(tput setaf 2 2>/dev/null || tput AF 2 2>/dev/null)
+build-info:: blue   = $$(tput setaf 4 2>/dev/null || tput AF 4 2>/dev/null)
+build-info:: white  = $$(tput setaf 7 2>/dev/null || tput AF 7 2>/dev/null)
 build-info:: label  = $(bold)$(blue)
 build-info:: text   = $(normal)
 build-info:: _item_added     = $(red)$(_ITEM)$(normal)
