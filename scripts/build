@@ -50,6 +50,9 @@ if ! [ -r $PWD/chroot-$DIST/proc/cpuinfo ]; then
     sudo mount -t proc proc $PWD/chroot-$DIST/proc
 fi
 
+if ! [ -d $PWD/chroot-$DIST/sys/devices ]; then
+    sudo mount -t sysfs sysfs $PWD/chroot-$DIST/sys
+fi
 
 mkdir -p $DIST_SRC_ROOT
 sudo rm -rf $DIST_SRC
