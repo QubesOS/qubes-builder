@@ -1384,6 +1384,7 @@ class Wizard(Config):
                 # Download sources
                 # TODO: determine if BUILDER_PLUGIN has previously been downloaded
                 self.get_sources()
+                self._parse_makefiles()
 
             missing = _missing()
             requires = _requires()
