@@ -127,6 +127,17 @@ This setting is used only when building the template in DispVM
 
 Set release version of result iso
 
+### ISO_INSTALLER
+> Default: 1
+
+When building 'iso' target, build installation iso.
+
+### ISO_LIVE
+> Default: 0
+
+When building 'iso' target, build live image. Can be set together with
+`ISO_INSTALLER` to build both.
+
 ### NO_CHECK
 > Default: no value
 
