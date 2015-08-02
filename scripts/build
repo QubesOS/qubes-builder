@@ -108,6 +108,7 @@ if [ $COMPONENT == $INSTALLER_COMPONENT ]; then
         if [ -d $DIST_SRC/build/work ]; then
             sudo rm -fr $ORIG_SRC/build/ISO
             sudo rm -fr $ORIG_SRC/build/work
+            mkdir -p $ORIG_SRC/build/
             sudo mv $DIST_SRC/build/work $ORIG_SRC/build/
             sudo mv $DIST_SRC/build/ISO $ORIG_SRC/build/
         fi
