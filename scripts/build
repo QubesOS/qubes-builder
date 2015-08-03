@@ -69,7 +69,7 @@ if [ $VERBOSE -eq 0 ]; then
     BUILD_INITIAL_INFO="$BUILD_INITIAL_INFO (logfile: $BUILD_LOG)..."
 fi
 echo "$BUILD_INITIAL_INFO"
-if [ $VERBOSE -eq 1 ]; then
+if [ $VERBOSE -ge 1 ]; then
     sed -i -e 's/rpmbuild/rpmbuild --quiet/' $DIST_SRC/Makefile*
     MAKE_OPTS="$MAKE_OPTS -s"
 fi
