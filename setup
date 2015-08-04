@@ -96,8 +96,8 @@ def getchar():
     return _getchar()
 
 
-def install_deps(depends):
-    if not depends:
+def install_deps(depends_label):
+    if not depends_label:
         return
 
     import os
@@ -132,7 +132,7 @@ def install_deps(depends):
     os.system('clear')
     message1 = 'The following dependencies may not have been met:\n'
     message2 = '\nThe following {ansi[bold]}build dependencies{ansi[normal]}{ansi[blue]} will be installed:\n'.format(ansi=ansi)
-    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message1, depends, ansi=ansi)
+    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message1, depends_label, ansi=ansi)
     print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message2, build_depends, ansi=ansi)
     print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} build dependencies now, or anything else to quit [YyNnQq]: '.format(ansi=ansi)
     char =  getchar()
