@@ -15,7 +15,7 @@ and should ensure the following packages are installed:
 
 Unusually one can install those packages by just issuing:
 
-    $ sudo yum install git createrepo rpm-build make python-sh
+    $ sudo yum install git createrepo rpm-build rpm-sign make python-sh rpmdevtools
 
 Or just install them automatically by issuing:
 
