@@ -80,10 +80,10 @@ fi
 set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
 if [ $VERBOSE -eq 0 ]; then
-    sudo -E chroot chroot-$DIST su - -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
+    sudo -E chroot chroot-$DIST su -p -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
     BUILD_RETCODE=$?
 else
-    sudo -E chroot chroot-$DIST su - -c "$MAKE_CMD" $RUN_AS_USER
+    sudo -E chroot chroot-$DIST su -p -c "$MAKE_CMD" $RUN_AS_USER
     BUILD_RETCODE=$?
 fi
 if [ $BUILD_RETCODE -gt 0 ]; then
