@@ -711,6 +711,7 @@ check-release-status-%: red    = $$(tput setaf 1 || tput AF 1)
 check-release-status-%: green  = $$(tput setaf 2 || tput AF 2)
 check-release-status-%: yellow = $$(tput setaf 3 || tput AF 3)
 check-release-status-%: blue   = $$(tput setaf 4 || tput AF 4)
+check-release-status-%: white  = $$(tput setaf 7 || tput AF 7)
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
@@ -757,9 +758,25 @@ check-release-status-%:
 			fi; \
 			testing="$$testing $$C"; \
 		elif make -s -f Makefile.generic $(MAKE_ARGS) \
+				UPDATE_REPO=$(CURDIR)/$$repo_basedir/security-testing/$(PACKAGE_SET)/$(DIST) \
+				check-repo >/dev/null 2>&1; then \
+			echo -n $(yellow)security-testing$(normal); \
+			date_snap=`date -r $(CURDIR)/repo-latest-snapshot/security-testing-$(PACKAGE_SET)-$(DIST)-$$C +%s`; \
+			days=$$(( ( `date +%s` - $$date_snap ) / (24 * 60 * 60) )); \
+			if [ $$days -ge $(TESTING_DAYS) ]; then \
+				echo " $(green)($$days days ago)$(normal)"; \
+			else \
+				echo " $(yellow)($$days days ago)$(normal)"; \
+			fi; \
+			testing="$$testing $$C"; \
+		elif make -s -f Makefile.generic $(MAKE_ARGS) \
 				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$(DIST) \
 				check-repo >/dev/null 2>&1; then \
 			echo $(blue)unstable$(normal); \
+		elif make -s -f Makefile.generic $(MAKE_ARGS) \
+				UPDATE_REPO=$(CURDIR)/qubes-packages-mirror-repo/$(DIST) \
+				check-repo >/dev/null 2>&1; then \
+			echo $(white)built, not released$(normal); \
 		else \
 			echo $(red)not released$(normal); \
 			not_released="$$not_released $$C"; \
