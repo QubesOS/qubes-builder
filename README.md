@@ -12,10 +12,11 @@ and should ensure the following packages are installed:
 * rpmdevtools
 * make 
 * python-sh
+* dialog
 
 Unusually one can install those packages by just issuing:
 
-    $ sudo yum install git createrepo rpm-build rpm-sign make python-sh rpmdevtools
+    $ sudo yum install git createrepo rpm-build rpm-sign make python-sh rpmdevtools rpm-sign dialog
 
 Or just install them automatically by issuing:
 
