@@ -40,7 +40,7 @@ QUBES_DEVELOPERS_KEYS = 'qubes-developers-keys.asc'
 # Globals
 DIALOG = 'dialog'
 GPG_KEY_SERVER = 'pgp.mit.edu'
-DEVELOPMENT_MODE = True
+DEVELOPMENT_MODE = False
 SETUP_DEPENDENCIES = ['dialog']
 
 # Add 'qubes-builder/libs' directory to sys.path
