@@ -28,23 +28,24 @@ import types
 from ConfigParser import ConfigParser
 from textwrap import dedent, wrap
 
-# Global file locations
-CONFIG_DIR       = 'example-configs'
-OVERRIDE_CONF    = 'override.conf'
-OVERRIDE_DATA    = 'override.data'
-MASTER_TEMPLATE  = 'templates.conf'
-BUILDER_CONF     = 'builder.conf'
-BACKUP_EXTENSION =  '.bak'
-QUBES_DEVELOPERS_KEYS = 'qubes-developers-keys.asc'
-
 # Globals
 DIALOG = 'dialog'
 GPG_KEY_SERVER = 'pgp.mit.edu'
-DEVELOPMENT_MODE = True
+DEVELOPMENT_MODE = False
 SETUP_DEPENDENCIES = ['dialog']
 
+# Global file locations
+BASE_DIR              = os.getcwd()
+CONFIG_DIR            = 'example-configs'
+OVERRIDE_CONF         = 'override.conf'
+OVERRIDE_DATA         = 'override.data'
+MASTER_TEMPLATE       = 'templates.conf'
+BUILDER_CONF          = 'builder.conf'
+BACKUP_EXTENSION      =  '.bak'
+QUBES_DEVELOPERS_KEYS = 'qubes-developers-keys.asc'
+GNUPGHOME = os.path.join(os.path.abspath(BASE_DIR), 'keyrings/git')
+
 # Add 'qubes-builder/libs' directory to sys.path
-BASE_DIR = os.getcwd()
 LIBS_DIR = os.path.join(BASE_DIR, 'libs')
 if os.path.exists(LIBS_DIR) and os.path.isdir(LIBS_DIR):
     if LIBS_DIR not in sys.path:
@@ -59,6 +60,8 @@ def exit(*varargs, **kwargs):
     '''Function to exit.  Maybe restoring some files before exiting.
     '''
     kwargs['title'] = 'System Exit!'
+    kwargs['width'] = 80
+    kwargs['height'] = 0  # Auto height
 
     try:
         DefaultUI.ui.infobox(*varargs, **kwargs)
@@ -295,6 +298,12 @@ class DialogUI(DefaultUI):
         super(DialogUI, cls).__init__(cls)
 
     @classmethod
+    def _auto_height(cls, width, text):
+        _max = max(8, 5 + len(wrap(text, width=width)))  # Min of 8 rows
+        _min = min(22, _max)  # Max of 22 rows
+        return _min
+
+    @classmethod
     def yesno(cls, **info):
         '''YesNo dialog.
         '''
@@ -313,12 +322,6 @@ class DialogUI(DefaultUI):
             return False
         elif code == cls.dialog.ESC:
             exit('Escape key pressed. Exiting.')
-
-    @classmethod
-    def _auto_height(cls, width, text):
-        _max = max(8, 5 + len(wrap(text, width=width)))  # Min of 8 rows
-        _min = min(22, _max)  # Max of 22 rows
-        return _min
 
     @classmethod
     def msgbox(cls, *varargs, **info):
@@ -489,7 +492,11 @@ class DialogUI(DefaultUI):
     def verify_keys(cls, **info):
         '''Display `verify keys` confirmation dialog.
         '''
-        return cls.yesno(**info)
+        default = {
+            'height': 12,
+        }
+        default.update(info)
+        return cls.yesno(**default)
 
     @classmethod
     def get_sources(cls, **info):
@@ -995,7 +1002,7 @@ class Wizard(Config):
     def __call__(self):
         ## Check / Install Keys
         ## set force value to 'force' to force re-download and verify
-        self.verify_keys(force=False)
+        self.verify_keys(self.keys, force=False)
 
         ## Choose release version
         ## Soft link 'examples/templates.conf' to 'builder.conf'
@@ -1023,47 +1030,58 @@ class Wizard(Config):
         ## Display builder.conf
         self.display_configuration()
 
-    def gpg_verify_key(self, key):
-        key_data = self.keys.get(key, None)
-        if not key:
-            return False
+    def check_gnupghome(self, gnupghome):
+        if not os.path.exists(gnupghome):
+            os.makedirs(gnupghome, mode=0700)
+
+    def gpg_verify_key(self, key_data):
         verified = False
+        env = os.environ.copy()
+        env['GNUPGHOME'] = GNUPGHOME
+        self.check_gnupghome(GNUPGHOME)
 
         try:
-            text = sh.gpg('--with-colons', '--fingerprint', key).strip()
+            text = sh.gpg('--with-colons', '--fingerprint', key_data['key'], _env=env).strip()
         except sh.ErrorReturnCode, err:
             return False
 
         for fingerprint in text.split('\n'):
-            if fingerprint.startswith(u'fpr:') and fingerprint == self.keys[key]['verify']:
+            if fingerprint.startswith(u'fpr:') and fingerprint == key_data['verify']:
                 verified = True
                 break
 
         if not verified:
-            print sh.gpg('--fingerprint', key)
+            print sh.gpg('--fingerprint', key_data['key'], _env=env)
             return False
 
         return verified
 
-    def verify_keys(self, force=False):
-        for key in self.keys:
-            exit_code = 1
+    def verify_keys(self, keys, message=None, force=False):
+        env = os.environ.copy()
+        env['GNUPGHOME'] = GNUPGHOME
+        self.check_gnupghome(GNUPGHOME)
+
+        for id, key_data in keys.items():
+            key = key_data['key']
+            is_key_missing = True
             try:
-                text = sh.gpg('--list-key', key)
-                exit_code = text.exit_code
+                text = sh.gpg('--list-key', key, _env=env)
+                is_key_missing = text.exit_code
             except sh.ErrorReturnCode, err:
                 # exit_code will be non-zero and will trigger installation and verification of keys
                 pass
 
-            if force or exit_code:
+            if force or is_key_missing:
                 info = {
-                    'title':  'Add Keys',
-                    'default_button': 'yes',
+                    'title':  'Add Key {0}'.format(id),
+                    'default_button': 'no',
                 }
-                if force:
-                    info['text'] = u'{key[owner]} forced get.\n\nSelect "Yes" to re-add or "No" to exit'.format(key=self.keys[key])
+                if message:
+                    info['text'] = u'Owner: {key_data[owner]}\n\n{0}\n\nSelect "Yes" to add or "No" to exit'.format(message, key_data=key_data)
+                elif force:
+                    info['text'] = u'Owner: {key_data[owner]} forced get.\n\nSelect "Yes" to re-add or "No" to exit'.format(key_data=key_data)
                 else:
-                    info['text'] = u'{key[owner]} key does not exist.\n\nSelect "Yes" to add or "No" to exit'.format(key=self.keys[key])
+                    info['text'] = u'Owner: {key_data[owner]} key does not exist.\n\nSelect "Yes" to add or "No" to exit'.format(key_data=key_data)
 
                 if not self.ui.verify_keys(**info):
                     exit('User aborted setup: Exiting setup since keys can not be installed')
@@ -1071,19 +1089,22 @@ class Wizard(Config):
                 # Receive key from keyserver
                 else:
                     try:
-                        text = sh.gpg('--keyserver', GPG_KEY_SERVER, '--recv-keys', key)
+                        cmd = 'GNUPGHOME={0} gpg --keyserver {1} --recv-keys {2}'.format(GNUPGHOME, GPG_KEY_SERVER, key)
+                        text = sh.gpg('--keyserver', GPG_KEY_SERVER, '--recv-keys', key, _env=env)
+                        sh.gpg(sh.echo('{0}:6:'.format(key)), '--import-ownertrust', _env=env)
                     except sh.ErrorReturnCode, err:
-                        exit('Unable to receive keys from keyserver.  Try again later or install them manually')
+                        print err.message
+                        exit(err.message)
 
             # Verify key on every run
-            result = self.gpg_verify_key(key)
+            result = self.gpg_verify_key(key_data)
             if not result:
-                exit({'title':  '{key[owner]} fingerprint failed!'.format(key=self.keys[key]),
-                      'text': '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(key=self.keys[key]),})
+                exit({'title': '{key_data[owner]} fingerprint failed!'.format(key_data=key_data),
+                      'text': '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(key_data=key_data),})
 
         # Add developers keys
         try:
-            sh.gpg('--import', QUBES_DEVELOPERS_KEYS)
+            sh.gpg('--import', QUBES_DEVELOPERS_KEYS, _env=env)
         except sh.ErrorReturnCode, err:
             exit('Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(QUBES_DEVELOPERS_KEYS, err))
 
@@ -1296,6 +1317,16 @@ class Wizard(Config):
                         requires[builder_name].append(plugin)
             return requires
 
+        def _requires_key():
+            for builder_name in self.builders_selected:
+                builder = self.builders.get(builder_name, {})
+                if builder.get('key', False):
+                    # Setup will exit if user chooses not to install key
+                    message = 'The BUILDER_PLUGIN {0} requires a third party key.'.format(builder['id'])
+                    key_id = '0x{0}'.format(builder['key'][-8:])
+                    self.verify_keys({key_id: builder}, message=message)
+            return True
+
         def _colorize(items, missing):
             colorized = []
             for item in items:
@@ -1378,6 +1409,10 @@ class Wizard(Config):
             # Selected builders changed; write and reload config file to reflect
             # changes
             if builders_selected !=  self.builders_selected:
+                # Check if BUILDER_PLUGIN requires a key to install; prompt to install
+                # Setup will exit if user chooses not to install key
+                _requires_key()
+
                 self.write_configuration()
                 self._parse_makefiles()
 

@@ -56,13 +56,19 @@ type        : builder
 description : Whonix Builder - Template flavor to build Whonix Gateway and Workstation
 require     : builder-debian
 require_in  : whonix
+key         : 916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA
+owner       : Patrick Schleizer <adrelanos@riseup.net>
+fingerprint : 916B 8D99 C38E AF5E 8ADC  7A2A 8D66 066A 2EEA CCDA
+verify      : fpr:::::::::916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:
+url         : https://www.whonix.org/wiki/Whonix_Signing_Key
 
 # require is a dependancy to use
 # require_in forces the named component to be required (not optional)
 # optional: lists dists compatible options
 # If 'development' is 'True' it will not be shown unless setup is started with --development
-[app-salt-config]
-id          : app-salt-config
+
+[mgmt-salt]
+id          : mgmt-salt
 type        : builder
 description : Salt Configuration Flavor - Adds Qubes management and configuration files
 optional    : fc wheezy jessie trusty utopic vivid
