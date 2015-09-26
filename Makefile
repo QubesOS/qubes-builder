@@ -446,7 +446,7 @@ iso:
 			fi \
 	    fi; \
 	done
-	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
+	@for DIST in $(DISTS_VM); do \
 		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
