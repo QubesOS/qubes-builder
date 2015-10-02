@@ -9,6 +9,7 @@
 #  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
 #  - FETCH_ONLY=1 - fetch sources but do not merge
+#  - IGNORE_MISSING=1 - exit with code 0 if remote branch doesn't exists
 #  - GIT_REMOTE=<remote-name> - use "remote" from git configuration instead of
 #    explicit URL
 #  - REPO=dir - specify repository directory, component will be guessed based
@@ -48,10 +49,8 @@ fi
 echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_URL $BRANCH..."
 if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
-    pushd $REPO > /dev/null
-    git fetch -q $GIT_URL --tags || exit 1
-    git fetch -q $GIT_URL $BRANCH || exit 1
-    popd > /dev/null
+    git -C $REPO fetch -q $GIT_URL --tags $BRANCH || \
+        { [ 0$IGNORE_MISSING -eq 1 ] && exit 0 || exit 1; }
     VERIFY_REF=FETCH_HEAD
 else
     rm -rf $REPO

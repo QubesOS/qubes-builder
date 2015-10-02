@@ -592,6 +592,7 @@ SHELL = /bin/bash
 	SCRIPT_DIR=$(CURDIR)/scripts; \
 	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
 	FETCH_ONLY=1; \
+	IGNORE_MISSING=1; \
 	REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
@@ -628,10 +629,9 @@ do-merge:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
-		pushd $$REPO > /dev/null; \
+		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git merge --no-edit FETCH_HEAD || exit 1; \
-		popd > /dev/null; \
+		git -C $$REPO merge --no-edit FETCH_HEAD || exit 1; \
 	done
 
 update-repo-current-testing update-repo-security-testing update-repo-unstable: update-repo-%:
