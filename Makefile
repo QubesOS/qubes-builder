@@ -251,7 +251,7 @@ sign-%:
 		done ; \
 		if [ -n "$$FILE_LIST" ]; then \
 			echo "--> Signing..."; \
-			RPMSIGN_OPTS=; \
+			RPMSIGN_OPTS=--digest-algo=sha256; \
 			if [ -n "$$SIGN_KEY" ]; then \
 				RPMSIGN_OPTS="--key-id=$$SIGN_KEY"; \
 			fi; \
