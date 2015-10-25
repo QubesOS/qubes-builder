@@ -656,7 +656,7 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 					UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
 					COMPONENT=`basename $$REPO` \
 					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
-					update-repo; \
+					update-repo || exit 1; \
 			fi; \
 			for DIST in $(DISTS_VM_NO_FLAVOR); do \
 				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
@@ -666,11 +666,11 @@ update-repo-current-testing update-repo-security-testing update-repo-unstable: u
 					UPDATE_REPO=$(CURDIR)/$$repo_vm_basedir/$*/vm/$$DIST \
 					COMPONENT=`basename $$REPO` \
 					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-vm-$$DIST-`basename $$REPO` \
-					update-repo; \
+					update-repo || exit 1; \
 			done; \
 		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then \
 			echo "Updating $$REPO... "; \
-			make -s -C $$REPO update-repo-$* || echo; \
+			make -s -C $$REPO update-repo-$* || exit 1; \
 		else \
 			echo -n "Updating $$REPO... skipping."; \
 		fi; \
