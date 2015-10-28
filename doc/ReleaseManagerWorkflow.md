@@ -86,6 +86,7 @@ To streamline the task, this script can be used:
     set -x
     export DIST=wheezy
     if [ -f debian/changelog ]; then
+        rm -f debian/changelog.*
         ../builder-debian/scripts/debian-changelog.sh
         add=`readlink -f debian/changelog`
     fi
