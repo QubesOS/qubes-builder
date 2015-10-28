@@ -39,6 +39,11 @@ BUILD_LOG="build-logs/$(COMPONENT)-$(PACKAGE_SET)-$(DIST).log"
 # environment variables for build process (inside of chroot)
 CHROOT_ENV = BACKEND_VMM=$(BACKEND_VMM)
 
+# default value
+ifndef MIN_AGE
+MIN_AGE = 7
+endif
+
 ### Load component-specific settings
 
 # Component specific settins. Generic variables:
@@ -159,3 +164,17 @@ package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
 get-var::
 	@GET_VAR=$${!GET_VAR}; \
 	echo "$${GET_VAR}"
+
+update-repo-from-snapshot: update-repo-date-check
+
+update-repo-date-check:
+	if ! [ -r $(SNAPSHOT_FILE) ]; then \
+		echo "`tput bold`*** Packages weren't uploaded to $(SNAPSHOT_REPO)! ***`tput sgr0`"; \
+		exit 1; \
+	fi
+	touch -t `date -d "$(MIN_AGE) days ago" +%Y%m%d%H%M` /tmp/age-compare-file
+	if ! [ $(SNAPSHOT_FILE) -ot /tmp/age-compare-file ]; then \
+		echo "`tput bold`*** Packages weren't in $(SNAPSHOT_REPO) for at least $(MIN_AGE) days! ***`tput sgr0`"; \
+		exit 1; \
+	fi
+	rm -f /tmp/age-compare-file

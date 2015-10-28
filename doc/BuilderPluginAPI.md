@@ -66,7 +66,17 @@ This makefile should define following targets:
    them to `BUILDER_REPO_DIR`
  * `update-repo` - copy/hardlink packages of given component to repository
    pointed by `UPDATE_REPO` variable; it should maintain metadata suitable for
-   given distribution package manager
+   given distribution package manager; if `SNAPSHOT_FILE` is set, list of
+   copied packages should be stored in that file (in any form usable later for
+   `update-repo-from-snapshot` target); additionally `TARGET_REPO` variable is
+   available with flavor of repository pointed by `UPDATE_REPO` (`current`,
+   `current-testing`, etc)
+ * `update-repo-from-snapshot` (optional) - copy/hardlink packages listed in
+   `SNAPSHOT_FILE` (stored previously by `update-repo` target) to the
+   repository pointed by `UPDATE_REPO` variable; this target may additionally
+   use `SNAPSHOT_REPO` variable to know what was `TARGET_REPO` during snapshot
+   creation (`update-repo` target call); additionally `TARGET_REPO` is also set
+   to the flavor of repository pointed by `UPDATE_REPO`
  * `check-repo` (optional) - similar to `update-repo` but only check if package
    is already included in repository pointed by `UPDATE_REPO` variable; it
    should fail if package is not included

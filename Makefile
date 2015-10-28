@@ -634,67 +634,93 @@ do-merge:
 		git -C $$REPO merge --no-edit FETCH_HEAD || exit 1; \
 	done
 
-update-repo-current-testing update-repo-security-testing update-repo-unstable: update-repo-%:
-	@dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
-	if [ -n "$(DIST_DOM0)" ]; then \
-		[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
-		repos_to_update="$$repo_dom0_basedir"; \
+
+# update-repo-* targets only set appropriate variables and call
+# internal-update-repo-* targets for the actual work
+update-repo-%: MAKE_TARGET=update-repo
+update-repo-current: MAKE_TARGET=update-repo-from-snapshot
+# unfortunatelly $* here doesn't work as expected (is expanded too late), so
+# need to list all of them explicitly
+update-repo-current-testing: SNAPSHOT_REPO=current-testing
+update-repo-security-testing: SNAPSHOT_REPO=security-testing
+update-repo-unstable: SNAPSHOT_REPO=unstable
+# exception here: update-repo-current uses snapshot of current-testing
+update-repo-current: SNAPSHOT_REPO=current-testing
+
+# add dependency on each combination of:
+# internal-update-repo-$(TARGET_REPO).$(PACKAGE_SET).$(DIST).$(COMPONENT)
+# use dots for separating "arguments" to not deal with dashes in component names
+ifneq ($(DIST_DOM0),)
+update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) $(addprefix internal-update-repo-%.dom0.$(DIST_DOM0).,$(COMPONENTS)) post-update-repo-%
+else
+update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) post-update-repo-%
+endif
+	@true
+
+$(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS))
+	@true
+$(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS))
+	@true
+$(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS))
+	@true
+$(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS))
+	@true
+
+# setup arguments
+internal-update-repo-%: TARGET_REPO = $(word 1, $(subst ., ,$*))
+internal-update-repo-%: PACKAGE_SET = $(word 2, $(subst ., ,$*))
+internal-update-repo-%: DIST        = $(word 3, $(subst ., ,$*))
+internal-update-repo-%: COMPONENT   = $(word 4, $(subst ., ,$*))
+internal-update-repo-%: REPO 		= $(SRC_DIR)/$(COMPONENT)
+internal-update-repo-%: $(REPO)
+
+# and the actual code
+# this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
+internal-update-repo-%:
+	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
+	if [ -n "$${!repo_base_var}" ]; then \
+		repo_basedir="$${!repo_base_var}"; \
+	else \
+		repo_basedir="$(LINUX_REPO_BASEDIR)"; \
 	fi; \
-	for REPO in $(GIT_REPOS); do \
-		[ $$REPO == '.' ] && break; \
-		if [ -r $$REPO/Makefile.builder ]; then \
-			echo -n "Updating $$REPO... "; \
-			if [ "0$(UPDATE_REPO_CHECK_VTAG)" -eq 1 ]; then \
-				vtag=`git -C $$REPO tag --points-at HEAD --list v*`; \
-				if [ -z "$$vtag" ]; then \
-					echo "`tput bold``tput setaf 1`no version tag`tput sgr0`"; \
-					continue; \
-				fi; \
+	if [ -r $$REPO/Makefile.builder ]; then \
+		echo -n "Updating $$REPO... "; \
+		if [ "0$(UPDATE_REPO_CHECK_VTAG)" -eq 1 ]; then \
+			vtag=`git -C $$REPO tag --points-at HEAD --list v*`; \
+			if [ -z "$$vtag" ]; then \
+				echo "`tput bold``tput setaf 1`no version tag`tput sgr0`"; \
+				exit 0; \
 			fi; \
-			if [ -n "$(DIST_DOM0)" ]; then \
-				make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-					UPDATE_REPO=$(CURDIR)/$$repo_dom0_basedir/$*/dom0/$(DIST_DOM0) \
-					COMPONENT=`basename $$REPO` \
-					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-dom0-$(DIST_DOM0)-`basename $$REPO` \
-					update-repo || exit 1; \
-			fi; \
-			for DIST in $(DISTS_VM_NO_FLAVOR); do \
-				vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
-				[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
-				repos_to_update+=" $$repo_vm_basedir"; \
-				make -s -f Makefile.generic DIST=$$DIST PACKAGE_SET=vm \
-					UPDATE_REPO=$(CURDIR)/$$repo_vm_basedir/$*/vm/$$DIST \
-					COMPONENT=`basename $$REPO` \
-					SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$*-vm-$$DIST-`basename $$REPO` \
-					update-repo || exit 1; \
-			done; \
-		elif make -C $$REPO -n update-repo-$* >/dev/null 2>/dev/null; then \
-			echo "Updating $$REPO... "; \
-			make -s -C $$REPO update-repo-$* || exit 1; \
-		else \
-			echo -n "Updating $$REPO... skipping."; \
 		fi; \
-		echo; \
+		make -s -f Makefile.generic DIST=$(DIST) PACKAGE_SET=$(PACKAGE_SET) \
+			COMPONENT=`basename $$REPO` \
+			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
+			TARGET_REPO=$(TARGET_REPO) \
+			UPDATE_REPO=$(CURDIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+			SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $$REPO` \
+			$(MAKE_TARGET) || exit 1; \
+	elif make -C $$REPO -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
+		echo "Updating $$REPO... "; \
+		make -s -C $$REPO update-repo-$(TARGET_REPO) || exit 1; \
+	else \
+		echo -n "Updating $$REPO... skipping."; \
+	fi; \
+	echo
+
+# this is executed only once for all update-repo-* target
+post-update-repo-%:
+	@for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
+		repo_base_var="LINUX_REPO_$${dist}_BASEDIR"; \
+		if [ -n "$${!repo_base_var}" ]; then \
+			repo_basedir="$${!repo_base_var}"; \
+		else \
+			repo_basedir="$(LINUX_REPO_BASEDIR)"; \
+		fi; \
+		repos_to_update="$$repos_to_update $$repo_basedir"; \
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
-	done
-
-update-repo-current:
-	dom0_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
-	if [ -n "$(DIST_DOM0)" ]; then \
-		[ -n "$${!dom0_var}" ] && repo_dom0_basedir="`echo $${!dom0_var}`" || repo_dom0_basedir="$(LINUX_REPO_BASEDIR)"; \
-		repos_to_update="$$repo_dom0_basedir"; \
-	fi; \
-	for DIST in $(DISTS_VM_NO_FLAVOR); do \
-		vm_var="LINUX_REPO_$${DIST}_BASEDIR"; \
-		[ -n "$${!vm_var}" ] && repo_vm_basedir="`echo $${!vm_var}`" || repo_vm_basedir="$(LINUX_REPO_BASEDIR)"; \
-		repos_to_update+=" $$repo_vm_basedir"; \
-	done; \
-	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
-		[ -z "$$repo" ] && continue; \
-		(cd $$repo/.. && ./commit-testing-to-current.sh "$(CURDIR)/repo-latest-snapshot" "$(COMPONENTS)" `basename $$repo`); \
 	done
 
 check-release-status: $(addprefix check-release-status-vm-,$(DISTS_VM_NO_FLAVOR))
