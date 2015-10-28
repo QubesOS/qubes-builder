@@ -683,27 +683,27 @@ internal-update-repo-%:
 	else \
 		repo_basedir="$(LINUX_REPO_BASEDIR)"; \
 	fi; \
-	if [ -r $$REPO/Makefile.builder ]; then \
-		echo -n "Updating $$REPO... "; \
+	if [ -r $(REPO)/Makefile.builder ]; then \
+		echo -n "Updating $(REPO)... "; \
 		if [ "0$(UPDATE_REPO_CHECK_VTAG)" -eq 1 ]; then \
-			vtag=`git -C $$REPO tag --points-at HEAD --list v*`; \
+			vtag=`git -C $(REPO) tag --points-at HEAD --list v*`; \
 			if [ -z "$$vtag" ]; then \
 				echo "`tput bold``tput setaf 1`no version tag`tput sgr0`"; \
 				exit 0; \
 			fi; \
 		fi; \
 		make -s -f Makefile.generic DIST=$(DIST) PACKAGE_SET=$(PACKAGE_SET) \
-			COMPONENT=`basename $$REPO` \
+			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
 			TARGET_REPO=$(TARGET_REPO) \
 			UPDATE_REPO=$(CURDIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
-			SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $$REPO` \
+			SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
 			$(MAKE_TARGET) || exit 1; \
-	elif make -C $$REPO -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
-		echo "Updating $$REPO... "; \
-		make -s -C $$REPO update-repo-$(TARGET_REPO) || exit 1; \
+	elif make -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
+		echo "Updating $(REPO)... "; \
+		make -s -C $(REPO) update-repo-$(TARGET_REPO) || exit 1; \
 	else \
-		echo -n "Updating $$REPO... skipping."; \
+		echo -n "Updating $(REPO)... skipping."; \
 	fi; \
 	echo
 
