@@ -762,8 +762,7 @@ check-release-status-%:
 		echo -n "$$C: "; \
 		vtag=`git -C $(SRC_DIR)/$$C tag --points-at HEAD --list v*`; \
 		if [ -z "$$vtag" ]; then \
-			echo "$(bold)$(red)no version tag$(normal)"; \
-			continue; \
+			echo -n "$(bold)$(red)no version tag$(normal) "; \
 		else \
 			echo -n $$vtag ""; \
 		fi; \
