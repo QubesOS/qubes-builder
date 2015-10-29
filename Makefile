@@ -110,7 +110,7 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 				   branch_var="BRANCH_$(subst -,_,$(1))"; \
 				   [ -n "$${!branch_var}" ] && BRANCH="$${!branch_var}"; \
 				   pushd $(SRC_DIR)/$(1) > /dev/null; \
-				   CURRENT_BRANCH=`git branch | sed -n -e 's/^\* \(.*\)/\1/p' | tr -d '\n'`; \
+				   CURRENT_BRANCH=`git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match HEAD`; \
 				   if [ "$$BRANCH" != "$$CURRENT_BRANCH" ]; then \
 					   echo "-> ERROR: Wrong branch $$CURRENT_BRANCH (expected $$BRANCH)"; \
 					   exit 1; \
