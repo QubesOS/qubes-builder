@@ -657,6 +657,10 @@ update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) pos
 endif
 	@true
 
+# do not include builder itself in the template (it would fail anyway)
+update-repo-template:
+	@true
+
 $(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS))
 	@true
 $(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS))
