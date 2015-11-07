@@ -631,7 +631,7 @@ do-merge:
 	for REPO in $$REPOS; do \
 		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --no-edit FETCH_HEAD || exit 1; \
+		git -C $$REPO merge --ff --no-edit FETCH_HEAD || exit 1; \
 	done
 
 
