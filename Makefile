@@ -431,7 +431,7 @@ iso:
 	@echo "-> Preparing for ISO build..."
 	@make -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos || exit 1
 	@echo "--> Copying RPMs from individual repos..."
-	@for repo in $(filter-out linux-template-builder,$(GIT_REPOS)); do \
+	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
 	    if [ -r $$repo/Makefile.builder ]; then
 			make --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=dom0 \
