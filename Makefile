@@ -64,11 +64,6 @@ _aliases = $(eval DISTS_VM := $(patsubst $(_alias_name), $(_alias_flavor), $(DIS
           )
 $(strip $(foreach _alias, $(TEMPLATE_ALIAS), $(_aliases)))
 
-# Add BUILDER_PLUGINS COMPONENTS automatically if they do not already exist
-_component = $(if $(filter $(_plugin), $(COMPONENTS)),, $(_plugin))
-_components += $(foreach _plugin, $(BUILDER_PLUGINS), $(_component))
-COMPONENTS := $(COMPONENTS) $(_components)
-
 # Sets the COMPONENTS to only what is needed to build the template
 ifeq ($(TEMPLATE_ONLY), 1)
   COMPONENTS := $(TEMPLATE)
