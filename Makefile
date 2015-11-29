@@ -746,7 +746,7 @@ check-release-status-%:
 	testing=; \
 	repo_var="LINUX_REPO_$(DIST)_BASEDIR"; \
 	[ -n "$${!repo_var}" ] && repo_basedir="`echo $${!repo_var}`" || repo_basedir="$(LINUX_REPO_BASEDIR)"; \
-	for C in $(filter-out builder $(BUILDER_PLUGINS_ALL),$(COMPONENTS)); do \
+	for C in $(filter-out builder,$(COMPONENTS)); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
 			continue; \
