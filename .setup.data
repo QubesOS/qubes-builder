@@ -74,4 +74,3 @@ description : Salt Configuration Flavor - Adds Qubes management and configuratio
 optional    : fc wheezy jessie trusty utopic vivid
 require     : None
 require_in  : None
-development : True
