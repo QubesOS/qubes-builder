@@ -237,23 +237,48 @@ def display_configuration(filename):
         exit(err)
 
 
-def soft_link(source, target):
+def is_linkable(source, target, replace_file=False, replace_link=False):
+    '''Return True if target can be linked to source.
+    '''
+    # Source does not exist or is a broken link
+    if not source or not os.path.exists(source):
+        return False
+
+    # Target does not exist or is a broken link
+    if target and not os.path.exists(target):
+        return True
+    
+    # Source and target are same as indicated by device and i-node
+    # number
+    if os.path.samefile(source, target):
+        return False
+    
+    # Target is a regular file and 'replace_file' is False
+    if not replace_file:
+        if os.path.exists(target) and not os.path.islink(target):
+            return False
+
+    # Target is a link and 'replace_link' is True
+    if replace_link and os.path.islink(target):
+        return True
+
+    # Most likely target is a link and 'replace_link' is False
+    return False
+
+
+def soft_link(source, target, replace_file=False, replace_link=False):
     '''Attempt to soft-link a file.  Exit with message on failure.
     '''
-    try:
-        if os.path.exists(target) and not os.path.islink(target):
-            message = 'Setup will not over-write regular files that are not soft-linked.'
-            exit('Error linking:\n{0} to {1}\n\n{2}'.format(source, target, message))
-
-        if os.path.exists(source):
-            if os.path.exists(target):
+    if is_linkable(source, target, replace_file, replace_link):
+        try:
+            if os.path.lexists(target):
                 os.remove(target)
             os.symlink(source, target)
-        else:
-            message = 'Target file does not exist and therefore cannot be linked.'
-            exit('Error linking:\n{0} to {1}\n\n{2}'.format(source, target, message))
-    except OSError, e:
-        exit('Error linking:\n{0} to {1}\n\n{2}.'.format(source, target, e.strerror))
+        except OSError, e:
+            exit('Error linking:\n{0} to {1}\n\n{2}.'.format(target, source, e.strerror))
+    else:
+        message = 'Unable to link target file to source.'
+        exit('Error linking:\n{0} to {1}\n\n{2}'.format(target, source, message))
 
 
 class DefaultUI(object):
@@ -555,7 +580,6 @@ class Config(object):
         'release':                   0 ,
         'ssh_access':                0 ,
         'template_only':             0 ,
-        'override_source':           '',
         'git_baseurl':               '',
         'git_prefix':                '',
         'git_prefix_default':        '',
@@ -627,11 +651,11 @@ class Config(object):
         # the configuration file does not yet exist
         self._create_builder_conf(force=False)
 
-        # Set up any branch specific override configurations
-        self._overrides()
-
         # Parse Makefiles
         self._parse_makefiles()
+
+        # Set up any branch specific override configurations
+        self._overrides()
 
         # Load .setup.data
         if filename and os.path.exists(filename):
@@ -746,8 +770,7 @@ class Config(object):
         # See if a branch specific override configuration file exists
         #--------------------------------------------------------------------------
         branch = sh.git('rev-parse', '--abbrev-ref', 'HEAD').strip()
-        override_target = self.conf_override
-        override_source = None
+        override_path = None
 
         # Skip if overrides already exsits and is a regular file
         if not (os.path.exists(self.conf_override) and not os.path.islink(self.conf_override)):
@@ -756,9 +779,11 @@ class Config(object):
 
             patterns = []
             # Example: example-configs/r3-feature_branch-override.conf
+            #          example-configs/r3-master-override.conf
             patterns.append('{0}/r{1}-{2}-{3}'.format(dir, self.release, branch, override))
 
             # Example: example-configs/feature_branch-override.conf
+            #          example-configs/master-override.conf
             patterns.append('{0}/{1}-{2}'.format(dir, branch, override))
 
             # Example: example-configs/override.conf
@@ -766,35 +791,28 @@ class Config(object):
 
             for pattern in patterns:
                 if os.path.exists(pattern):
-                    override_source = pattern
+                    override_path = pattern
                     break
 
-            if override_source:
-                # If override_target alreaady exists (it is a link or we would not be here)
-                # display a confirmation dialog to link if not currently linked to override_source
-                if not os.readlink(override_target) == override_source:
-                    info = {
-                        'title': 'Use Branch Specific Override Configuration File?',
-                        'default_button': 'yes',
-                        'text': dedent('''\
-                        A branch specific configuration file was found in your personal directory:
-                        {0}.
+            if is_linkable(override_path, self.conf_override, replace_link=True):
+                info = {
+                    'title': 'Use Branch Specific Override Configuration File?',
+                    'default_button': 'yes',
+                    'text': dedent('''\
+                    A branch specific configuration file was found in your personal directory:
+                    {0}.
 
-                        Would you like to use and override the other provided repos?
-                        '''.format(override_source)),
-                    }
-                    result = DefaultUI.ui.override(**info)
+                    Would you like to use and override the other provided repos?
+                    '''.format(override_path)),
+                }
 
-                    # Soft link override_source to override_target if user confirmed override
-                    if result:
-                        soft_link(override_source, override_target)
-                    else:
-                        override_source = None
-
-        elif os.path.exists(self.conf_override):
-            override_source = self.conf_override
-
-        self.override_source = override_source
+                # Link if user confirmed override
+                if DefaultUI.ui.override(**info):
+                    soft_link(override_path, self.conf_override, replace_link=True)
+        
+                    # Re-parse Makefiles
+                    self._parse_makefiles()
+        
 
     def _parse_makefiles(self):
         '''
@@ -805,6 +823,9 @@ class Config(object):
 
         # Get variables from Makefile
         try:
+            env['GET_VAR'] = 'RELEASE'
+            self.release = make().strip()
+            
             env['GET_VAR'] = 'SSH_ACCESS'
             self.ssh_access = make().strip()
 
@@ -949,7 +970,7 @@ class Config(object):
         })
 
         # INCLUDE_OVERRIDE_CONF
-        if self.override_source:
+        if os.path.exists(self.conf_override):
             override = r'INCLUDE_OVERRIDE_CONF ?= true'
         else:
             override = r'#INCLUDE_OVERRIDE_CONF ?= true'
