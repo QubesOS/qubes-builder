@@ -1571,7 +1571,7 @@ def main(argv):
                          help='Location path of qubes-builder base directory' )
     wizard.add_argument( '-c', dest='config_filename', action='store', default='.setup.data',
                          help='Setup configuration file' )
-    wizard.add_argument( '--development', action='store_true', default=DEVELOPMENT_MODE,
+    wizard.add_argument( '--development', '--dev', dest='development', action='store_true', default=DEVELOPMENT_MODE,
                          help='include in-progress development configuration options' )
 
     info = mode.add_parser('info', help='Display builder configuration')
