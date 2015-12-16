@@ -326,8 +326,8 @@ template-in-dispvm-%:
 # Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
 ifeq (,$(NO_SIGN))
 sign-all:: $(addprefix sign-,$(COMPONENTS))
-sign-dom0:: $(addprefix sign-vm-,$(COMPONENTS))
-sign-vm:: $(addprefix sign-dom0-,$(COMPONENTS))
+sign-dom0:: $(addprefix sign-dom0-,$(COMPONENTS))
+sign-vm:: $(addprefix sign-vm-,$(COMPONENTS))
 	@true
 else
 sign-all::
