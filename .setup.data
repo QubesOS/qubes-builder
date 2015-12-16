@@ -41,7 +41,7 @@ id          : builder-debian
 type        : builder
 description : Debian Builder - Contains all Makefiles to build Debian based templates
 require     : None
-require_in  : wheezy jessie whonix trusty utopic vivid
+require_in  : wheezy jessie stretch whonix trusty utopic vivid
 
 [builder-archlinux]
 id          : builder-archlinux
@@ -71,6 +71,15 @@ url         : https://www.whonix.org/wiki/Whonix_Signing_Key
 id          : mgmt-salt
 type        : builder
 description : Salt Configuration Flavor - Adds Qubes management and configuration files
-optional    : fc wheezy jessie trusty utopic vivid
+optional    : fc wheezy jessie stretch trusty utopic vivid
 require     : None
 require_in  : None
+
+[mgmt-salt-dev]
+id          : mgmt-salt-dev
+type        : builder
+description : Build and install all optional Salt Management Formulas
+optional    : fc wheezy jessie stretch trusty utopic vivid
+require     : mgmt-salt
+require_in  : None
+development : True
