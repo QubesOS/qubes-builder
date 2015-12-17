@@ -22,17 +22,19 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
+import time
 import types
 
 from ConfigParser import ConfigParser
+from subprocess import (Popen, STDOUT)
 from textwrap import dedent, wrap
 
 # Globals
 DIALOG = 'dialog'
 GPG_KEY_SERVER = 'pgp.mit.edu'
 DEVELOPMENT_MODE = False
-SETUP_DEPENDENCIES = ['dialog']
 
 # Global file locations
 BASE_DIR              = os.getcwd()
@@ -99,66 +101,79 @@ def getchar():
     return _getchar()
 
 
-def install_deps(depends_label):
-    if not depends_label:
-        return
-
-    import os
-    import subprocess
-    import time
-
-    from subprocess import (Popen, STDOUT)
-    try:
-        from subprocess import DEVNULL # py3k
-    except ImportError:
-        import os
-        DEVNULL = open(os.devnull, 'wb')
-
-    ansi = ANSIColor()
+def get_builder_deps():
+    '''Install qubes-builder depends if they are not already installed.
+    '''
     env = os.environ.copy()
-
-    if SETUP_DEPENDENCIES:
-        env['DEPENDENCIES'] = ' '.join(SETUP_DEPENDENCIES)
     if not os.path.exists(BUILDER_CONF):
         env['BUILDERCONF'] = MASTER_TEMPLATE
 
     try:
-        print 'exec'
         env['GET_VAR'] = 'DEPENDENCIES'
-        build_depends = subprocess.check_output(['make', '--always-make', '--quiet', 'get-var'], env=env).strip()
+        dependencies = subprocess.check_output(['make', '--always-make', '--quiet', 'get-var'], env=env).strip()
         env.pop('GET_VAR')
     except (subprocess.CalledProcessError):
         print '\nAn error occured trying to determine dependencies and therefore setup must now exit'
         print 'Exiting!'
         exit()
 
-    os.system('clear')
-    message1 = 'The following dependencies may not have been met:\n'
-    message2 = '\nThe following {ansi[bold]}build dependencies{ansi[normal]}{ansi[blue]} will be installed:\n'.format(ansi=ansi)
-    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message1, depends_label, ansi=ansi)
-    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message2, build_depends, ansi=ansi)
-    print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} build dependencies now, or anything else to quit [YyNnQq]: '.format(ansi=ansi)
-    char =  getchar()
-    if char.lower() != 'y':
-        print '\nYou selected not to install the dependencies and therefore setup must now exit'.format(ansi=ansi)
-        print 'Exiting!'
-        exit()
+    return dependencies.split(' ')
 
-    os.system('clear')
-    sys.stdout.write('Waiting for {ansi[red]}{0}{ansi[normal]} to install\n'.format(build_depends, ansi=ansi))
-    sys.stdout.flush()
 
-    proc = Popen(['make', 'install-deps'], stdout=DEVNULL, stderr=STDOUT, env=env)
-    while proc.poll() is None:
-        sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
+def install_deps(packages=[]):
+    '''Call qubes-builder make-deps to install packages if they are not already installed.
+
+    The DEPENDENCIES env variable will contain any packages to update.
+    '''
+    try:
+        from subprocess import DEVNULL # py3k
+    except ImportError:
+        import os
+        DEVNULL = open(os.devnull, 'wb')
+    
+    ansi = ANSIColor()
+    dependencies = set()
+    packages += get_builder_deps()
+    
+    # Only add packages to dependency list if they are not installed
+    for package in packages:
+        proc = Popen(['rpm', '-q', package], stdout=DEVNULL, stderr=DEVNULL)
+        proc.wait()
+        if proc.returncode:
+            dependencies.add(package)
+                
+    if dependencies:
+        env = os.environ.copy()
+        dependencies = ' '.join(list(dependencies))
+
+        # Prompt and confirm installation of dependencies
+        os.system('clear')
+        message = 'The following dependencies have not been met:\n'
+        print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message, dependencies, ansi=ansi)
+        print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} dependencies now, or anything else to quit [YyNnQq]: '.format(ansi=ansi)
+        char =  getchar()
+        if char.lower() != 'y':
+            print '\nYou selected not to install the dependencies and therefore setup must now exit'.format(ansi=ansi)
+            print 'Exiting!'
+            exit()
+
+        # User confirmed installation of dependencies
+        os.system('clear')
+        sys.stdout.write('Waiting for {ansi[red]}{0}{ansi[normal]} to install\n'.format(dependencies, ansi=ansi))
         sys.stdout.flush()
-        time.sleep(1)
-    print
 
-    if proc.returncode:
-        print '\nThere was an error installing dependencies!{ansi[blue]}{ansi[normal]} and therefore setup must now exit'.format(ansi=ansi)
-        print 'Exiting!'
-        exit()
+        env['DEPENDENCIES'] = dependencies
+        proc = Popen(['make', 'install-deps'], stdout=DEVNULL, stderr=STDOUT, env=env)
+        while proc.poll() is None:
+            sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
+            sys.stdout.flush()
+            time.sleep(1)
+        print
+
+        if proc.returncode:
+            print '\nThere was an error installing dependencies!{ansi[blue]}{ansi[normal]} and therefore setup must now exit'.format(ansi=ansi)
+            print 'Exiting!'
+            exit()
 
 
 def write_file(filename, text):
@@ -314,7 +329,7 @@ class DialogUI(DefaultUI):
     try:
         dialog = Dialog(dialog=DIALOG)
     except (ExecutableNotFound):
-        install_deps('dialog')
+        install_deps(['dialog'])
         dialog = Dialog(dialog=DIALOG)
 
     @classmethod
@@ -1595,14 +1610,13 @@ def main(argv):
 try:
     import sh
 except ImportError:
-    install_deps('python-sh')
+    install_deps(['python-sh'])
     import sh
 
 
 if __name__ == '__main__':
-    # If no builder.conf is present; assume install-deps has not been run
-    if not os.path.exists(BUILDER_CONF):
-        install_deps('qubes-builder dependencies')
+    # Make sure dependencies are all installed
+    install_deps()
 
     main(sys.argv)
     sys.exit(0)
