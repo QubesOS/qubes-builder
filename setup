@@ -2,7 +2,7 @@
 # vim: set ft=python ts=4 sw=4 sts=4 et :
 # -*- coding: utf-8 -*-
 
-# setup.py --- Qubes Builder Configuration Utiltiy
+# setup.py --- Qubes Builder Configuration Utility
 #
 # Copyright (C) 2015  Jason Mehring
 #
@@ -120,7 +120,7 @@ def get_builder_deps():
         ).strip()
         env.pop('GET_VAR')
     except (subprocess.CalledProcessError):
-        print '\nAn error occured trying to determine dependencies and therefore setup must now exit'
+        print '\nAn error occurred trying to determine dependencies and therefore setup must now exit'
         print 'Exiting!'
         exit()
 
@@ -578,13 +578,13 @@ class DialogUI(DefaultUI):
 
     @classmethod
     def dists(cls, **info):
-        '''Display DISTS_VM's for selction.
+        '''Display DISTS_VM's for selection.
         '''
         return cls.checklist(**info)
 
     @classmethod
     def builders(cls, **info):
-        '''Display BUILDER_PLUGINS's for selction.
+        '''Display BUILDER_PLUGINS's for selection.
         '''
         return cls.checklist(**info)
 
@@ -699,7 +699,7 @@ class Config(object):
         '''Init.
 
         filename is the name of the main configuration file to load which
-        is typically .salt.conf and is configurable with commandline option
+        is typically .salt.conf and is configurable with command-line option
         '-c'
         '''
         self.filename = filename
@@ -860,7 +860,7 @@ class Config(object):
         branch = sh.git('rev-parse', '--abbrev-ref', 'HEAD').strip()
         override_path = None
 
-        # Skip if overrides already exsits and is a regular file
+        # Skip if overrides already exists and is a regular file
         if not (
             os.path.exists(self.conf_override) and
             not os.path.islink(self.conf_override)
