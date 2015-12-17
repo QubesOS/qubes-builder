@@ -1,3 +1,9 @@
+[releases]
+default     : 3.1
+2           : Qubes Release 2.0
+3           : Qubes Release 3.0
+3.1         : Qubes Release 3.1
+
 [0x36879494]
 type        : gpg
 key         : 427F11FD0FAA4B080123F01CDDFA1A3E36879494

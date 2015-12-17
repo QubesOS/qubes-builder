@@ -475,7 +475,7 @@ class DialogUI(DefaultUI):
     def release(cls, **info):
         '''Display `select release` dialog of Qubes release version to build.
         '''
-        return cls.yesno(**info)
+        return cls.radiolist(**info)
 
     @classmethod
     def override(cls, **info):
@@ -577,7 +577,7 @@ class Config(object):
 
     _makefile_vars = {
         'about':                     '',
-        'release':                   0 ,
+        'release':                   '',
         'ssh_access':                0 ,
         'template_only':             0 ,
         'git_baseurl':               '',
@@ -634,9 +634,10 @@ class Config(object):
         # Override configuration filename will override and merge into .setup.data
         self.conf_override_data = os.path.join(self.dir_builder, OVERRIDE_DATA)
 
-        self.parser = ConfigParser()
+        self.parser = ConfigParser(dict_type=collections.OrderedDict)
         self.parser.add_section('makefile')
         self.sections = []
+        self.releases = collections.OrderedDict()
         self.keys = collections.OrderedDict()
         self.repos = collections.OrderedDict()
         self.builders = collections.OrderedDict()
@@ -728,7 +729,7 @@ class Config(object):
         return super(Config, self).__setattr__(name, value)
 
     def _get_section(self, section_name):
-        adict = {}
+        adict = collections.OrderedDict()
         options = self.parser.options(section_name)
         for option in options:
             try:
@@ -748,7 +749,7 @@ class Config(object):
             section = self._get_section(section_name)
             if not section:
                 continue
-            section_type = section.get('type')
+            section_type = section.get('type', section_name)
             if section_type == 'gpg':
                 config = copy.deepcopy(self._defaults_key)
                 section['id'] = section_name
@@ -762,6 +763,8 @@ class Config(object):
                 config = copy.deepcopy(self._defaults_builder)
                 config.update(section)
                 self.builders[section_name] = self._coerce_values(self._defaults_builder, config)
+            elif section_type == 'releases':
+                self.releases = section
 
     def _overrides(self):
         '''Set up any branch specific override configurations.
@@ -941,7 +944,7 @@ class Config(object):
 
         # RELEASE
         replace.add(**{
-            'replace': r'RELEASE[ ]*[?:]?=[ ]*[\d]',
+            'replace': r'RELEASE[ ]*[?:]?=[ ]*[\d.]+',
             'text': r'RELEASE := {0}'.format(self.release),
         })
 
@@ -1134,26 +1137,23 @@ class Wizard(Config):
     def set_release(self, force=False):
         '''Select release version of Qubes to build.
         '''
-        try:
-            release = sh.make('-C', self.dir_builder, '-B', 'release', '--quiet').strip()
-        except sh.ErrorReturnCode, err:
-            exit(err)
+        choices = []
+        default = self.release or self.releases.pop('default')
 
-        default_button = 'yes' if release == '2' else 'no'
+        for release, description in self.releases.items():
+            if release in ['default']:
+                continue
+            selected = str(release) == str(default)
+            choices.append( (release, description, selected) )
+
         info = {
-            'title':  'Choose Qubes Version',
-            'yes_label': 'Release 2',
-            'no_label': 'Release 3',
-            'default_button': default_button,
-            'text': dedent('''\
-                Choose which version of Qubes you wish to build.
-
-                Valid options are either the stable release 2 or development release 3 version.
-            '''),
+            'title':  'Choose Which Qubes Release To Use To Build Packages',
+            'choices': choices,
+            'width': 76,
+            'height': 16,
         }
 
-        result = self.ui.release(**info)
-        self.release = '2' if result else '3'
+        self.release = str(self.ui.release(**info))
 
     def set_repo(self):
         '''Set repo prefix.
