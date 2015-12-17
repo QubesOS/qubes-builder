@@ -11,6 +11,8 @@
 # Install 'dialog' program if it does not yet exist
 # ------------------------------------------------------------------------------
 
+# pylint: disable=E1101,W1401
+
 from __future__ import unicode_literals
 
 import argparse
@@ -25,9 +27,10 @@ import shutil
 import subprocess
 import sys
 import time
+import tty
 import types
+import ConfigParser
 
-from ConfigParser import ConfigParser
 from subprocess import (Popen, STDOUT)
 from textwrap import dedent, wrap
 
@@ -53,12 +56,13 @@ if os.path.exists(LIBS_DIR) and os.path.isdir(LIBS_DIR):
     if LIBS_DIR not in sys.path:
         sys.path.insert(1, LIBS_DIR)
 
+# Import ANSIColor after LIBS_DIR is added to path
 from ansi import ANSIColor
 
 locale.setlocale(locale.LC_ALL, '')
 
 
-def exit(*varargs, **kwargs):
+def exit(*varargs, **kwargs):  # pylint: disable=W0622
     '''Function to exit.  Maybe restoring some files before exiting.
     '''
     kwargs['title'] = 'System Exit!'
@@ -90,8 +94,6 @@ def getchar():
         import msvcrt
         return msvcrt.getchar()
 
-    import sys, tty
-
     def _getchar():
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
@@ -119,7 +121,7 @@ def get_builder_deps():
             env=env
         ).strip()
         env.pop('GET_VAR')
-    except (subprocess.CalledProcessError):
+    except subprocess.CalledProcessError:
         print '\nAn error occurred trying to determine dependencies and therefore setup must now exit'
         print 'Exiting!'
         exit()
@@ -127,15 +129,16 @@ def get_builder_deps():
     return dependencies.split(' ')
 
 
-def install_deps(packages=[]):
+def install_deps(packages=None):
     '''Call qubes-builder make-deps to install packages if they are not already installed.
 
     The DEPENDENCIES env variable will contain any packages to update.
     '''
+    packages = packages or []
+
     try:
         from subprocess import DEVNULL  # py3k
     except ImportError:
-        import os
         DEVNULL = open(os.devnull, 'wb')
 
     ansi = ANSIColor()
@@ -336,10 +339,10 @@ def soft_link(source, target, replace_file=False, replace_link=False):
             if os.path.lexists(target):
                 os.remove(target)
             os.symlink(source, target)
-        except OSError, e:
+        except OSError, err:
             exit(
                 'Error linking:\n{0} to {1}\n\n{2}.'.format(
-                    target, source, e.strerror
+                    target, source, err.strerror
                 )
             )
     else:
@@ -384,7 +387,7 @@ class DialogUI(DefaultUI):
     # Initialize a dialog.Dialog instance
     try:
         dialog = Dialog(dialog=DIALOG)
-    except (ExecutableNotFound):
+    except ExecutableNotFound:
         install_deps(['dialog'])
         dialog = Dialog(dialog=DIALOG)
 
@@ -474,9 +477,8 @@ class DialogUI(DefaultUI):
         no_help = "You asked for help about something called '{0}'. Sorry, but I am quite incompetent in this matter."
 
         if code == 'help':
-            tag, selected_tags, choices = tag
             cls.msgbox(
-                helper.get(tag, no_help.format(tag)),
+                helper.get(tag[0], no_help.format(tag[0])),
                 height=0,
                 width=60
             )
@@ -516,7 +518,6 @@ class DialogUI(DefaultUI):
             if cls.list_done(code, tag, helper):
                 break
 
-        string = '\n'.join(tag)
         return tag
 
     @classmethod
@@ -605,9 +606,9 @@ class DialogUI(DefaultUI):
 
         # Download sources
         if get_sources:
-            import subprocess
             try:
-                from subprocess import DEVNULL  # py3k
+                # py3k
+                from subprocess import DEVNULL  # pylint: disable=W0404
             except ImportError:
                 DEVNULL = open(os.devnull, 'wb')
 
@@ -713,7 +714,9 @@ class Config(object):
         # Override configuration filename will override and merge into .setup.data
         self.conf_override_data = os.path.join(self.dir_builder, OVERRIDE_DATA)
 
-        self.parser = ConfigParser(dict_type=collections.OrderedDict)
+        self.parser = ConfigParser.ConfigParser(
+            dict_type=collections.OrderedDict
+        )
         self.parser.add_section('makefile')
         self.sections = []
         self.releases = collections.OrderedDict()
@@ -819,7 +822,7 @@ class Config(object):
                 adict[option] = self.parser.get(section_name, option)
                 #if adict[option] == -1:
                 #    adict.pop(option, None)
-            except:
+            except (ConfigParser.Error, TypeError):
                 adict[option] = None
         return adict
 
@@ -865,7 +868,7 @@ class Config(object):
             os.path.exists(self.conf_override) and
             not os.path.islink(self.conf_override)
         ):
-            dir = self.dir_configurations
+            directory = self.dir_configurations
             override = os.path.basename(self.conf_override)
 
             patterns = []
@@ -873,16 +876,16 @@ class Config(object):
             #          example-configs/r3-master-override.conf
             patterns.append(
                 '{0}/r{1}-{2}-{3}'.format(
-                    dir, self.release, branch, override
+                    directory, self.release, branch, override
                 )
             )
 
             # Example: example-configs/feature_branch-override.conf
             #          example-configs/master-override.conf
-            patterns.append('{0}/{1}-{2}'.format(dir, branch, override))
+            patterns.append('{0}/{1}-{2}'.format(directory, branch, override))
 
             # Example: example-configs/override.conf
-            patterns.append('{0}/{1}'.format(dir, override))
+            patterns.append('{0}/{1}'.format(directory, override))
 
             for pattern in patterns:
                 if os.path.exists(pattern):
@@ -922,7 +925,7 @@ class Config(object):
     def _parse_makefiles(self):
         '''
         '''
-        from sh import make
+        from sh import make  # pylint: disable=E0611
         env = os.environ.copy()
         make = make.bake(
             '--always-make',
@@ -995,7 +998,7 @@ class Config(object):
                 'about',
                 directory=self.dir_builder
             )
-        except sh.ErrorReturnCode, err:
+        except sh.ErrorReturnCode:
             pass
 
     def write_configuration(self):
@@ -1003,26 +1006,25 @@ class Config(object):
         '''
         replace = ReplaceInplace(self.conf_builder)
         dists_vm = ''
-        text = ''
 
         ### -- INFO -----------------------------------------------------------
         # Format about
         info = '''\
             ################################################################################
             #
-            # Qubes Release: {self[release]}
-            # Source Prefix: {self[git_prefix]} (repo)
+            # Qubes Release: {vars[release]}
+            # Source Prefix: {vars[git_prefix]} (repo)
             #
             # Master Configuration File(s):
             # {about}
             #
             # builder.conf copied from:
-            # {self[conf_template]}
+            # {vars[conf_template]}
             #
             ################################################################################
             '''.format(
             about=' '.join(self.about.split()),
-            self=vars(self)
+            vars=vars(self)
         )
 
         ### -- DISTS_VM -------------------------------------------------------
@@ -1039,8 +1041,7 @@ class Config(object):
 
             endif
             '''.format(
-            dists_vm=dists_vm,
-            self=vars(self)
+            dists_vm=dists_vm
         )
 
         ### -- BUILDER_PLUGINS ------------------------------------------------
@@ -1057,8 +1058,7 @@ class Config(object):
               BUILDER_PLUGINS :=
               {plugins}
             '''.format(
-            plugins=plugins,
-            self=vars(self)
+            plugins=plugins
         )
 
         # INFO
@@ -1191,7 +1191,7 @@ class Wizard(Config):
 
         ## Choose release version
         ## Soft link 'examples/templates.conf' to 'builder.conf'
-        self.set_release(force=True)
+        self.set_release()
 
         ## Prompt for selection of base repo to use for build
         self.set_repo()
@@ -1232,7 +1232,7 @@ class Wizard(Config):
                 key_data['key'],
                 _env=env
             ).strip()
-        except sh.ErrorReturnCode, err:
+        except sh.ErrorReturnCode:
             return False
 
         for fingerprint in text.split('\n'):
@@ -1253,7 +1253,7 @@ class Wizard(Config):
         env['GNUPGHOME'] = GNUPGHOME
         self.check_gnupghome(GNUPGHOME)
 
-        for id, key_data in keys.items():
+        for key_id, key_data in keys.items():
             key = key_data['key']
             is_key_missing = True
             try:
@@ -1265,7 +1265,7 @@ class Wizard(Config):
 
             if force or is_key_missing:
                 info = {
-                    'title': 'Add Key {0}'.format(id),
+                    'title': 'Add Key {0}'.format(key_id),
                     'default_button': 'no',
                 }
                 if message:
@@ -1296,9 +1296,6 @@ class Wizard(Config):
                 # Receive key from keyserver
                 else:
                     try:
-                        cmd = 'GNUPGHOME={0} gpg --keyserver {1} --recv-keys {2}'.format(
-                            GNUPGHOME, GPG_KEY_SERVER, key
-                        )
                         text = sh.gpg(
                             '--keyserver',
                             GPG_KEY_SERVER,
@@ -1325,7 +1322,7 @@ class Wizard(Config):
                             key_data=key_data
                         ),
                         'text':
-                        '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(
+                        '\nWrong fingerprint\n{key_data[fingerprint]}\n\nExiting!'.format(
                             key_data=key_data
                         ),
                     }
@@ -1343,7 +1340,7 @@ class Wizard(Config):
 
         return True
 
-    def set_release(self, force=False):
+    def set_release(self):
         '''Select release version of Qubes to build.
         '''
         choices = []
@@ -1362,7 +1359,7 @@ class Wizard(Config):
             'height': 16,
         }
 
-        self.release = str(self.ui.release(**info))
+        self.release = str(self.ui.release(**info))  # pylint: disable=W0201
 
     def set_repo(self):
         '''Set repo prefix.
@@ -1371,7 +1368,7 @@ class Wizard(Config):
         default_set = False
         full_prefix = '{0}/{1}'.format(self.git_baseurl, self.git_prefix)
 
-        for index, repo in self.repos.items():
+        for repo in self.repos.values():
             toggle = full_prefix.endswith(repo['prefix'])
             if toggle:
                 default_set = True
@@ -1391,7 +1388,7 @@ class Wizard(Config):
             'height': 16,
         }
 
-        self.git_prefix = self.ui.repo(**info)
+        self.git_prefix = self.ui.repo(**info)  # pylint: disable=W0201
 
     def set_ssh_access(self):
         '''Set GIT_BASEURL and GIT_PREFIX to allow ssh (write) access to repo.
@@ -1418,7 +1415,7 @@ class Wizard(Config):
         if ssh_access:
             if '/' in self.git_prefix:
                 repo, prefix = self.git_prefix.split('/')
-                self.git_prefix = prefix
+                self.git_prefix = prefix  # pylint: disable=W0201
             else:
                 repo = self.git_baseurl.split(':')[-1]
                 prefix = self.git_prefix
@@ -1428,11 +1425,15 @@ class Wizard(Config):
             r'^(.*//|.*@)(.*(?=[:])|.*)([:].*|)', self.git_baseurl
         )
         if ssh_access:
-            self.git_baseurl = 'git@{0}:{1}'.format(baseurl.group(2), repo)
+            self.git_baseurl = 'git@{0}:{1}'.format(
+                baseurl.group(2), repo
+            )  # pylint: disable=W0201
         else:
-            self.git_baseurl = 'https://{0}'.format(baseurl.group(2))
+            self.git_baseurl = 'https://{0}'.format(
+                baseurl.group(2)
+            )  # pylint: disable=W0201
 
-        self.ssh_access = ssh_access
+        self.ssh_access = ssh_access  # pylint: disable=W0201
 
     def set_template_only(self):
         '''Choose to build a complete system or templates only.
@@ -1449,7 +1450,9 @@ class Wizard(Config):
             '''
             ),
         }
-        self.template_only = self.ui.template_only(**info)
+        self.template_only = self.ui.template_only(
+            **info
+        )  # pylint: disable=W0201
 
     def set_dists(self):
         ''''''
@@ -1462,7 +1465,7 @@ class Wizard(Config):
 
             tag = aliasr or dist
             item = label
-            help = dist if dist != tag else ''
+            help_text = dist if dist != tag else ''
 
             helper[tag] = dedent(
                 '''\
@@ -1470,12 +1473,16 @@ class Wizard(Config):
                 \Zb\Z4Template Label:\Zn {1}
                 \Zb\Z4Template Alias:\Zn {2}
             '''
-            ).format(tag, item, help)
+            ).format(tag, item, help_text)
 
-            if help:
-                help = 'Alias value: {0}'.format(help)
+            if help_text:
+                help_text = 'Alias value: {0}'.format(help_text)
 
-            choices.append((tag, item, dist in self.dists_vm_selected, help))
+            choices.append(
+                (
+                    tag, item, dist in self.dists_vm_selected, help_text
+                )
+            )
 
         info = {
             'helper': helper,
@@ -1496,12 +1503,11 @@ class Wizard(Config):
             ),
         }
 
-        self.dists_vm_selected = self.ui.dists(**info)
+        self.dists_vm_selected = self.ui.dists(**info)  # pylint: disable=W0201
 
     def get_sources(self):
         '''Prompt user to get sources.
         '''
-        default_button = 'yes'
         info = {
             'title': 'Get sources',
             'default_button': 'yes',
@@ -1520,7 +1526,7 @@ class Wizard(Config):
             '''
             ),
         }
-        retcode = self.ui.get_sources(**info)
+        self.ui.get_sources(**info)
 
     def set_builders(self):
         ''''''
@@ -1599,14 +1605,14 @@ class Wizard(Config):
                     continue
 
                 tag = builder['id']
-                help = builder['description']
+                help_text = builder['description']
 
                 helper_text = dedent(
                     '''\
                     \Zb\Z4Builder Plugin:\Zn {0}
                     \Zb\Z4Description:\Zn {1}
                 '''
-                ).format(tag, help)
+                ).format(tag, help_text)
 
                 require = []
                 for builder_name in builder['require']:
@@ -1648,7 +1654,7 @@ class Wizard(Config):
                 choices.append(
                     (
                         tag, item, builder['id'] in self.builders_selected,
-                        help
+                        help_text
                     )
                 )
 
@@ -1674,7 +1680,9 @@ class Wizard(Config):
             }
 
             builders_selected = self.builders_selected
-            self.builders_selected = self.ui.builders(**info)
+            self.builders_selected = self.ui.builders(
+                **info
+            )  # pylint: disable=W0201
 
             # Selected builders changed; write and reload config file to reflect
             # changes
@@ -1816,10 +1824,13 @@ def set_default_subparser(self, name, args=None):
         if arg in ['-h', '--help']:  # global help if no subparser
             break
     else:
-        for x in self._subparsers._actions:
-            if not isinstance(x, argparse._SubParsersAction):
+        for x in self._subparsers._actions:  # pylint: disable=W0212
+            if not isinstance(
+                x, argparse._SubParsersAction
+            ):  # pylint: disable=W0212
                 continue
-            for sp_name in x._name_parser_map.keys():
+            for sp_name in x._name_parser_map.keys(
+            ):  # pylint: disable=W0201,W0212
                 if sp_name in sys.argv[1:]:
                     subparser_found = True
         if not subparser_found:
@@ -1834,7 +1845,7 @@ def set_default_subparser(self, name, args=None):
 argparse.ArgumentParser.set_default_subparser = set_default_subparser
 
 
-def main(argv):
+def main(argv):  # pylint: disable=W0613
     parser = argparse.ArgumentParser()
     mode = parser.add_subparsers(dest='mode', help='commands')
 
@@ -1877,6 +1888,7 @@ def main(argv):
         help='configuration file ({0})'.format(BUILDER_CONF)
     )
 
+    # pylint: disable=W0612
     depends = mode.add_parser(
         'install-deps',
         help='Install build dependencies'
