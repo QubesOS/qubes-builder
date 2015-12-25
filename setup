@@ -2,7 +2,7 @@
 # vim: set ft=python ts=4 sw=4 sts=4 et :
 # -*- coding: utf-8 -*-
 
-# setup.py --- Qubes Builder Configuration Utiltiy
+# setup.py --- Qubes Builder Configuration Utility
 #
 # Copyright (C) 2015  Jason Mehring
 #
@@ -10,6 +10,8 @@
 # ------------------------------------------------------------------------------
 # Install 'dialog' program if it does not yet exist
 # ------------------------------------------------------------------------------
+
+# pylint: disable=E1101,W1401
 
 from __future__ import unicode_literals
 
@@ -22,26 +24,29 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
+import time
+import tty
 import types
+import ConfigParser
 
-from ConfigParser import ConfigParser
+from subprocess import (Popen, STDOUT)
 from textwrap import dedent, wrap
 
 # Globals
 DIALOG = 'dialog'
 GPG_KEY_SERVER = 'pgp.mit.edu'
 DEVELOPMENT_MODE = False
-SETUP_DEPENDENCIES = ['dialog']
 
 # Global file locations
-BASE_DIR              = os.getcwd()
-CONFIG_DIR            = 'example-configs'
-OVERRIDE_CONF         = 'override.conf'
-OVERRIDE_DATA         = 'override.data'
-MASTER_TEMPLATE       = 'templates.conf'
-BUILDER_CONF          = 'builder.conf'
-BACKUP_EXTENSION      =  '.bak'
+BASE_DIR = os.getcwd()
+CONFIG_DIR = 'example-configs'
+OVERRIDE_CONF = 'override.conf'
+OVERRIDE_DATA = 'override.data'
+MASTER_TEMPLATE = 'templates.conf'
+BUILDER_CONF = 'builder.conf'
+BACKUP_EXTENSION = '.bak'
 QUBES_DEVELOPERS_KEYS = 'qubes-developers-keys.asc'
 GNUPGHOME = os.path.join(os.path.abspath(BASE_DIR), 'keyrings/git')
 
@@ -51,12 +56,13 @@ if os.path.exists(LIBS_DIR) and os.path.isdir(LIBS_DIR):
     if LIBS_DIR not in sys.path:
         sys.path.insert(1, LIBS_DIR)
 
+# Import ANSIColor after LIBS_DIR is added to path
 from ansi import ANSIColor
 
 locale.setlocale(locale.LC_ALL, '')
 
 
-def exit(*varargs, **kwargs):
+def exit(*varargs, **kwargs):  # pylint: disable=W0622
     '''Function to exit.  Maybe restoring some files before exiting.
     '''
     kwargs['title'] = 'System Exit!'
@@ -72,7 +78,9 @@ def exit(*varargs, **kwargs):
     try:
         config = Config(None)
         if os.path.exists(config.conf_builder + BACKUP_EXTENSION):
-            shutil.move(config.conf_builder + BACKUP_EXTENSION, config.conf_builder)
+            shutil.move(
+                config.conf_builder + BACKUP_EXTENSION, config.conf_builder
+            )
     except NameError:
         pass
 
@@ -86,7 +94,6 @@ def getchar():
         import msvcrt
         return msvcrt.getchar()
 
-    import sys, tty
     def _getchar():
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
@@ -96,69 +103,107 @@ def getchar():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return char
+
     return _getchar()
 
 
-def install_deps(depends_label):
-    if not depends_label:
-        return
-
-    import os
-    import subprocess
-    import time
-
-    from subprocess import (Popen, STDOUT)
-    try:
-        from subprocess import DEVNULL # py3k
-    except ImportError:
-        import os
-        DEVNULL = open(os.devnull, 'wb')
-
-    ansi = ANSIColor()
+def get_builder_deps():
+    '''Install qubes-builder depends if they are not already installed.
+    '''
     env = os.environ.copy()
-
-    if SETUP_DEPENDENCIES:
-        env['DEPENDENCIES'] = ' '.join(SETUP_DEPENDENCIES)
     if not os.path.exists(BUILDER_CONF):
         env['BUILDERCONF'] = MASTER_TEMPLATE
 
     try:
-        print 'exec'
         env['GET_VAR'] = 'DEPENDENCIES'
-        build_depends = subprocess.check_output(['make', '--always-make', '--quiet', 'get-var'], env=env).strip()
+        dependencies = subprocess.check_output(
+            ['make', '--always-make', '--quiet', 'get-var'],
+            env=env
+        ).strip()
         env.pop('GET_VAR')
-    except (subprocess.CalledProcessError):
-        print '\nAn error occured trying to determine dependencies and therefore setup must now exit'
+    except subprocess.CalledProcessError:
+        print '\nAn error occurred trying to determine dependencies and therefore setup must now exit'
         print 'Exiting!'
         exit()
 
-    os.system('clear')
-    message1 = 'The following dependencies may not have been met:\n'
-    message2 = '\nThe following {ansi[bold]}build dependencies{ansi[normal]}{ansi[blue]} will be installed:\n'.format(ansi=ansi)
-    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message1, depends_label, ansi=ansi)
-    print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(message2, build_depends, ansi=ansi)
-    print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} build dependencies now, or anything else to quit [YyNnQq]: '.format(ansi=ansi)
-    char =  getchar()
-    if char.lower() != 'y':
-        print '\nYou selected not to install the dependencies and therefore setup must now exit'.format(ansi=ansi)
-        print 'Exiting!'
-        exit()
+    return dependencies.split(' ')
 
-    os.system('clear')
-    sys.stdout.write('Waiting for {ansi[red]}{0}{ansi[normal]} to install\n'.format(build_depends, ansi=ansi))
-    sys.stdout.flush()
 
-    proc = Popen(['make', 'install-deps'], stdout=DEVNULL, stderr=STDOUT, env=env)
-    while proc.poll() is None:
-        sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
+def install_deps(packages=None):
+    '''Call qubes-builder make-deps to install packages if they are not already installed.
+
+    The DEPENDENCIES env variable will contain any packages to update.
+    '''
+    packages = packages or []
+
+    try:
+        from subprocess import DEVNULL  # py3k
+    except ImportError:
+        DEVNULL = open(os.devnull, 'wb')
+
+    ansi = ANSIColor()
+    dependencies = set()
+    packages += get_builder_deps()
+
+    # Only add packages to dependency list if they are not installed
+    for package in packages:
+        proc = Popen(['rpm', '-q', package], stdout=DEVNULL, stderr=DEVNULL)
+        proc.wait()
+        if proc.returncode:
+            dependencies.add(package)
+
+    if dependencies:
+        env = os.environ.copy()
+        dependencies = ' '.join(list(dependencies))
+
+        # Prompt and confirm installation of dependencies
+        os.system('clear')
+        message = 'The following dependencies have not been met:\n'
+        print '{ansi[blue]}{0}{ansi[red]}{1}{ansi[normal]}\r\r'.format(
+            message,
+            dependencies,
+            ansi=ansi
+        )
+        print '\nEnter \'Y\' to install {ansi[red]}ALL{ansi[normal]} dependencies now, or anything else to quit [YyNnQq]: '.format(
+            ansi=ansi
+        )
+        char = getchar()
+        if char.lower() != 'y':
+            print '\nYou selected not to install the dependencies and therefore setup must now exit'.format(
+                ansi=ansi
+            )
+            print 'Exiting!'
+            exit()
+
+        # User confirmed installation of dependencies
+        os.system('clear')
+        sys.stdout.write(
+            'Waiting for {ansi[red]}{0}{ansi[normal]} to install\n'.format(
+                dependencies,
+                ansi=ansi
+            )
+        )
         sys.stdout.flush()
-        time.sleep(1)
-    print
 
-    if proc.returncode:
-        print '\nThere was an error installing dependencies!{ansi[blue]}{ansi[normal]} and therefore setup must now exit'.format(ansi=ansi)
-        print 'Exiting!'
-        exit()
+        env['DEPENDENCIES'] = dependencies
+        proc = Popen(
+            ['make', 'install-deps'],
+            stdout=DEVNULL,
+            stderr=STDOUT,
+            env=env
+        )
+        while proc.poll() is None:
+            sys.stdout.write('{ansi[red]}.{ansi[normal]}'.format(ansi=ansi))
+            sys.stdout.flush()
+            time.sleep(1)
+        print
+
+        if proc.returncode:
+            print '\nThere was an error installing dependencies!{ansi[blue]}{ansi[normal]} and therefore setup must now exit'.format(
+                ansi=ansi
+            )
+            print 'Exiting!'
+            exit()
 
 
 def write_file(filename, text):
@@ -179,11 +224,11 @@ def parse_parentheses(text):
 
     text = ''
     raw = ''
-    count =  0
+    count = 0
 
     for token in lexer:
         chars = token
-        if  chars[0] in '\'"' and chars[-1] in '\'"':
+        if chars[0] in '\'"' and chars[-1] in '\'"':
             new_chars = parse_parentheses(chars[1:-1])
             text += chars[0] + new_chars + chars[-1]
             continue
@@ -209,51 +254,104 @@ def display_configuration(filename):
     '''Display the configuration file.
     '''
     ansi = ANSIColor()
-    print '{ansi[bold]}{ansi[black]}{0}:{ansi[normal]}'.format(filename, ansi=ansi)
+    print '{ansi[bold]}{ansi[black]}{0}:{ansi[normal]}'.format(
+        filename,
+        ansi=ansi
+    )
     try:
         with codecs.open(filename, 'r', 'utf8') as infile:
             for line in infile:
-                match = re.match(r'(?P<text>.*?(?=#)|.*)(?P<comment>([#]+.*)|)', line.rstrip())
+                match = re.match(
+                    r'(?P<text>.*?(?=#)|.*)(?P<comment>([#]+.*)|)',
+                    line.rstrip()
+                )
                 if match:
                     line = ''
                     text = match.groupdict()['text']
                     comment = match.groupdict()['comment']
                     if match.groupdict()['text']:
                         var = re.match(r'(?P<var>.*)(?P<text>[?:]?=.*)', text)
-                        target = re.match(r'(?P<target>.*[:]+)(?P<text>.*)', text)
+                        target = re.match(
+                            r'(?P<target>.*[:]+)(?P<text>.*)', text
+                        )
                         text = parse_parentheses(text)
 
                         if var:
-                            line += '{ansi[blue]}{d[var]}{ansi[normal]}{d[text]}'.format(d=var.groupdict(), ansi=ansi)
+                            line += '{ansi[blue]}{d[var]}{ansi[normal]}{d[text]}'.format(
+                                d=var.groupdict(),
+                                ansi=ansi
+                            )
                         elif target:
-                            line += '{ansi[red]}{d[target]}{ansi[normal]}{d[text]}'.format(d=target.groupdict(), ansi=ansi)
+                            line += '{ansi[red]}{d[target]}{ansi[normal]}{d[text]}'.format(
+                                d=target.groupdict(),
+                                ansi=ansi
+                            )
                         else:
-                            line += '{ansi[black]}{0}{ansi[normal]}'.format(text, ansi=ansi)
+                            line += '{ansi[black]}{0}{ansi[normal]}'.format(
+                                text,
+                                ansi=ansi
+                            )
 
                     if comment:
-                        line += '{ansi[green]}{0}{ansi[normal]}'.format(comment, ansi=ansi)
+                        line += '{ansi[green]}{0}{ansi[normal]}'.format(
+                            comment,
+                            ansi=ansi
+                        )
                 print line
     except IOError, err:
         exit(err)
 
 
-def soft_link(source, target):
+def is_linkable(source, target, replace_file=False, replace_link=False):
+    '''Return True if target can be linked to source.
+    '''
+    # Source does not exist or is a broken link
+    if not source or not os.path.exists(source):
+        return False
+
+    # Target does not exist or is a broken link
+    if target and not os.path.exists(target):
+        return True
+
+    # Source and target are same as indicated by device and i-node
+    # number
+    if os.path.samefile(source, target):
+        return False
+
+    # Target is a regular file and 'replace_file' is False
+    if not replace_file:
+        if os.path.exists(target) and not os.path.islink(target):
+            return False
+
+    # Target is a link and 'replace_link' is True
+    if replace_link and os.path.islink(target):
+        return True
+
+    # Most likely target is a link and 'replace_link' is False
+    return False
+
+
+def soft_link(source, target, replace_file=False, replace_link=False):
     '''Attempt to soft-link a file.  Exit with message on failure.
     '''
-    try:
-        if os.path.exists(target) and not os.path.islink(target):
-            message = 'Setup will not over-write regular files that are not soft-linked.'
-            exit('Error linking:\n{0} to {1}\n\n{2}'.format(source, target, message))
-
-        if os.path.exists(source):
-            if os.path.exists(target):
+    if is_linkable(source, target, replace_file, replace_link):
+        try:
+            if os.path.lexists(target):
                 os.remove(target)
             os.symlink(source, target)
-        else:
-            message = 'Target file does not exist and therefore cannot be linked.'
-            exit('Error linking:\n{0} to {1}\n\n{2}'.format(source, target, message))
-    except OSError, e:
-        exit('Error linking:\n{0} to {1}\n\n{2}.'.format(source, target, e.strerror))
+        except OSError, err:
+            exit(
+                'Error linking:\n{0} to {1}\n\n{2}.'.format(
+                    target, source, err.strerror
+                )
+            )
+    else:
+        message = 'Unable to link target file to source.'
+        exit(
+            'Error linking:\n{0} to {1}\n\n{2}'.format(
+                target, source, message
+            )
+        )
 
 
 class DefaultUI(object):
@@ -274,6 +372,7 @@ class DialogUI(DefaultUI):
     try:
         from textwrap import indent
     except ImportError:
+
         @staticmethod
         def indent(text, prefix, predicate=None):
             l = []
@@ -288,8 +387,8 @@ class DialogUI(DefaultUI):
     # Initialize a dialog.Dialog instance
     try:
         dialog = Dialog(dialog=DIALOG)
-    except (ExecutableNotFound):
-        install_deps('dialog')
+    except ExecutableNotFound:
+        install_deps(['dialog'])
         dialog = Dialog(dialog=DIALOG)
 
     @classmethod
@@ -307,11 +406,7 @@ class DialogUI(DefaultUI):
     def yesno(cls, **info):
         '''YesNo dialog.
         '''
-        default = {
-            'colors': True,
-            'width': 60,
-            'height': 8,
-        }
+        default = {'colors': True, 'width': 60, 'height': 8, }
 
         default.update(info)
         code = cls.dialog.yesno(**default)
@@ -331,7 +426,7 @@ class DialogUI(DefaultUI):
         '''
         default = {
             'colors': True,
-            'title':  'Qubes Setup Information.',
+            'title': 'Qubes Setup Information.',
             'width': 72,
             'height': 8,
             'text': ''
@@ -342,7 +437,9 @@ class DialogUI(DefaultUI):
             default['text'] = ' '.join(varargs)
 
         if not default['height']:
-            default['height'] = cls._auto_height(default['width'], default['text'])
+            default['height'] = cls._auto_height(
+                default['width'], default['text']
+            )
 
         if default['text']:
             cls.dialog.msgbox(**default)
@@ -355,7 +452,7 @@ class DialogUI(DefaultUI):
         '''
         default = {
             'colors': True,
-            'title':  'Qubes Setup Information.',
+            'title': 'Qubes Setup Information.',
             'width': 72,
             'height': 8,
             'text': ''
@@ -366,7 +463,9 @@ class DialogUI(DefaultUI):
             default['text'] = ' '.join(varargs)
 
         if not default['height']:
-            default['height'] = cls._auto_height(default['width'], default['text'])
+            default['height'] = cls._auto_height(
+                default['width'], default['text']
+            )
 
         if default['text']:
             cls.dialog.infobox(**default)
@@ -378,8 +477,11 @@ class DialogUI(DefaultUI):
         no_help = "You asked for help about something called '{0}'. Sorry, but I am quite incompetent in this matter."
 
         if code == 'help':
-            tag, selected_tags, choices = tag
-            cls.msgbox(helper.get(tag, no_help.format(tag)), height=0, width=60)
+            cls.msgbox(
+                helper.get(tag[0], no_help.format(tag[0])),
+                height=0,
+                width=60
+            )
             return False
 
         elif code == cls.dialog.CANCEL:
@@ -416,7 +518,6 @@ class DialogUI(DefaultUI):
             if cls.list_done(code, tag, helper):
                 break
 
-        string = '\n'.join(tag)
         return tag
 
     @classmethod
@@ -450,7 +551,7 @@ class DialogUI(DefaultUI):
     def release(cls, **info):
         '''Display `select release` dialog of Qubes release version to build.
         '''
-        return cls.yesno(**info)
+        return cls.radiolist(**info)
 
     @classmethod
     def override(cls, **info):
@@ -478,13 +579,13 @@ class DialogUI(DefaultUI):
 
     @classmethod
     def dists(cls, **info):
-        '''Display DISTS_VM's for selction.
+        '''Display DISTS_VM's for selection.
         '''
         return cls.checklist(**info)
 
     @classmethod
     def builders(cls, **info):
-        '''Display BUILDER_PLUGINS's for selction.
+        '''Display BUILDER_PLUGINS's for selection.
         '''
         return cls.checklist(**info)
 
@@ -492,9 +593,7 @@ class DialogUI(DefaultUI):
     def verify_keys(cls, **info):
         '''Display `verify keys` confirmation dialog.
         '''
-        default = {
-            'height': 12,
-        }
+        default = {'height': 12, }
         default.update(info)
         return cls.yesno(**default)
 
@@ -507,9 +606,9 @@ class DialogUI(DefaultUI):
 
         # Download sources
         if get_sources:
-            import subprocess
             try:
-                from subprocess import DEVNULL # py3k
+                # py3k
+                from subprocess import DEVNULL  # pylint: disable=W0404
             except ImportError:
                 DEVNULL = open(os.devnull, 'wb')
 
@@ -523,8 +622,13 @@ class DialogUI(DefaultUI):
             env['white'] = ''
 
             args = ['make', 'get-sources']
-            p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                stderr=DEVNULL, close_fds=True, env=env)
+            p = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=DEVNULL,
+                close_fds=True,
+                env=env
+            )
 
             default = {
                 #'colors': True,
@@ -533,8 +637,11 @@ class DialogUI(DefaultUI):
                 'width': 120,
             }
 
-            cls.dialog.programbox(fd=p.stdout.fileno(),
-                text="Get sources", **default)
+            cls.dialog.programbox(
+                fd=p.stdout.fileno(),
+                text="Get sources",
+                **default
+            )
             retcode = p.wait()
 
             # Context manager support for subprocess.Popen objects requires
@@ -551,75 +658,77 @@ class Config(object):
     MARKER = object()
 
     _makefile_vars = {
-        'about':                     '',
-        'release':                   0 ,
-        'ssh_access':                0 ,
-        'template_only':             0 ,
-        'override_source':           '',
-        'git_baseurl':               '',
-        'git_prefix':                '',
-        'git_prefix_default':        '',
-        'dist_dom0_selected':        '',
-        'dists_vm_all':              [],
-        'dists_vm_selected':         [],
-        'builders_selected':         [],
+        'about': '',
+        'release': '',
+        'ssh_access': 0,
+        'template_only': 0,
+        'git_baseurl': '',
+        'git_prefix': '',
+        'git_prefix_default': '',
+        'dist_dom0_selected': '',
+        'dists_vm_all': [],
+        'dists_vm_selected': [],
+        'builders_selected': [],
         'template_aliases_reversed': [],
-        'template_labels':           [],
-        'template_labels_reversed':  [],
+        'template_labels': [],
+        'template_labels_reversed': [],
     }
 
     _defaults_builder = {
-        'id'          : '',
-        'type'        : '',
-        'description' : '',
-        'optional'    : [],
-        'require'     : [],
-        'require_in'  : [],
-        'development' : False,
+        'id': '',
+        'type': '',
+        'description': '',
+        'optional': [],
+        'require': [],
+        'require_in': [],
+        'development': False,
     }
 
     _defaults_key = {
-        'id'          : '',
-        'type'        : '',
-        'key'         : '',
-        'owner'       : '',
-        'fingerprint' : None,
-        'verify'      : '',
-        'url'         : '',
+        'id': '',
+        'type': '',
+        'key': '',
+        'owner': '',
+        'fingerprint': None,
+        'verify': '',
+        'url': '',
     }
 
-    _defaults_repo = {
-        'type'        : '',
-        'description' : '',
-        'prefix'      : '',
-    }
+    _defaults_repo = {'type': '', 'description': '', 'prefix': '', }
 
     def __init__(self, filename, **options):
         '''Init.
 
         filename is the name of the main configuration file to load which
-        is typically .salt.conf and is configurable with commandline option
+        is typically .salt.conf and is configurable with command-line option
         '-c'
         '''
         self.filename = filename
         self.options = options
 
-        self.dir_builder = self.options.get('dir_builder') or os.path.abspath(os.path.curdir)
+        self.dir_builder = self.options.get('dir_builder') or os.path.abspath(
+            os.path.curdir
+        )
         self.dir_configurations = os.path.join(self.dir_builder, CONFIG_DIR)
 
         # Override configuration filename will override and merge into .setup.data
         self.conf_override_data = os.path.join(self.dir_builder, OVERRIDE_DATA)
 
-        self.parser = ConfigParser()
+        self.parser = ConfigParser.ConfigParser(
+            dict_type=collections.OrderedDict
+        )
         self.parser.add_section('makefile')
         self.sections = []
+        self.releases = collections.OrderedDict()
         self.keys = collections.OrderedDict()
         self.repos = collections.OrderedDict()
         self.builders = collections.OrderedDict()
 
         self._init_makefile_vars()
 
-        self.conf_template = os.path.join(self.dir_configurations, MASTER_TEMPLATE)
+        self.conf_template = os.path.join(
+            self.dir_configurations, MASTER_TEMPLATE
+        )
         self.conf_override = os.path.join(self.dir_builder, OVERRIDE_CONF)
         self.conf_builder = os.path.join(self.dir_builder, BUILDER_CONF)
 
@@ -627,11 +736,11 @@ class Config(object):
         # the configuration file does not yet exist
         self._create_builder_conf(force=False)
 
-        # Set up any branch specific override configurations
-        self._overrides()
-
         # Parse Makefiles
         self._parse_makefiles()
+
+        # Set up any branch specific override configurations
+        self._overrides()
 
         # Load .setup.data
         if filename and os.path.exists(filename):
@@ -655,10 +764,12 @@ class Config(object):
 
                 # ABOUT
                 replace = ReplaceInplace(self.conf_builder)
-                replace.add(**{
-                    'replace': r'@echo "{0}"'.format(MASTER_TEMPLATE),
-                    'text': r'@echo "{0}"'.format(BUILDER_CONF),
-                })
+                replace.add(
+                    **{
+                        'replace': r'@echo "{0}"'.format(MASTER_TEMPLATE),
+                        'text': r'@echo "{0}"'.format(BUILDER_CONF),
+                    }
+                )
                 replace.start()
             except IOError, err:
                 exit(err)
@@ -704,14 +815,14 @@ class Config(object):
         return super(Config, self).__setattr__(name, value)
 
     def _get_section(self, section_name):
-        adict = {}
+        adict = collections.OrderedDict()
         options = self.parser.options(section_name)
         for option in options:
             try:
                 adict[option] = self.parser.get(section_name, option)
                 #if adict[option] == -1:
                 #    adict.pop(option, None)
-            except:
+            except (ConfigParser.Error, TypeError):
                 adict[option] = None
         return adict
 
@@ -724,7 +835,7 @@ class Config(object):
             section = self._get_section(section_name)
             if not section:
                 continue
-            section_type = section.get('type')
+            section_type = section.get('type', section_name)
             if section_type == 'gpg':
                 config = copy.deepcopy(self._defaults_key)
                 section['id'] = section_name
@@ -737,7 +848,11 @@ class Config(object):
             elif section_type == 'builder':
                 config = copy.deepcopy(self._defaults_builder)
                 config.update(section)
-                self.builders[section_name] = self._coerce_values(self._defaults_builder, config)
+                self.builders[section_name] = self._coerce_values(
+                    self._defaults_builder, config
+                )
+            elif section_type == 'releases':
+                self.releases = section
 
     def _overrides(self):
         '''Set up any branch specific override configurations.
@@ -746,65 +861,85 @@ class Config(object):
         # See if a branch specific override configuration file exists
         #--------------------------------------------------------------------------
         branch = sh.git('rev-parse', '--abbrev-ref', 'HEAD').strip()
-        override_target = self.conf_override
-        override_source = None
+        override_path = None
 
-        # Skip if overrides already exsits and is a regular file
-        if not (os.path.exists(self.conf_override) and not os.path.islink(self.conf_override)):
-            dir = self.dir_configurations
+        # Skip if overrides already exists and is a regular file
+        if not (
+            os.path.exists(self.conf_override) and
+            not os.path.islink(self.conf_override)
+        ):
+            directory = self.dir_configurations
             override = os.path.basename(self.conf_override)
 
             patterns = []
             # Example: example-configs/r3-feature_branch-override.conf
-            patterns.append('{0}/r{1}-{2}-{3}'.format(dir, self.release, branch, override))
+            #          example-configs/r3-master-override.conf
+            patterns.append(
+                '{0}/r{1}-{2}-{3}'.format(
+                    directory, self.release, branch, override
+                )
+            )
 
             # Example: example-configs/feature_branch-override.conf
-            patterns.append('{0}/{1}-{2}'.format(dir, branch, override))
+            #          example-configs/master-override.conf
+            patterns.append('{0}/{1}-{2}'.format(directory, branch, override))
 
             # Example: example-configs/override.conf
-            patterns.append('{0}/{1}'.format(dir, override))
+            patterns.append('{0}/{1}'.format(directory, override))
 
             for pattern in patterns:
                 if os.path.exists(pattern):
-                    override_source = pattern
+                    override_path = pattern
                     break
 
-            if override_source:
-                # If override_target alreaady exists (it is a link or we would not be here)
-                # display a confirmation dialog to link if not currently linked to override_source
-                if not os.readlink(override_target) == override_source:
-                    info = {
-                        'title': 'Use Branch Specific Override Configuration File?',
-                        'default_button': 'yes',
-                        'text': dedent('''\
-                        A branch specific configuration file was found in your personal directory:
-                        {0}.
+            if is_linkable(
+                override_path,
+                self.conf_override,
+                replace_link=True
+            ):
+                info = {
+                    'title':
+                    'Use Branch Specific Override Configuration File?',
+                    'default_button': 'yes',
+                    'text': dedent(
+                        '''\
+                    A branch specific configuration file was found in your personal directory:
+                    {0}.
 
-                        Would you like to use and override the other provided repos?
-                        '''.format(override_source)),
-                    }
-                    result = DefaultUI.ui.override(**info)
+                    Would you like to use and override the other provided repos?
+                    '''.format(override_path)
+                    ),
+                }
 
-                    # Soft link override_source to override_target if user confirmed override
-                    if result:
-                        soft_link(override_source, override_target)
-                    else:
-                        override_source = None
+                # Link if user confirmed override
+                if DefaultUI.ui.override(**info):
+                    soft_link(
+                        override_path,
+                        self.conf_override,
+                        replace_link=True
+                    )
 
-        elif os.path.exists(self.conf_override):
-            override_source = self.conf_override
-
-        self.override_source = override_source
+                    # Re-parse Makefiles
+                    self._parse_makefiles()
 
     def _parse_makefiles(self):
         '''
         '''
-        from sh import make
+        from sh import make  # pylint: disable=E0611
         env = os.environ.copy()
-        make = make.bake('--always-make', '--quiet', 'get-var', directory=self.dir_builder, _env=env)
+        make = make.bake(
+            '--always-make',
+            '--quiet',
+            'get-var',
+            directory=self.dir_builder,
+            _env=env
+        )
 
         # Get variables from Makefile
         try:
+            env['GET_VAR'] = 'RELEASE'
+            self.release = make().strip()
+
             env['GET_VAR'] = 'SSH_ACCESS'
             self.ssh_access = make().strip()
 
@@ -819,7 +954,7 @@ class Config(object):
 
             env['GET_VAR'] = 'GIT_PREFIX'
             self.git_prefix = make().strip()
-            self.git_prefix_default= self.git_prefix
+            self.git_prefix_default = self.git_prefix
 
             env['GET_VAR'] = 'DISTS_VM'
             self.dists_vm_selected = make().strip().split()
@@ -833,16 +968,37 @@ class Config(object):
 
             env['GET_VAR'] = 'TEMPLATE_ALIAS'
             aliases = make().strip().split()
-            self.template_aliases = dict([(item.split(':')) for item in aliases])
-            self.template_aliases_reversed = dict([(value, key) for key, value in self.template_aliases.items()])
+            self.template_aliases = dict(
+                [
+                    (item.split(':')) for item in aliases
+                ]
+            )
+            self.template_aliases_reversed = dict(
+                [
+                    (
+                        value, key
+                    ) for key, value in self.template_aliases.items()
+                ]
+            )
 
             env['GET_VAR'] = 'TEMPLATE_LABEL'
             labels = make().strip().split()
             self.template_labels = dict([(item.split(':')) for item in labels])
-            self.template_labels_reversed = dict([(value, key) for key, value in self.template_labels.items()])
+            self.template_labels_reversed = dict(
+                [
+                    (
+                        value, key
+                    ) for key, value in self.template_labels.items()
+                ]
+            )
 
-            self.about = sh.make('--always-make', '--quiet', 'about', directory=self.dir_builder)
-        except sh.ErrorReturnCode, err:
+            self.about = sh.make(
+                '--always-make',
+                '--quiet',
+                'about',
+                directory=self.dir_builder
+            )
+        except sh.ErrorReturnCode:
             pass
 
     def write_configuration(self):
@@ -850,24 +1006,26 @@ class Config(object):
         '''
         replace = ReplaceInplace(self.conf_builder)
         dists_vm = ''
-        text = ''
 
         ### -- INFO -----------------------------------------------------------
         # Format about
         info = '''\
             ################################################################################
             #
-            # Qubes Release: {self[release]}
-            # Source Prefix: {self[git_prefix]} (repo)
+            # Qubes Release: {vars[release]}
+            # Source Prefix: {vars[git_prefix]} (repo)
             #
             # Master Configuration File(s):
             # {about}
             #
             # builder.conf copied from:
-            # {self[conf_template]}
+            # {vars[conf_template]}
             #
             ################################################################################
-            '''.format(about=' '.join(self.about.split()), self=vars(self))
+            '''.format(
+            about=' '.join(self.about.split()),
+            vars=vars(self)
+        )
 
         ### -- DISTS_VM -------------------------------------------------------
         for dist in self.dists_vm_selected:
@@ -882,12 +1040,16 @@ class Config(object):
               {dists_vm}
 
             endif
-            '''.format(dists_vm=dists_vm, self=vars(self))
+            '''.format(
+            dists_vm=dists_vm
+        )
 
         ### -- BUILDER_PLUGINS ------------------------------------------------
         plugins = ''
         for plugin in self.builders_selected:
-            plugins += 'BUILDER_PLUGINS += {0}\n{1}'.format(plugin, '              ')
+            plugins += 'BUILDER_PLUGINS += {0}\n{1}'.format(
+                plugin, '              '
+            )
         plugins = plugins.strip()
 
         plugins = '''\
@@ -895,76 +1057,98 @@ class Config(object):
               # Enabled BUILDER_PLUGINS
               BUILDER_PLUGINS :=
               {plugins}
-            '''.format(plugins=plugins, self=vars(self))
+            '''.format(
+            plugins=plugins
+        )
 
         # INFO
-        replace.add(**{
-            'insert_after': r'.*[[]=setup info start=[]]',
-            'insert_until': r'.*[[]=setup info stop=[]]',
-            'text': dedent(info).rstrip('\n'),
-        })
+        replace.add(
+            **{
+                'insert_after': r'.*[[]=setup info start=[]]',
+                'insert_until': r'.*[[]=setup info stop=[]]',
+                'text': dedent(info).rstrip('\n'),
+            }
+        )
 
         # DISTS_VM
-        replace.add(**{
-            'insert_after': r'.*[[]=setup dists start=[]]',
-            'insert_until': r'.*[[]=setup dists stop=[]]',
-            'text': dedent(dists).rstrip('\n'),
-        })
+        replace.add(
+            **{
+                'insert_after': r'.*[[]=setup dists start=[]]',
+                'insert_until': r'.*[[]=setup dists stop=[]]',
+                'text': dedent(dists).rstrip('\n'),
+            }
+        )
 
         # BUILDER_PLUGINS
-        replace.add(**{
-            'insert_after': r'.*[[]=setup plugins start=[]]',
-            'insert_until': r'.*[[]=setup plugins stop=[]]',
-            'text': dedent(plugins),
-        })
+        replace.add(
+            **{
+                'insert_after': r'.*[[]=setup plugins start=[]]',
+                'insert_until': r'.*[[]=setup plugins stop=[]]',
+                'text': dedent(plugins),
+            }
+        )
 
         # RELEASE
-        replace.add(**{
-            'replace': r'RELEASE[ ]*[?:]?=[ ]*[\d]',
-            'text': r'RELEASE := {0}'.format(self.release),
-        })
+        replace.add(
+            **{
+                'replace': r'RELEASE[ ]*[?:]?=[ ]*[\d.]+',
+                'text': r'RELEASE := {0}'.format(self.release),
+            }
+        )
 
         # SSH_ACCESS
-        replace.add(**{
-            'replace': r'SSH_ACCESS[ ]*[?:]?=[ ]*[\d]',
-            'text': r'SSH_ACCESS := {0}'.format(self.ssh_access),
-        })
+        replace.add(
+            **{
+                'replace': r'SSH_ACCESS[ ]*[?:]?=[ ]*[\d]',
+                'text': r'SSH_ACCESS := {0}'.format(self.ssh_access),
+            }
+        )
 
         # GIT_BASEURL
-        replace.add(**{
-            'replace': r'GIT_BASEURL[ ]*[?:]?=[ ]*.*',
-            'text': r'GIT_BASEURL := {0}'.format(self.git_baseurl),
-        })
+        replace.add(
+            **{
+                'replace': r'GIT_BASEURL[ ]*[?:]?=[ ]*.*',
+                'text': r'GIT_BASEURL := {0}'.format(self.git_baseurl),
+            }
+        )
 
         # GIT_PREFIX
-        replace.add(**{
-            'replace': r'GIT_PREFIX[ ]*[?:]?=[ ]*.*',
-            'text': r'GIT_PREFIX := {0}'.format(self.git_prefix),
-        })
+        replace.add(
+            **{
+                'replace': r'GIT_PREFIX[ ]*[?:]?=[ ]*.*',
+                'text': r'GIT_PREFIX := {0}'.format(self.git_prefix),
+            }
+        )
 
         # TEMPLATE_ONLY
-        replace.add(**{
-            'replace': r'TEMPLATE_ONLY[ ]*[?:]?=[ ]*.*',
-            'text': r'TEMPLATE_ONLY ?= {0}'.format(self.template_only),
-        })
+        replace.add(
+            **{
+                'replace': r'TEMPLATE_ONLY[ ]*[?:]?=[ ]*.*',
+                'text': r'TEMPLATE_ONLY ?= {0}'.format(self.template_only),
+            }
+        )
 
         # INCLUDE_OVERRIDE_CONF
-        if self.override_source:
+        if os.path.exists(self.conf_override):
             override = r'INCLUDE_OVERRIDE_CONF ?= true'
         else:
             override = r'#INCLUDE_OVERRIDE_CONF ?= true'
-        replace.add(**{
-            'replace': r'^.*INCLUDE_OVERRIDE_CONF[ ]+[?]?[=].*$',
-            'text': r'{0}'.format(override),
-        })
+        replace.add(
+            **{
+                'replace': r'^.*INCLUDE_OVERRIDE_CONF[ ]+[?]?[=].*$',
+                'text': r'{0}'.format(override),
+            }
+        )
 
         # Start the search and replace process on the configuration file
         replace.start()
 
     def display_configuration(self):
-        ansi =  ANSIColor()
+        ansi = ANSIColor()
         display_configuration(self.conf_builder)
-        info = '\nNew configuration file written to: {0}\n'.format(self.conf_builder)
+        info = '\nNew configuration file written to: {0}\n'.format(
+            self.conf_builder
+        )
 
         install_qubes = '''
             Complete Qubes Build Steps
@@ -993,6 +1177,7 @@ class Config(object):
 
 class Wizard(Config):
     ''''''
+
     def __init__(self, ui, **kwargs):
         self.ui = ui
         DefaultUI.ui = ui
@@ -1006,7 +1191,7 @@ class Wizard(Config):
 
         ## Choose release version
         ## Soft link 'examples/templates.conf' to 'builder.conf'
-        self.set_release(force=True)
+        self.set_release()
 
         ## Prompt for selection of base repo to use for build
         self.set_repo()
@@ -1041,12 +1226,19 @@ class Wizard(Config):
         self.check_gnupghome(GNUPGHOME)
 
         try:
-            text = sh.gpg('--with-colons', '--fingerprint', key_data['key'], _env=env).strip()
-        except sh.ErrorReturnCode, err:
+            text = sh.gpg(
+                '--with-colons',
+                '--fingerprint',
+                key_data['key'],
+                _env=env
+            ).strip()
+        except sh.ErrorReturnCode:
             return False
 
         for fingerprint in text.split('\n'):
-            if fingerprint.startswith(u'fpr:') and fingerprint == key_data['verify']:
+            if fingerprint.startswith(u'fpr:') and fingerprint == key_data[
+                'verify'
+            ]:
                 verified = True
                 break
 
@@ -1061,7 +1253,7 @@ class Wizard(Config):
         env['GNUPGHOME'] = GNUPGHOME
         self.check_gnupghome(GNUPGHOME)
 
-        for id, key_data in keys.items():
+        for key_id, key_data in keys.items():
             key = key_data['key']
             is_key_missing = True
             try:
@@ -1073,25 +1265,49 @@ class Wizard(Config):
 
             if force or is_key_missing:
                 info = {
-                    'title':  'Add Key {0}'.format(id),
+                    'title': 'Add Key {0}'.format(key_id),
                     'default_button': 'no',
                 }
                 if message:
-                    info['text'] = u'Owner: {key_data[owner]}\n\n{0}\n\nSelect "Yes" to add or "No" to exit'.format(message, key_data=key_data)
+                    info[
+                        'text'
+                    ] = u'Owner: {key_data[owner]}\n\n{0}\n\nSelect "Yes" to add or "No" to exit'.format(
+                        message,
+                        key_data=key_data
+                    )
                 elif force:
-                    info['text'] = u'Owner: {key_data[owner]} forced get.\n\nSelect "Yes" to re-add or "No" to exit'.format(key_data=key_data)
+                    info[
+                        'text'
+                    ] = u'Owner: {key_data[owner]} forced get.\n\nSelect "Yes" to re-add or "No" to exit'.format(
+                        key_data=key_data
+                    )
                 else:
-                    info['text'] = u'Owner: {key_data[owner]} key does not exist.\n\nSelect "Yes" to add or "No" to exit'.format(key_data=key_data)
+                    info[
+                        'text'
+                    ] = u'Owner: {key_data[owner]} key does not exist.\n\nSelect "Yes" to add or "No" to exit'.format(
+                        key_data=key_data
+                    )
 
                 if not self.ui.verify_keys(**info):
-                    exit('User aborted setup: Exiting setup since keys can not be installed')
+                    exit(
+                        'User aborted setup: Exiting setup since keys can not be installed'
+                    )
 
                 # Receive key from keyserver
                 else:
                     try:
-                        cmd = 'GNUPGHOME={0} gpg --keyserver {1} --recv-keys {2}'.format(GNUPGHOME, GPG_KEY_SERVER, key)
-                        text = sh.gpg('--keyserver', GPG_KEY_SERVER, '--recv-keys', key, _env=env)
-                        sh.gpg(sh.echo('{0}:6:'.format(key)), '--import-ownertrust', _env=env)
+                        text = sh.gpg(
+                            '--keyserver',
+                            GPG_KEY_SERVER,
+                            '--recv-keys',
+                            key,
+                            _env=env
+                        )
+                        sh.gpg(
+                            sh.echo('{0}:6:'.format(key)),
+                            '--import-ownertrust',
+                            _env=env
+                        )
                     except sh.ErrorReturnCode, err:
                         print err.message
                         exit(err.message)
@@ -1099,40 +1315,51 @@ class Wizard(Config):
             # Verify key on every run
             result = self.gpg_verify_key(key_data)
             if not result:
-                exit({'title': '{key_data[owner]} fingerprint failed!'.format(key_data=key_data),
-                      'text': '\nWrong fingerprint\n{key[fingerprint]}\n\nExiting!'.format(key_data=key_data),})
+                exit(
+                    {
+                        'title':
+                        '{key_data[owner]} fingerprint failed!'.format(
+                            key_data=key_data
+                        ),
+                        'text':
+                        '\nWrong fingerprint\n{key_data[fingerprint]}\n\nExiting!'.format(
+                            key_data=key_data
+                        ),
+                    }
+                )
 
         # Add developers keys
         try:
             sh.gpg('--import', QUBES_DEVELOPERS_KEYS, _env=env)
         except sh.ErrorReturnCode, err:
-            exit('Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(QUBES_DEVELOPERS_KEYS, err))
+            exit(
+                'Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(
+                    QUBES_DEVELOPERS_KEYS, err
+                )
+            )
 
         return True
 
-    def set_release(self, force=False):
+    def set_release(self):
         '''Select release version of Qubes to build.
         '''
-        try:
-            release = sh.make('-C', self.dir_builder, '-B', 'release', '--quiet').strip()
-        except sh.ErrorReturnCode, err:
-            exit(err)
+        choices = []
+        default = self.release or self.releases.pop('default')
 
-        default_button = 'yes' if release == '2' else 'no'
+        for release, description in self.releases.items():
+            if release in ['default']:
+                continue
+            selected = str(release) == str(default)
+            choices.append((release, description, selected))
+
         info = {
-            'title':  'Choose Qubes Version',
-            'yes_label': 'Release 2',
-            'no_label': 'Release 3',
-            'default_button': default_button,
-            'text': dedent('''\
-                Choose which version of Qubes you wish to build.
-
-                Valid options are either the stable release 2 or development release 3 version.
-            '''),
+            'title': 'Choose Which Qubes Release To Use To Build Packages',
+            'choices': choices,
+            'width': 76,
+            'height': 16,
         }
 
-        result = self.ui.release(**info)
-        self.release = '2' if result else '3'
+        self.release = str(self.ui.release(**info))  # pylint: disable=W0201
 
     def set_repo(self):
         '''Set repo prefix.
@@ -1141,22 +1368,27 @@ class Wizard(Config):
         default_set = False
         full_prefix = '{0}/{1}'.format(self.git_baseurl, self.git_prefix)
 
-        for index, repo in self.repos.items():
+        for repo in self.repos.values():
             toggle = full_prefix.endswith(repo['prefix'])
             if toggle:
                 default_set = True
-            choices.append( (repo['prefix'], repo['description'], toggle) )
+            choices.append((repo['prefix'], repo['description'], toggle))
 
-        choices.insert(0, (self.git_prefix_default, 'Stable - Default Repo', not default_set) )
+        choices.insert(
+            0, (
+                self.git_prefix_default, 'Stable - Default Repo',
+                not default_set
+            )
+        )
 
         info = {
-            'title':  'Choose Repos To Use To Build Packages',
+            'title': 'Choose Repos To Use To Build Packages',
             'choices': choices,
             'width': 76,
             'height': 16,
         }
 
-        self.git_prefix = self.ui.repo(**info)
+        self.git_prefix = self.ui.repo(**info)  # pylint: disable=W0201
 
     def set_ssh_access(self):
         '''Set GIT_BASEURL and GIT_PREFIX to allow ssh (write) access to repo.
@@ -1167,13 +1399,15 @@ class Wizard(Config):
         '''
         default_button = 'yes' if self.ssh_access else 'no'
         info = {
-            'title':  'Enable SSH Access',
+            'title': 'Enable SSH Access',
             'default_button': default_button,
-            'text': dedent('''\
+            'text': dedent(
+                '''\
                 Do you have ssh access to the repos?
 
                 Select 'Yes' to configure urls to match git or 'No' for https"
-            '''),
+            '''
+            ),
         }
         result = self.ui.ssh_access(**info)
         ssh_access = 1 if result else 0
@@ -1181,34 +1415,44 @@ class Wizard(Config):
         if ssh_access:
             if '/' in self.git_prefix:
                 repo, prefix = self.git_prefix.split('/')
-                self.git_prefix = prefix
+                self.git_prefix = prefix  # pylint: disable=W0201
             else:
                 repo = self.git_baseurl.split(':')[-1]
                 prefix = self.git_prefix
 
         # Re-write baseurl depending on ssh_access mode
-        baseurl = re.match(r'^(.*//|.*@)(.*(?=[:])|.*)([:].*|)', self.git_baseurl)
+        baseurl = re.match(
+            r'^(.*//|.*@)(.*(?=[:])|.*)([:].*|)', self.git_baseurl
+        )
         if ssh_access:
-            self.git_baseurl = 'git@{0}:{1}'.format(baseurl.group(2), repo)
+            self.git_baseurl = 'git@{0}:{1}'.format(
+                baseurl.group(2), repo
+            )  # pylint: disable=W0201
         else:
-            self.git_baseurl = 'https://{0}'.format(baseurl.group(2))
+            self.git_baseurl = 'https://{0}'.format(
+                baseurl.group(2)
+            )  # pylint: disable=W0201
 
-        self.ssh_access = ssh_access
+        self.ssh_access = ssh_access  # pylint: disable=W0201
 
     def set_template_only(self):
         '''Choose to build a complete system or templates only.
         '''
         default_button = 'yes' if self.template_only else 'no'
         info = {
-            'title':  'Build Template Only?',
+            'title': 'Build Template Only?',
             'default_button': default_button,
-            'text': dedent('''\
+            'text': dedent(
+                '''\
                 Would you like to build only the templates?
 
                 Select 'Yes' to to only build templates or 'No' for complete build
-            '''),
+            '''
+            ),
         }
-        self.template_only = self.ui.template_only(**info)
+        self.template_only = self.ui.template_only(
+            **info
+        )  # pylint: disable=W0201
 
     def set_dists(self):
         ''''''
@@ -1221,18 +1465,24 @@ class Wizard(Config):
 
             tag = aliasr or dist
             item = label
-            help = dist if dist != tag else ''
+            help_text = dist if dist != tag else ''
 
-            helper[tag] = dedent('''\
+            helper[tag] = dedent(
+                '''\
                 \Zb\Z4Distribution:\Zn {0}
                 \Zb\Z4Template Label:\Zn {1}
                 \Zb\Z4Template Alias:\Zn {2}
-            ''').format(tag, item, help)
+            '''
+            ).format(tag, item, help_text)
 
-            if help:
-                help = 'Alias value: {0}'.format(help)
+            if help_text:
+                help_text = 'Alias value: {0}'.format(help_text)
 
-            choices.append( (tag, item, dist in self.dists_vm_selected, help) )
+            choices.append(
+                (
+                    tag, item, dist in self.dists_vm_selected, help_text
+                )
+            )
 
         info = {
             'helper': helper,
@@ -1245,24 +1495,26 @@ class Wizard(Config):
             'item_help': True,
             'help_tags': True,
             'help_status': True,
-            'text': dedent('''\
+            'text': dedent(
+                '''\
                 \Zb\Z4Left column contains DIST name\Zn
                 \Zb\Z4Right column contains TEMPLATE_LABEL\Zn
-            '''),
+            '''
+            ),
         }
 
-        self.dists_vm_selected = self.ui.dists(**info)
+        self.dists_vm_selected = self.ui.dists(**info)  # pylint: disable=W0201
 
     def get_sources(self):
         '''Prompt user to get sources.
         '''
-        default_button = 'yes'
         info = {
-            'title':  'Get sources',
+            'title': 'Get sources',
             'default_button': 'yes',
             'height': 0,
             'width': 0,
-            'text': dedent('''\
+            'text': dedent(
+                '''\
                 Either a BUILDER_PLUGIN has been added or Qubes sources have not
                 yet been downloaded.
 
@@ -1271,13 +1523,14 @@ class Wizard(Config):
                 to select some VMs for building.
 
                 Select 'Yes' to download and merge sources or 'No' to skip"
-            '''),
+            '''
+            ),
         }
-        retcode = self.ui.get_sources(**info)
-
+        self.ui.get_sources(**info)
 
     def set_builders(self):
         ''''''
+
         # Build required depends list
         def _depends(builder, key):
             depends = []
@@ -1322,7 +1575,9 @@ class Wizard(Config):
                 builder = self.builders.get(builder_name, {})
                 if builder.get('key', False):
                     # Setup will exit if user chooses not to install key
-                    message = 'The BUILDER_PLUGIN {0} requires a third party key.'.format(builder['id'])
+                    message = 'The BUILDER_PLUGIN {0} requires a third party key.'.format(
+                        builder['id']
+                    )
                     key_id = '0x{0}'.format(builder['key'][-8:])
                     self.verify_keys({key_id: builder}, message=message)
             return True
@@ -1344,16 +1599,20 @@ class Wizard(Config):
 
             for builder in self.builders.values():
                 # Skip development plugins if development mode was not enabled (--development)
-                if builder.get('development', None) and not self.cli_args.get('development', None):
+                if builder.get('development', None) and not self.cli_args.get(
+                    'development', None
+                ):
                     continue
 
                 tag = builder['id']
-                help = builder['description']
+                help_text = builder['description']
 
-                helper_text = dedent('''\
+                helper_text = dedent(
+                    '''\
                     \Zb\Z4Builder Plugin:\Zn {0}
                     \Zb\Z4Description:\Zn {1}
-                ''').format(tag, help)
+                '''
+                ).format(tag, help_text)
 
                 require = []
                 for builder_name in builder['require']:
@@ -1363,26 +1622,41 @@ class Wizard(Config):
                         require.append('\Z1{0}\Zn'.format(builder_name))
 
                 if require:
-                    helper_text += '\Zb\Z4This plugin requires: {0}\n'.format(' '.join(require))
+                    helper_text += '\Zb\Z4This plugin requires: {0}\n'.format(
+                        ' '.join(require)
+                    )
                     require = 'Requires: {0}'.format(' '.join(require))
                 else:
                     helper_text += '\Zb\Z4This plugin requires:\Zn None\n'
 
-                require_in = _colorize(_depends(builder, 'require_in'), missing.get(tag, [])) or None
+                require_in = _colorize(
+                    _depends(builder, 'require_in'), missing.get(
+                        tag, []
+                    )
+                ) or None
                 if require_in:
-                    helper_text += '\Zb\Z4This plugin is needed by:\Zn {0}\n'.format(' '.join(require_in))
+                    helper_text += '\Zb\Z4This plugin is needed by:\Zn {0}\n'.format(
+                        ' '.join(require_in)
+                    )
                     require_in = 'For: {0}'.format(' '.join(require_in))
                 else:
                     helper_text += '\Zb\Z4This plugin is needed by:\Zn None\n'
 
                 optional = _depends(builder, 'optional') or None
                 if optional:
-                    helper_text += '\Zb\Z4Optional plugin for:\Zn {0}\n'.format(' '.join(optional))
+                    helper_text += '\Zb\Z4Optional plugin for:\Zn {0}\n'.format(
+                        ' '.join(optional)
+                    )
                     optional = 'For: {0}'.format(' '.join(optional))
 
                 item = require or require_in or optional or ''
                 helper[tag] = helper_text
-                choices.append( (tag, item, builder['id'] in self.builders_selected, help) )
+                choices.append(
+                    (
+                        tag, item, builder['id'] in self.builders_selected,
+                        help_text
+                    )
+                )
 
             info = {
                 'helper': helper,
@@ -1395,20 +1669,24 @@ class Wizard(Config):
                 'item_help': True,
                 'help_tags': True,
                 'help_status': True,
-                'text': dedent('''\
+                'text': dedent(
+                    '''\
                     Select from the following list any builder plugins to be enabled.
 
                     Note that some plugins are required to build specific VM's as will
                     be indicated by the comment to the left of the plugin choice.
-                '''),
+                '''
+                ),
             }
 
             builders_selected = self.builders_selected
-            self.builders_selected = self.ui.builders(**info)
+            self.builders_selected = self.ui.builders(
+                **info
+            )  # pylint: disable=W0201
 
             # Selected builders changed; write and reload config file to reflect
             # changes
-            if builders_selected !=  self.builders_selected:
+            if builders_selected != self.builders_selected:
                 # Check if BUILDER_PLUGIN requires a key to install; prompt to install
                 # Setup will exit if user chooses not to install key
                 _requires_key()
@@ -1426,14 +1704,22 @@ class Wizard(Config):
             if requires:
                 text = ''
                 for builder_name, missing_builder in requires.items():
-                    text += '\Z1{0}\Zn is selected to be installed but\n'.format(builder_name)
-                    text += '\Z4{0}\Zn is not enabled! Either enable \Z4{0}\Zn or disable \Z1{1}\Zn.\n\n'.format(' '.join(missing_builder), builder_name)
+                    text += '\Z1{0}\Zn is selected to be installed but\n'.format(
+                        builder_name
+                    )
+                    text += '\Z4{0}\Zn is not enabled! Either enable \Z4{0}\Zn or disable \Z1{1}\Zn.\n\n'.format(
+                        ' '.join(missing_builder), builder_name
+                    )
                 self.ui.msgbox(text)
             elif missing:
                 text = ''
                 for builder_name, missing_vms in missing.items():
-                    text += '\Z1{0}\Zn are selected to be installed but\n'.format(' '.join(missing_vms))
-                    text += '\Z4{0}\Zn is not enabled! Either enable \Z4{0}\Zn or exit to re-pick VMs.\n\n'.format(builder_name)
+                    text += '\Z1{0}\Zn are selected to be installed but\n'.format(
+                        ' '.join(missing_vms)
+                    )
+                    text += '\Z4{0}\Zn is not enabled! Either enable \Z4{0}\Zn or exit to re-pick VMs.\n\n'.format(
+                        builder_name
+                    )
                 self.ui.msgbox(text)
             else:
                 break
@@ -1444,7 +1730,7 @@ class ReplaceInplace(object):
         self.filename = filename
         self.rules = {}
 
-    defaults =  {
+    defaults = {
         # key to use to match line
         'match_key': None,
 
@@ -1454,9 +1740,7 @@ class ReplaceInplace(object):
         # all text before this line will be removed.  Keeps pattern
         # if value is `None`, stop insert mode after initial insert
         'insert_until': None,
-
         'replace': None,
-
         'text': None,
         'find': None,
         'start_line': None,
@@ -1468,11 +1752,23 @@ class ReplaceInplace(object):
         default.update(kwargs)
 
         if default['insert_after']:
-            default['insert_after'] = re.compile(r'{0}'.format(default['insert_after']))
+            default['insert_after'] = re.compile(
+                r'{0}'.format(
+                    default[
+                        'insert_after'
+                    ]
+                )
+            )
             default['match_key'] = 'insert_after'
 
             if default['insert_until']:
-                default['insert_until'] = re.compile(r'{0}'.format(default['insert_until']))
+                default['insert_until'] = re.compile(
+                    r'{0}'.format(
+                        default[
+                            'insert_until'
+                        ]
+                    )
+                )
 
         elif default['replace']:
             default['replace'] = re.compile(r'{0}'.format(default['replace']))
@@ -1486,8 +1782,12 @@ class ReplaceInplace(object):
         insert_mode = False
         stop = []
 
-        for line in fileinput.input(self.filename, inplace=True, backup=BACKUP_EXTENSION):
-            line =  line.rstrip('\n')
+        for line in fileinput.input(
+            self.filename,
+            inplace=True,
+            backup=BACKUP_EXTENSION
+        ):
+            line = line.rstrip('\n')
             for rule in self.rules:
                 if rule.search(line):
                     if self.rules[rule]['match_key'] == 'insert_after':
@@ -1524,10 +1824,13 @@ def set_default_subparser(self, name, args=None):
         if arg in ['-h', '--help']:  # global help if no subparser
             break
     else:
-        for x in self._subparsers._actions:
-            if not isinstance(x, argparse._SubParsersAction):
+        for x in self._subparsers._actions:  # pylint: disable=W0212
+            if not isinstance(
+                x, argparse._SubParsersAction
+            ):  # pylint: disable=W0212
                 continue
-            for sp_name in x._name_parser_map.keys():
+            for sp_name in x._name_parser_map.keys(
+            ):  # pylint: disable=W0201,W0212
                 if sp_name in sys.argv[1:]:
                     subparser_found = True
         if not subparser_found:
@@ -1538,26 +1841,58 @@ def set_default_subparser(self, name, args=None):
             else:
                 args.insert(0, name)
 
+
 argparse.ArgumentParser.set_default_subparser = set_default_subparser
 
-def main(argv):
+
+def main(argv):  # pylint: disable=W0613
     parser = argparse.ArgumentParser()
     mode = parser.add_subparsers(dest='mode', help='commands')
 
     wizard = mode.add_parser('wizard', help='Runs setup wizard')
-    wizard.add_argument( '--dialog-release', action='store', default='3', help='Display the Choose Release Dialog' )
-    wizard.add_argument( '--dir', dest='dir_builder', action='store', default=None,
-                         help='Location path of qubes-builder base directory' )
-    wizard.add_argument( '-c', dest='config_filename', action='store', default='.setup.data',
-                         help='Setup configuration file' )
-    wizard.add_argument( '--development', action='store_true', default=DEVELOPMENT_MODE,
-                         help='include in-progress development configuration options' )
+    wizard.add_argument(
+        '--dialog-release',
+        action='store',
+        default='3',
+        help='Display the Choose Release Dialog'
+    )
+    wizard.add_argument(
+        '--dir',
+        dest='dir_builder',
+        action='store',
+        default=None,
+        help='Location path of qubes-builder base directory'
+    )
+    wizard.add_argument(
+        '-c',
+        dest='config_filename',
+        action='store',
+        default='.setup.data',
+        help='Setup configuration file'
+    )
+    wizard.add_argument(
+        '--development',
+        '--dev',
+        dest='development',
+        action='store_true',
+        default=DEVELOPMENT_MODE,
+        help='include in-progress development configuration options'
+    )
 
     info = mode.add_parser('info', help='Display builder configuration')
-    info.add_argument( '-c', dest='config_filename', action='store', default=BUILDER_CONF,
-                       help='configuration file ({0})'.format(BUILDER_CONF) )
+    info.add_argument(
+        '-c',
+        dest='config_filename',
+        action='store',
+        default=BUILDER_CONF,
+        help='configuration file ({0})'.format(BUILDER_CONF)
+    )
 
-    depends = mode.add_parser('install-deps', help='Install build dependencies')
+    # pylint: disable=W0612
+    depends = mode.add_parser(
+        'install-deps',
+        help='Install build dependencies'
+    )
 
     parser.set_default_subparser('wizard')
     args = vars(parser.parse_args())
@@ -1574,14 +1909,12 @@ def main(argv):
 try:
     import sh
 except ImportError:
-    install_deps('python-sh')
+    install_deps(['python-sh'])
     import sh
 
-
 if __name__ == '__main__':
-    # If no builder.conf is present; assume install-deps has not been run
-    if not os.path.exists(BUILDER_CONF):
-        install_deps('qubes-builder dependencies')
+    # Make sure dependencies are all installed
+    install_deps()
 
     main(sys.argv)
     sys.exit(0)
