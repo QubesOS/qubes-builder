@@ -66,8 +66,11 @@ copyBuilder() {
         --exclude "/lost+found/" \
         --exclude "/*.img" \
         --exclude "/iso/*.iso" \
+        --exclude "/qubes-packages-mirror-repo/" \
         --exclude-from .gitignore \
         "${PWD}/" mnt/
+    # restore initial files in qubes-package-mirror-repo
+    git -C mnt checkout qubes-packages-mirror-repo
 }
 
 allowIncomingTemplateCopy() {
