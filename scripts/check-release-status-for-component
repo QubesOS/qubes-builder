@@ -1,0 +1,157 @@
+#!/bin/sh
+
+usage() {
+    echo "$0 [opts] COMPONENT PACKAGE_SET DIST"
+    echo "Supported options:"
+    echo "  --color             - color output"
+    echo "  --abort-no-version  - abort if no version tag is present"
+    echo "  --abort-on-empty    - abort when no packages defined"
+    echo "  --no-print-version  - skip printing version number, only release status"
+}
+
+color=0
+abort_no_version=0
+abort_empty=0
+print_version=1
+
+end_of_options=0
+while [ -n "$1" -a "$end_of_options" = 0 ]; do
+    case "$1" in
+        --color) color=1; shift ;;
+        --abort-no-version) abort_no_version=1; shift ;;
+        --abort-on-empty) abort_empty=1; shift ;;
+        --no-print-version) print_version=0; shift ;;
+        --*) usage; exit 1 ;;
+        *) end_of_options=1 ;;
+    esac
+done
+
+if [ $# -lt 2 ]; then
+    usage
+    exit 1
+fi
+
+COMPONENT="$1"
+PACKAGE_SET="$2"
+DIST="$3"
+
+#
+# import required builder.conf settings if not already present
+#
+
+cd "$(dirname $0)/.."
+
+repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${DIST}_BASEDIR)
+if [ -n "${repo_dist_basedir}" ]; then
+    repo_basedir="${repo_dist_basedir}"
+else
+    repo_basedir=$(make -s get-var GET_VAR=LINUX_REPO_BASEDIR)
+fi
+
+for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST}; do
+    if [ -n "${!var}" ]; then
+        continue
+    fi
+    value=$(make -s get-var GET_VAR=${var})
+    if [ -n "$value" ]; then
+        eval "export $var=\"$value\""
+    fi
+done
+
+#
+# helper functions
+#
+
+color() {
+    if [ "$color" = 0 ]; then
+        return
+    fi
+    case "$1" in
+        current)          tput setaf 2 || tput AF 2 ;; # green
+        current-testing)  tput setaf 3 || tput AF 3 ;; # yellow
+        security-testing) tput setaf 3 || tput AF 3 ;; # yellow
+        unstable)         tput setaf 4 || tput AF 4 ;; # blue
+        unreleased)       tput setaf 1 || tput AF 1 ;; # red
+        built,unreleased) tput setaf 7 || tput AF 7 ;; # white
+        days-testing)     tput setaf 3 || tput AF 3 ;; # yellow
+        days-stable)      tput setaf 2 || tput AF 2 ;; # green
+        no-version)
+            tput bold 2>/dev/null || tput md 2>/dev/null # bold
+            tput setaf 1 || tput AF 1 # red
+            ;;
+        *) echo "unknown repo $1" >&2; exit 1 ;;
+    esac
+}
+
+reset_color() {
+    if [ "$color" = 0 ]; then
+        return
+    fi
+    tput sgr0    || tput me
+}
+
+MAKE_ARGS="PACKAGE_SET=${PACKAGE_SET} DIST=${DIST} COMPONENT=${COMPONENT}"
+
+check_single_repo() {
+    make -s -f Makefile.generic ${MAKE_ARGS} \
+        UPDATE_REPO=${PWD}/${repo_basedir}/$1/${PACKAGE_SET}/${DIST} \
+        check-repo >/dev/null 2>&1
+}
+
+#
+# the code
+#
+
+if [ "$abort_empty" = 1 ]; then
+    if [ -z "$(make -s -f Makefile.generic ${MAKE_ARGS} \
+            get-var GET_VAR=PACKAGE_LIST 2>/dev/null)" ]; then
+        echo "No packages defined" >&2
+        exit 1
+    fi
+fi
+
+vtag=$(git -C ${SRC_DIR}/${COMPONENT} tag --points-at HEAD --list v*)
+
+if [ -z "$vtag" ]; then
+    if [ "$print_version" = 1 ]; then
+        echo -n "$(color no-version)no version tag$(reset_color) "
+    fi
+    if [ "${abort_no_version}" = 1 ]; then
+        echo "ERROR: No version tag!" >&2
+        exit 1
+    fi
+else
+    if [ "$print_version" = 1 ]; then
+        echo -n $vtag ""
+    fi
+fi
+
+found=0
+for repo in current current-testing security-testing unstable; do
+    if check_single_repo $repo; then
+        echo -n "$(color ${repo})${repo}$(reset_color)"
+        snap_file="${PWD}/repo-latest-snapshot/${repo}-${PACKAGE_SET}-${DIST}-${COMPONENT}"
+        if [ -f "$snap_file" ]; then
+            date_snap=$(date -r "$snap_file" +%s)
+            days=$(( ( `date +%s` - ${date_snap} ) / (24 * 60 * 60) ))
+            if [ $days -lt ${TESTING_DAYS} ]; then
+                echo -n " $(color days-testing)(${days} days ago)$(reset_color)"
+            else
+                echo -n " $(color days-stable)(${days} days ago)$(reset_color)"
+            fi
+        fi
+        echo ""
+        found=1
+        break
+    fi
+done
+
+if [ "$found" = 0 ]; then
+    if make -s -f Makefile.generic ${MAKE_ARGS} \
+            UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${DIST} \
+            check-repo >/dev/null 2>&1; then
+        echo "$(color built,unreleased)built, not released$(reset_color)"
+    else
+        echo "$(color unreleased)not released$(reset_color)"
+    fi
+fi

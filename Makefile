@@ -731,21 +731,11 @@ endif
 
 check-release-status-%: bold   = $$(tput bold    || tput md)
 check-release-status-%: normal = $$(tput sgr0    || tput me)
-check-release-status-%: black  = $$(tput setaf 0 || tput AF 0)
-check-release-status-%: red    = $$(tput setaf 1 || tput AF 1)
-check-release-status-%: green  = $$(tput setaf 2 || tput AF 2)
-check-release-status-%: yellow = $$(tput setaf 3 || tput AF 3)
-check-release-status-%: blue   = $$(tput setaf 4 || tput AF 4)
-check-release-status-%: white  = $$(tput setaf 7 || tput AF 7)
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
 	@echo "-> Checking packages for $(bold)$(DIST) $(PACKAGE_SET)$(normal)"
-	not_released=; \
-	testing=; \
-	repo_var="LINUX_REPO_$(DIST)_BASEDIR"; \
-	[ -n "$${!repo_var}" ] && repo_basedir="`echo $${!repo_var}`" || repo_basedir="$(LINUX_REPO_BASEDIR)"; \
 	for C in $(filter-out builder,$(COMPONENTS)); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
@@ -759,55 +749,8 @@ check-release-status-%:
 			continue; \
 		fi
 		echo -n "$$C: "; \
-		vtag=`git -C $(SRC_DIR)/$$C tag --points-at HEAD --list v*`; \
-		if [ -z "$$vtag" ]; then \
-			echo -n "$(bold)$(red)no version tag$(normal) "; \
-		else \
-			echo -n $$vtag ""; \
-		fi; \
-		if make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current/$(PACKAGE_SET)/$(DIST) \
-				check-repo >/dev/null 2>&1; then \
-			echo $(green)current$(normal); \
-		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/current-testing/$(PACKAGE_SET)/$(DIST) \
-				check-repo >/dev/null 2>&1; then \
-			echo -n $(yellow)testing$(normal); \
-			date_snap=`date -r $(CURDIR)/repo-latest-snapshot/current-testing-$(PACKAGE_SET)-$(DIST)-$$C +%s`; \
-			days=$$(( ( `date +%s` - $$date_snap ) / (24 * 60 * 60) )); \
-			if [ $$days -ge $(TESTING_DAYS) ]; then \
-				echo " $(green)($$days days ago)$(normal)"; \
-			else \
-				echo " $(yellow)($$days days ago)$(normal)"; \
-			fi; \
-			testing="$$testing $$C"; \
-		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/security-testing/$(PACKAGE_SET)/$(DIST) \
-				check-repo >/dev/null 2>&1; then \
-			echo -n $(yellow)security-testing$(normal); \
-			date_snap=`date -r $(CURDIR)/repo-latest-snapshot/security-testing-$(PACKAGE_SET)-$(DIST)-$$C +%s`; \
-			days=$$(( ( `date +%s` - $$date_snap ) / (24 * 60 * 60) )); \
-			if [ $$days -ge $(TESTING_DAYS) ]; then \
-				echo " $(green)($$days days ago)$(normal)"; \
-			else \
-				echo " $(yellow)($$days days ago)$(normal)"; \
-			fi; \
-			testing="$$testing $$C"; \
-		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/$$repo_basedir/unstable/$(PACKAGE_SET)/$(DIST) \
-				check-repo >/dev/null 2>&1; then \
-			echo $(blue)unstable$(normal); \
-		elif make -s -f Makefile.generic $(MAKE_ARGS) \
-				UPDATE_REPO=$(CURDIR)/qubes-packages-mirror-repo/$(DIST) \
-				check-repo >/dev/null 2>&1; then \
-			echo $(white)built, not released$(normal); \
-		else \
-			echo $(red)not released$(normal); \
-			not_released="$$not_released $$C"; \
-		fi; \
+		$(CURDIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
 	done; \
-	echo "--> Not released:$$not_released"; \
-	echo "--> Testing:$$testing"
 
 windows-image:
 	./win-mksrcimg.sh
