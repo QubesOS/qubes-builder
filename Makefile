@@ -826,12 +826,11 @@ build-id::
 
 # TODO: Consider changing umount_kill script to the following:
 # "fuser -kmM" && umount -R
-.PHONY: umount
-umount:
-	-@sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/$(SRC_DIR)/"; \
-	for dist in $(DISTS_ALL); do \
-	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$(BUILDER_DIR)/chroot-$$dist"; \
-	done;
+umount-tgt = $(DISTS_ALL:%=chroot-%.umount) $(SRC_DIR).umount
+.PHONY: umount $(umount-tgt)
+$(umount-tgt):
+	@sudo $(BUILDER_DIR)/scripts/umount_kill.sh $(BUILDER_DIR)/$(@:%.umount=%)
+umount: $(umount-tgt)
 
 # Returns variable value
 # Example usage: GET_VAR=DISTS_VM make get-var
