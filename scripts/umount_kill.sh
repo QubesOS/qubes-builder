@@ -25,7 +25,8 @@
 # $1 = full path to mount; 
 # $2 = if set will not umount; only kill processes in mount
 umount_kill() {
-    MOUNTDIR="$1"
+    local MOUNTDIR="$1"
+    local PROMPT_SHOWN=""
 
     # We need absolute paths here so we don't kill everything
     if ! [[ "$MOUNTDIR" = /* ]]; then
@@ -36,9 +37,13 @@ umount_kill() {
     # since we are doing an exact string match on the path
     MOUNTDIR=$(echo "$MOUNTDIR" | sed s#//*#/#g)
 
-    echo "-> Attempting to kill any processes still running in '$MOUNTDIR' before un-mounting"
     for dir in $(grep "$MOUNTDIR" /proc/mounts | cut -f2 -d" " | sort -r | grep "^$MOUNTDIR")
     do
+        if [[ -z $PROMPT_SHOWN ]]; then
+            echo "-> Attempting to kill any processes still running in '$MOUNTDIR' before un-mounting"
+            PROMPT_SHOWN="yes"
+        fi
+
         sudo lsof "$dir" 2> /dev/null | \
             grep "$dir" | \
             tail -n +2 | \
