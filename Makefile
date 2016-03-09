@@ -158,18 +158,12 @@ help:
 	@echo "You can also specify COMPONENTS=\"c1 c2 c3 ...\" on command line"
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
-.PHONY: get-sources
-get-sources:: COMPONENTS := $(filter-out builder $(BUILDER_PLUGINS), $(COMPONENTS))
-get-sources:: COMPONENTS := $(BUILDER_PLUGINS) $(COMPONENTS)
-get-sources:: GIT_REPOS := $(addprefix $(SRC_DIR)/, $(COMPONENTS))
-get-sources:: build-info
-get-sources::
-	@set -a; \
-	SCRIPT_DIR=$(CURDIR)/scripts; \
-	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
-	for REPO in $(GIT_REPOS); do \
-		$$SCRIPT_DIR/get-sources || exit 1; \
-	done
+
+get-sources-tgt = $(addsuffix .get-sources,$(filter-out builder,$(COMPONENTS)))
+.PHONY: get-sources $(get-sources-tgt)
+$(get-sources-tgt): build-info
+	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+get-sources: $(get-sources-tgt)
 
 .PHONY: check-depend
 check-depend:

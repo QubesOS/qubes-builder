@@ -77,7 +77,7 @@ fi
 
 if [ "$verify" == "true" ]; then
     echo "--> Verifying tags..."
-    $SCRIPT_DIR/verify-git-tag $REPO $VERIFY_REF || exit 1
+    $(dirname $0)/verify-git-tag $REPO $VERIFY_REF || exit 1
 fi
 
 if [ "$FETCH_ONLY" != "1" ]; then
