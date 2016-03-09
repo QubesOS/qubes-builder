@@ -188,9 +188,9 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
-			make --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
+			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
 		done; \
-	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
+	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM_NO_FLAVOR); do \
 	        MAKE_TARGET="rpms-vm" ./scripts/build $$DIST $* || exit 1; \
 	    done; \
@@ -200,8 +200,8 @@ $(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depe
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-		make -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
-	elif [ -n "`make -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
+		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
+	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
 	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
 endif
@@ -231,7 +231,7 @@ sign-%:
 	sign_key_var="SIGN_KEY_$(DIST)"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
 	if [ -r $(SRC_DIR)/$(COMPONENT)/Makefile.builder ]; then \
-		make --no-print-directory -f Makefile.generic \
+		$(MAKE) --no-print-directory -f Makefile.generic \
 			DIST=$(DIST) \
 			PACKAGE_SET=$(PACKAGE_SET) \
 			COMPONENT=$(COMPONENT) \
@@ -295,24 +295,24 @@ template-local-%::
 	mkdir -p "$$GNUPGHOME"
 	chmod 700 "$$GNUPGHOME"
 	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
-	make -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
+	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	for repo in $(GIT_REPOS); do \
 		if [ -r $$repo/Makefile.builder ]; then
-			make --no-print-directory -f Makefile.generic \
+			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
 				COMPONENT=`basename $$repo` \
 				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
 				update-repo || exit 1
-		elif make -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
-			make -s -C $$repo update-repo-template || exit 1
+		elif $(MAKE) -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
+			$(MAKE) -s -C $$repo update-repo-template || exit 1
 		fi
 	done
 	if [ "$(VERBOSE)" -eq 0 ]; then
 		echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
-		make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
 		echo "--> Done."
 	else
-		make -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
 	fi
 
 template-in-dispvm: $(addprefix template-in-dispvm-,$(DISTS_VM))
@@ -366,14 +366,14 @@ clean::
 			continue; \
 		elif [ $$REPO == "$(SRC_DIR)/linux-template-builder" ]; then \
 			for DIST in $(DISTS_VM_NO_FLAVOR); do \
-				DIST=$$DIST make -s -C $$REPO clean || exit 1; \
+				DIST=$$DIST $(MAKE) -s -C $$REPO clean || exit 1; \
 			done ;\
 		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
 			echo ;\
 		elif [ $$REPO == "." ]; then \
 			echo ;\
 		else \
-			make -s -C $$REPO clean; \
+			$(MAKE) -s -C $$REPO clean; \
 		fi ;\
 	done;
 
@@ -424,18 +424,18 @@ mostlyclean:: umount clean clean-rpms clean-chroot
 .PHONY: iso
 iso:
 	@echo "-> Preparing for ISO build..."
-	@make -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos || exit 1
+	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos || exit 1
 	@echo "--> Copying RPMs from individual repos..."
 	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
 	    if [ -r $$repo/Makefile.builder ]; then
-			make --no-print-directory -f Makefile.generic \
+			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=dom0 \
 				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
 				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 				update-repo || exit 1
-	    elif make -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
-	        if ! make -s -C $$repo update-repo-installer ; then \
+	    elif $(MAKE) -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
+	        if ! $(MAKE) -s -C $$repo update-repo-installer ; then \
 				echo "make update-repo-installer failed for repo $$repo"; \
 				exit 1; \
 			fi \
@@ -443,7 +443,7 @@ iso:
 	done
 	@for DIST in $(DISTS_VM); do \
 		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-			make -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
+			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
 		fi \
@@ -691,16 +691,16 @@ internal-update-repo-%:
 				exit 0; \
 			fi; \
 		fi; \
-		make -s -f Makefile.generic DIST=$(DIST) PACKAGE_SET=$(PACKAGE_SET) \
+		$(MAKE) -s -f Makefile.generic DIST=$(DIST) PACKAGE_SET=$(PACKAGE_SET) \
 			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
 			TARGET_REPO=$(TARGET_REPO) \
 			UPDATE_REPO=$(CURDIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
 			SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
 			$(MAKE_TARGET) || exit 1; \
-	elif make -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
+	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \
-		make -s -C $(REPO) update-repo-$(TARGET_REPO) || exit 1; \
+		$(MAKE) -s -C $(REPO) update-repo-$(TARGET_REPO) || exit 1; \
 	else \
 		echo -n "Updating $(REPO)... skipping."; \
 	fi; \
@@ -741,7 +741,7 @@ check-release-status-%:
 			# Old style components not supported
 			continue; \
 		fi; \
-		if [ -z "`make -s -f Makefile.generic \
+		if [ -z "`$(MAKE) -s -f Makefile.generic \
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=$$C \
@@ -761,7 +761,7 @@ windows-image-extract:
 	for REPO in $(GIT_REPOS); do \
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
-			make -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
+			$(MAKE) -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
 				WINDOWS_IMAGE_DIR=$(CURDIR)/mnt \
 				COMPONENT=`basename $$REPO` \
 				DIST=dummy \
