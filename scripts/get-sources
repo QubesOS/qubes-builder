@@ -80,7 +80,9 @@ if [ "$verify" == "true" ]; then
     $(dirname $0)/verify-git-tag $REPO $VERIFY_REF || exit 1
 fi
 
-if [ "$FETCH_ONLY" != "1" ]; then
+if [ "$FETCH_ONLY" == "1" ]; then
+    exit 0
+fi
 
 CURRENT_BRANCH=`cd $REPO; git branch | sed -n -e 's/^\* \(.*\)/\1/p'`
 if [ "$CURRENT_BRANCH" != "$BRANCH" -o "$VERIFY_REF" == "HEAD" ]; then
@@ -113,5 +115,5 @@ if $MAKE -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
     echo "--> Verifying the sources..."
     $MAKE --quiet -C $REPO verify-sources
 fi
-fi
+
 echo
