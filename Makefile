@@ -111,7 +111,7 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 					   exit 1; \
 				   fi; \
 				   popd > /dev/null; \
-			   fi; 
+			   fi;
 
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:
@@ -372,7 +372,7 @@ clean::
 	done;
 
 .PHONY: clean-chroot
-clean-chroot:: 
+clean-chroot::
 	@dists="$(shell ls -d $(BUILDER_DIR)/chroot-*)"; \
 	for dist in $$dists; do \
 	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$$dist"; \
