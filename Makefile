@@ -362,8 +362,6 @@ clean::
 			for DIST in $(DISTS_VM_NO_FLAVOR); do \
 				DIST=$$DIST $(MAKE) -s -C $$REPO clean || exit 1; \
 			done ;\
-		elif [ $$REPO == "$(SRC_DIR)/yum" ]; then \
-			echo ;\
 		elif [ $$REPO == "." ]; then \
 			echo ;\
 		else \
