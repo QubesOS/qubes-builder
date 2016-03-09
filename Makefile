@@ -274,9 +274,9 @@ template-local-%::
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"
 	plugins_var="BUILDER_PLUGINS_$$DIST"
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"
-	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(CURDIR)/$(SRC_DIR)/$$d"; done`
+	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`
 	export BUILDER_PLUGINS_DIRS
-	CACHEDIR=$(CURDIR)/cache/$$DIST
+	CACHEDIR=$(BUILDER_DIR)/cache/$$DIST
 	export CACHEDIR
 	MAKE_TARGET=rpms
 	if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then
@@ -285,7 +285,7 @@ template-local-%::
 
 	# some sources can be downloaded and verified during template building
 	# process - e.g. archlinux template
-	export GNUPGHOME="$(CURDIR)/keyrings/template-$$DIST"
+	export GNUPGHOME="$(BUILDER_DIR)/keyrings/template-$$DIST"
 	mkdir -p "$$GNUPGHOME"
 	chmod 700 "$$GNUPGHOME"
 	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
@@ -295,7 +295,7 @@ template-local-%::
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
 				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
+				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
 				update-repo || exit 1
 		elif $(MAKE) -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
 			$(MAKE) -s -C $$repo update-repo-template || exit 1
@@ -426,7 +426,7 @@ iso:
 				PACKAGE_SET=dom0 \
 				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 				update-repo || exit 1
 	    elif $(MAKE) -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! $(MAKE) -s -C $$repo update-repo-installer ; then \
@@ -436,7 +436,7 @@ iso:
 	    fi; \
 	done
 	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST UPDATE_REPO=$(CURDIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		if ! DIST=$$DIST UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
@@ -578,8 +578,8 @@ push:
 SHELL = /bin/bash
 -prepare-merge:
 	@set -a; \
-	SCRIPT_DIR=$(CURDIR)/scripts; \
-	SRC_ROOT=$(CURDIR)/$(SRC_DIR); \
+	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
+	SRC_ROOT=$(BUILDER_DIR)/$(SRC_DIR); \
 	FETCH_ONLY=1; \
 	IGNORE_MISSING=1; \
 	REPOS="$(GIT_REPOS)"; \
@@ -689,8 +689,8 @@ internal-update-repo-%:
 			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
 			TARGET_REPO=$(TARGET_REPO) \
-			UPDATE_REPO=$(CURDIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
-			SNAPSHOT_FILE=$(CURDIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
+			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+			SNAPSHOT_FILE=$(BUILDER_DIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
 			$(MAKE_TARGET) || exit 1; \
 	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \
@@ -743,7 +743,7 @@ check-release-status-%:
 			continue; \
 		fi
 		echo -n "$$C: "; \
-		$(CURDIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
+		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
 	done; \
 
 windows-image:
@@ -756,7 +756,7 @@ windows-image-extract:
 		[ $$REPO == '.' ] && break; \
 		if [ -r $$REPO/Makefile.builder ]; then \
 			$(MAKE) -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
-				WINDOWS_IMAGE_DIR=$(CURDIR)/mnt \
+				WINDOWS_IMAGE_DIR=$(BUILDER_DIR)/mnt \
 				COMPONENT=`basename $$REPO` \
 				DIST=dummy \
 				windows-image-extract; \
