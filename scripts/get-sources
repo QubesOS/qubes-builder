@@ -102,14 +102,16 @@ echo "--> Merging..."
 [ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge --commit -q FETCH_HEAD; )
 
 # For additionally download sources
-if make -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
+MAKE=${MAKE:-make}
+
+if $MAKE -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
     export GNUPGHOME="$PWD/keyrings/$COMPONENT"
     mkdir -p "$GNUPGHOME"
     chmod 700 "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
-    make --quiet -C $REPO get-sources
+    $MAKE --quiet -C $REPO get-sources
     echo "--> Verifying the sources..."
-    make --quiet -C $REPO verify-sources
+    $MAKE --quiet -C $REPO verify-sources
 fi
 fi
 echo
