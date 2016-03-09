@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -e
+
+if [ -z "$1" ]; then
+	echo "Usage: $0 BASE_NAME"
+	echo " BASE_NAME is iso filename without ".iso" suffix, for example Qubes-3.1-x86_64"
+	exit 1
+fi
+
+# rely on set -e
+ls iso/$1.iso >/dev/null
+ls iso/$1.iso.asc >/dev/null
+ls iso/$1.iso.DIGESTS >/dev/null
+
+mkdir $1
+cd $1
+ln ../iso/$1.iso ./
+ln ../iso/$1.iso.asc ./
+ln ../iso/$1.iso.DIGESTS ./
+cd ..
+mktorrent -a udp://tracker.openbittorrent.com:80 \
+	-a udp://tracker.coppersurfer.tk:6969 \
+	-a udp://tracker.torrent.eu.org:451 \
+	-d -l 20 -v $1 \
+	-w https://mirrors.kernel.org/qubes/iso/ \
+	-w https://ftp.qubes-os.org/iso/ \
+	-o iso/$1.torrent
+rm -r "$1"
