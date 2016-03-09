@@ -350,7 +350,7 @@ clean-rpms:: clean-installer-rpms
 		sudo rm -rf qubes-packages-mirror-repo/$$dist || true ;\
 	done
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'; \
-	sudo rm -fr $(SRC_DIR)/*/pkgs/*/*/*.rpm || true; \
+	sudo rm -fr $(SRC_DIR)/*/pkgs/*/*/*.rpm || true;
 
 .PHONY: clean
 clean::
