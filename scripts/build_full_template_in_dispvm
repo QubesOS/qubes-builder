@@ -39,7 +39,7 @@ parseConfigLocation() {
             echo \$fpr:6: | gpg --import-ownertrust;
         done;
         gpg --import builder-conf-repo-key.asc;
-        SCRIPT_DIR=\$PWD GIT_URL=\"$TEMPLATE_CONF_URL\" REPO=/tmp/builder-conf-repo BRANCH=\"$TEMPLATE_CONF_BRANCH\" ./get-sources.sh || exit 1;
+        GIT_URL=\"$TEMPLATE_CONF_URL\" REPO=/tmp/builder-conf-repo BRANCH=\"$TEMPLATE_CONF_BRANCH\" ./scripts/get-sources || exit 1;
         rm -rf \$GNUPGHOME; unset GNUPGHOME;
         cp /tmp/builder-conf-repo/config/builder.conf ./builder.conf;
         "
