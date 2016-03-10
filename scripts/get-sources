@@ -54,7 +54,7 @@ if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
     fi
     VERIFY_REF=FETCH_HEAD
-    cd -
+    cd - >/dev/null
 else
     rm -rf $REPO
     git clone -n -q -b $BRANCH $GIT_URL $REPO
