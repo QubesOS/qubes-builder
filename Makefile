@@ -287,8 +287,7 @@ template-local-%::
 	# some sources can be downloaded and verified during template building
 	# process - e.g. archlinux template
 	export GNUPGHOME="$(BUILDER_DIR)/keyrings/template-$$DIST"
-	mkdir -p "$$GNUPGHOME"
-	chmod 700 "$$GNUPGHOME"
+	mkdir -m 700 -p "$$GNUPGHOME"
 	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
 	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
 	for repo in $(GIT_REPOS); do \

@@ -108,8 +108,7 @@ MAKE=${MAKE:-make}
 
 if $MAKE -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
     export GNUPGHOME="$PWD/keyrings/$COMPONENT"
-    mkdir -p "$GNUPGHOME"
-    chmod 700 "$GNUPGHOME"
+    mkdir -m 700 -p "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
     $MAKE --quiet -C $REPO get-sources
     echo "--> Verifying the sources..."
