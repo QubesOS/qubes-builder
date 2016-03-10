@@ -100,8 +100,10 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" -o "$VERIFY_REF" == "HEAD" ]; then
     popd &> /dev/null
 fi
 
-echo "--> Merging..."
-[ "$VERIFY_REF" == "FETCH_HEAD" ] && ( cd $REPO; git merge --commit -q FETCH_HEAD; )
+if [ "$VERIFY_REF" == "FETCH_HEAD" ]; then
+    echo "--> Merging..."
+    cd $REPO && git merge --commit -q FETCH_HEAD
+fi
 
 # For additionally download sources
 MAKE=${MAKE:-make}
