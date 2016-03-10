@@ -159,7 +159,8 @@ help:
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
 
-get-sources-tgt = $(addsuffix .get-sources,$(filter-out builder,$(COMPONENTS)))
+get-sources-sort = $(BUILDER_PLUGINS) $(filter-out builder $(BUILDER_PLUGINS), $(COMPONENTS))
+get-sources-tgt = $(addsuffix .get-sources, $(get-sources-sort))
 .PHONY: get-sources $(get-sources-tgt)
 $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
