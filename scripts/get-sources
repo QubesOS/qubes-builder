@@ -50,8 +50,9 @@ echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_URL $BRANCH..."
 if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
     cd $REPO
-    git fetch -q $GIT_URL --tags $BRANCH || \
-        { [ 0$IGNORE_MISSING -eq 1 ] && exit 0 || exit 1; }
+    if ! git fetch -q $GIT_URL --tags $BRANCH; then
+        if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
+    fi
     VERIFY_REF=FETCH_HEAD
     cd -
 else
