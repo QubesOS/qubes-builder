@@ -21,7 +21,7 @@ COMPONENTS ?= builder
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
-KEYRING_DIR_GIT ?= $(PWD)/keyrings/git
+KEYRING_DIR_GIT ?= $(BUILDER_DIR)/keyrings/git
 
 TESTING_DAYS = 7
 
