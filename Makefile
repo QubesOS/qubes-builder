@@ -376,8 +376,7 @@ $(clean-chroot-tgt): %.clean : %.umount
 clean-chroot: $(clean-chroot-tgt)
 
 .PHONY: clean-all
-clean-all:: umount clean-chroot
-clean-all:: clean-rpms clean
+clean-all: clean-chroot clean-rpms clean
 	for dir in $${DISTS_ALL[@]%%+*}; do \
 		if ! [ -d chroot-$$dir ]; then continue; fi; \
 		sudo umount chroot-$$dir/proc; \
@@ -387,7 +386,7 @@ clean-all:: clean-rpms clean
 	sudo rm -rf $(SRC_DIR) || true
 
 .PHONY: distclean
-distclean:: umount clean-all
+distclean: clean-all
 	sudo rm -rf $(BUILDER_DIR)/cache/*
 	sudo rm -rf $(BUILDER_DIR)/iso/*
 	sudo rm -rf $(BUILDER_DIR)/build-logs/*
