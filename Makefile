@@ -377,13 +377,7 @@ clean-chroot: $(clean-chroot-tgt)
 
 .PHONY: clean-all
 clean-all: clean-chroot clean-rpms clean
-	for dir in $${DISTS_ALL[@]%%+*}; do \
-		if ! [ -d chroot-$$dir ]; then continue; fi; \
-		sudo umount chroot-$$dir/proc; \
-		sudo umount chroot-$$dir/tmp/qubes-rpms-mirror-repo; \
-		sudo rm -rf chroot-$$dir || true; \
-	done || true
-	sudo rm -rf $(SRC_DIR) || true
+	@sudo rm -rf $(SRC_DIR)
 
 .PHONY: distclean
 distclean: clean-all
