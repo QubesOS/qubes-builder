@@ -103,7 +103,9 @@ fi
 
 if [ "$VERIFY_REF" == "FETCH_HEAD" ]; then
     echo "--> Merging..."
-    cd $REPO && git merge --commit -q FETCH_HEAD
+    pushd $REPO &> /dev/null
+    git merge --commit -q FETCH_HEAD
+    popd &> /dev/null
 fi
 
 # For additionally download sources
