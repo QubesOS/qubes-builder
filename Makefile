@@ -317,7 +317,7 @@ template-in-dispvm-%:
 	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."
 	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
-# Sign only unsigend files (naturally we don't expext files with WRONG sigs to be here)
+# Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 ifeq (,$(NO_SIGN))
 sign-all:: $(addprefix sign-,$(COMPONENTS))
 sign-dom0:: $(addprefix sign-dom0-,$(COMPONENTS))
@@ -389,8 +389,8 @@ distclean: clean-all
 	sudo rm -rf $(BUILDER_DIR)/keyrings
 	$(shell find $(BUILDER_DIR)/qubes-packages-mirror-repo/* -maxdepth 0 -type d -exec rm -rf {} \;)
 
-# Does a regular clean as well as removes all prepared and created tempalte
-# images as well as chroot-* while leave source repos in qubes-src
+# Does a regular clean as well as removes all prepared and created template
+# images as well as chroot-* while leaving source repos in qubes-src
 .PHONY: mostlyclean
 mostlyclean:: _linux_template_builder := $(BUILDER_DIR)/$(SRC_DIR)/linux-template-builder
 mostlyclean:: clean-chroot clean-rpms clean
