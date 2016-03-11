@@ -387,7 +387,7 @@ distclean: clean-all
 	sudo rm -rf $(BUILDER_DIR)/repo-latest-snapshot/*
 	sudo rm -rf $(BUILDER_DIR)/builder.conf*
 	sudo rm -rf $(BUILDER_DIR)/keyrings
-	$(shell find $(BUILDER_DIR)/qubes-packages-mirror-repo/* -maxdepth 0 -type d -exec rm -rf {} \;)
+	find $(BUILDER_DIR)/qubes-packages-mirror-repo/* -maxdepth 0 -type d -exec rm -rf {} \;
 
 # Does a regular clean as well as removes all prepared and created template
 # images as well as chroot-* while leaving source repos in qubes-src
