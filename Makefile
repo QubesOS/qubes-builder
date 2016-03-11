@@ -369,13 +369,11 @@ clean::
 		fi ;\
 	done;
 
-.PHONY: clean-chroot
-clean-chroot::
-	@dists="$(shell ls -d $(BUILDER_DIR)/chroot-*)"; \
-	for dist in $$dists; do \
-	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh "$$dist"; \
-	    sudo rm -rf "$$dist"; \
-	done
+clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
+.PHONY: clean-chroot $(clean-chroot-tgt)
+$(clean-chroot-tgt): %.clean : %.umount
+	@sudo rm -rf $(BUILDER_DIR)/$(@:%.clean=%)
+clean-chroot: $(clean-chroot-tgt)
 
 .PHONY: clean-all
 clean-all:: umount clean-chroot
