@@ -341,6 +341,7 @@ qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONE
 
 qubes-os-iso: get-sources qubes sign-all iso
 
+.PHONY: clean-installer-rpms clean-rpms clean
 clean-installer-rpms:
 	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
@@ -352,7 +353,6 @@ clean-rpms:: clean-installer-rpms
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'; \
 	sudo rm -fr $(SRC_DIR)/*/pkgs/*/*/*.rpm || true;
 
-.PHONY: clean
 clean::
 	@for REPO in $(GIT_REPOS); do \
 		echo "$$REPO" ;\
@@ -393,7 +393,7 @@ distclean: clean-all
 # images as well as chroot-* while leave source repos in qubes-src
 .PHONY: mostlyclean
 mostlyclean:: _linux_template_builder := $(BUILDER_DIR)/$(SRC_DIR)/linux-template-builder
-mostlyclean:: umount clean clean-rpms clean-chroot
+mostlyclean:: clean-chroot clean-rpms clean
 	if [ -d "$(_linux_template_builder)" ] ; then \
 	    pushd "$(_linux_template_builder)"; \
 	    sudo $(BUILDER_DIR)/scripts/umount_kill.sh mnt; \
