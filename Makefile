@@ -468,12 +468,12 @@ diff:
 	    popd > /dev/null; \
 	done
 
-grep:
-	@for REPO in $(GIT_REPOS); do \
-		pushd $$REPO > /dev/null; \
-		git grep "$$RE" | sed -e "s,^,$$REPO/,"; \
-	    popd > /dev/null; \
-	done
+grep-tgt = $(GIT_REPOS:$(SRC_DIR)/%=%.grep)
+RE ?= $(filter-out grep $(grep-tgt), $(MAKECMDGOALS))
+.PHONY: grep $(grep-tgt)
+$(grep-tgt):
+	@git -C $(@:%.grep=$(SRC_DIR)/%) grep "$(RE)" | sed "s#^#$(@:%.grep=$(SRC_DIR)\/%)/#"
+grep: $(grep-tgt)
 
 switch-branch:
 	@for REPO in $(GIT_REPOS); do \
