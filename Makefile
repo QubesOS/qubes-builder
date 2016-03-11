@@ -350,8 +350,8 @@ clean-rpms:: clean-installer-rpms
 		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/..."; \
 		sudo rm -rf qubes-packages-mirror-repo/$$dist || true ;\
 	done
-	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'; \
-	sudo rm -fr $(SRC_DIR)/*/pkgs/*/*/*.rpm || true;
+	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'
+	@sudo rm -f $(SRC_DIR)/*/pkgs/*/*/*.rpm || true
 
 clean::
 	@for REPO in $(GIT_REPOS); do \
