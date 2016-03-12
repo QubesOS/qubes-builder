@@ -111,7 +111,7 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 					   exit 1; \
 				   fi; \
 				   popd > /dev/null; \
-			   fi;
+			   fi
 
 .colors.mk: Makefile
 	@echo "c.bold   := $$(tput bold    2>/dev/null || tput md 2>/dev/null)" >$@
@@ -377,7 +377,7 @@ clean::
 		else \
 			$(MAKE) -s -C $$REPO clean; \
 		fi ;\
-	done;
+	done
 
 clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
 .PHONY: clean-chroot $(clean-chroot-tgt)
@@ -413,7 +413,7 @@ mostlyclean:: clean-chroot clean-rpms clean
 	    sudo rm -rf rpm/noarch/*  || true; \
 	    sudo rm -rf pkgs-for-template/* || true; \
 	    popd; \
-	fi;
+	fi
 
 .PHONY: iso
 iso:
@@ -587,7 +587,7 @@ SHELL = /bin/bash
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
 		$$SCRIPT_DIR/get-sources || exit 1; \
-	done;
+	done
 
 prepare-merge: -prepare-merge show-unmerged
 
