@@ -13,3 +13,4 @@ windows-sources.img
 untrusted-builder-env-*
 
 *.py?
+.*.mk
