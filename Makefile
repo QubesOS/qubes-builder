@@ -113,6 +113,7 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 				   popd > /dev/null; \
 			   fi
 
+ifndef NO_COLOR
 .colors.mk: Makefile
 	@echo "c.bold   := $$(tput bold    2>/dev/null || tput md 2>/dev/null)" >$@
 	@echo "c.normal := $$(tput sgr0    2>/dev/null || tput me 2>/dev/null)" >>$@
@@ -122,6 +123,8 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 	@echo "c.blue   := $$(tput setaf 4 2>/dev/null || tput AF 4 2>/dev/null)" >>$@
 	@echo "c.white  := $$(tput setaf 7 2>/dev/null || tput AF 7 2>/dev/null)" >>$@
 -include .colors.mk
+-include .user_colors.mk
+endif
 
 .EXPORT_ALL_VARIABLES:
 .ONESHELL:

@@ -191,6 +191,11 @@ verbosity level of build process
 * 1 - print (almost) only warnings
 * 2 - full output
 
+### NO_COLOR
+> Default: no value
+
+If set then various messages printed while building will not be colored.
+
 ### BUILDER_TURBO_MODE
 > Default: 0
 
