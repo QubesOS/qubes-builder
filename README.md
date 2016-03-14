@@ -14,7 +14,7 @@ and should ensure the following packages are installed:
 * python-sh
 * dialog
 
-Unusually one can install those packages by just issuing:
+Usually one can install those packages by just issuing:
 
     $ sudo dnf install git createrepo rpm-build rpm-sign make python-sh rpmdevtools rpm-sign dialog
     
