@@ -328,17 +328,11 @@ template-in-dispvm-%:
 	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
-ifeq (,$(NO_SIGN))
-sign-all:: $(COMPONENTS:%=sign-%)
-sign-dom0:: $(COMPONENTS:%=sign-dom0-%)
-sign-vm:: $(COMPONENTS:%=sign-vm-%)
+COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
+sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%)
+sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%)
+sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%)
 	@true
-else
-sign-all::
-sign-dom0::
-sign-vm::
-	@true
-endif
 
 qubes:: umount build-info
 qubes:: $(filter-out builder,$(COMPONENTS))
