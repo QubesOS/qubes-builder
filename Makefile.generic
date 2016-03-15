@@ -14,7 +14,7 @@
 LOADING_PLUGINS = 1
 undefine BUILDER_MAKEFILE 
 BUILDER_PLUGINS_COMBINED = $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_$(DIST))
--include $(addsuffix /Makefile.builder,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS_COMBINED)))
+-include $(BUILDER_PLUGINS_COMBINED:%=$(SRC_DIR)/%/Makefile.builder)
 ifeq ($(BUILDER_MAKEFILE),)
 $(error Building packages for $(DIST) not supported by any of configured plugins)
 endif
@@ -99,8 +99,8 @@ generic-copy-in:
 .PHONY: windows-image-extract
 windows-image-extract:
 ifneq (,$(WINDOWS_IMAGE_EXTRACT_EXTRA))
-	@rm -rf $(addprefix $(ORIG_SRC)/,$(WINDOWS_IMAGE_EXTRACT_EXTRA))
-	@cp -r $(addprefix $(WINDOWS_IMAGE_DIR)/$(ORIG_SRC)/,$(WINDOWS_IMAGE_EXTRACT_EXTRA)) $(ORIG_SRC)/
+	@rm -rf $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(ORIG_SRC)/%)
+	@cp -r $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(WINDOWS_IMAGE_DIR)/$(ORIG_SRC)/%) $(ORIG_SRC)/
 endif
 
 .PHONY: prep

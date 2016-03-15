@@ -72,8 +72,8 @@ endif
 
 # Include any BUILDER_PLUGINS builder.conf configurations
 BUILDER_PLUGINS_ALL := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
--include $(addsuffix /builder.conf,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS)))
--include $(addsuffix /builder.conf,$(addprefix $(SRC_DIR)/,$(BUILDER_PLUGINS_DISTS)))
+-include $(BUILDER_PLUGINS:%=$(SRC_DIR)/%/builder.conf)
+-include $(BUILDER_PLUGINS_DISTS:%=$(SRC_DIR)/%/builder.conf)
 
 # Remove any unused labels
 ifneq "$(SETUP_MODE)" "1"
@@ -173,7 +173,7 @@ help:
 
 
 get-sources-sort = $(BUILDER_PLUGINS) $(filter-out builder $(BUILDER_PLUGINS), $(COMPONENTS))
-get-sources-tgt = $(addsuffix .get-sources, $(get-sources-sort))
+get-sources-tgt = $(get-sources-sort:%=%.get-sources)
 .PHONY: get-sources $(get-sources-tgt)
 $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
@@ -189,7 +189,7 @@ check-depend: check.rpm check-depend.$(VERBOSE)
 
 $(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(COMPONENTS)): % : %-dom0 %-vm
 
-$(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
+$(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
@@ -201,7 +201,7 @@ $(filter-out qubes-vm, $(addsuffix -vm,$(COMPONENTS))) : %-vm : check-depend
 	    done; \
 	fi
 
-$(filter-out qubes-dom0, $(addsuffix -dom0,$(COMPONENTS))) : %-dom0 : check-depend
+$(filter-out qubes-dom0, $(COMPONENTS:%=%-dom0)) : %-dom0 : check-depend
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
@@ -211,18 +211,18 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
-$(addprefix sign-,$(COMPONENTS)): sign-% : sign-dom0-% sign-vm-%
+$(COMPONENTS:%=sign-%): sign-% : sign-dom0-% sign-vm-%
 	@true
 
 ifneq ($(DIST_DOM0),)
-$(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
+$(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
 	@true
 else
-$(addprefix sign-dom0-,$(COMPONENTS)): sign-dom0-% :
+$(COMPONENTS:%=sign-dom0-%): sign-dom0-%
 	@true
 endif
 
-$(addprefix sign-vm-,$(COMPONENTS)): sign-vm-% : $(addsuffix -%, $(addprefix sign-vm-, $(DISTS_VM_NO_FLAVOR)))
+$(COMPONENTS:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
 	@true
 
 sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
@@ -273,7 +273,7 @@ yum-dom0 yum-vm:
 
 linux-template-builder:: template
 
-template:: $(addprefix template-local-,$(DISTS_VM))
+template:: $(DISTS_VM:%=template-local-%)
 
 template-local-%::
 	@DIST=$*
@@ -319,7 +319,7 @@ template-local-%::
 		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
 	fi
 
-template-in-dispvm: $(addprefix template-in-dispvm-,$(DISTS_VM))
+template-in-dispvm: $(DISTS_VM:%=template-in-dispvm-%)
 
 template-in-dispvm-%: DIST=$*
 template-in-dispvm-%:
@@ -329,9 +329,9 @@ template-in-dispvm-%:
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 ifeq (,$(NO_SIGN))
-sign-all:: $(addprefix sign-,$(COMPONENTS))
-sign-dom0:: $(addprefix sign-dom0-,$(COMPONENTS))
-sign-vm:: $(addprefix sign-vm-,$(COMPONENTS))
+sign-all:: $(COMPONENTS:%=sign-%)
+sign-dom0:: $(COMPONENTS:%=sign-dom0-%)
+sign-vm:: $(COMPONENTS:%=sign-vm-%)
 	@true
 else
 sign-all::
@@ -716,7 +716,7 @@ post-update-repo-%:
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
 
-check-release-status: $(addprefix check-release-status-vm-,$(DISTS_VM_NO_FLAVOR))
+check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
 ifneq (,$(DIST_DOM0))
 check-release-status: check-release-status-dom0-$(DIST_DOM0)
