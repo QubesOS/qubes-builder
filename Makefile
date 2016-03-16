@@ -70,6 +70,8 @@ ifeq ($(TEMPLATE_ONLY), 1)
   DIST_DOM0 :=
 endif
 
+COMPONENTS_NO_BUILDER := $(filter-out builder,$(COMPONENTS))
+
 # Include any BUILDER_PLUGINS builder.conf configurations
 BUILDER_PLUGINS_ALL := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
 -include $(BUILDER_PLUGINS:%=$(SRC_DIR)/%/builder.conf)
@@ -94,7 +96,7 @@ DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
 
 DISTS_ALL := $(sort $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR))
 
-GIT_REPOS := $(addprefix $(SRC_DIR)/,$(filter-out builder,$(COMPONENTS)))
+GIT_REPOS := $(COMPONENTS_NO_BUILDER:%=$(SRC_DIR)/%)
 
 ifneq (,$(findstring builder,$(COMPONENTS)))
 GIT_REPOS += .
@@ -172,7 +174,7 @@ help:
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
 
-get-sources-sort = $(BUILDER_PLUGINS) $(filter-out builder $(BUILDER_PLUGINS), $(COMPONENTS))
+get-sources-sort = $(BUILDER_PLUGINS) $(filter-out $(BUILDER_PLUGINS), $(COMPONENTS_NO_BUILDER))
 get-sources-tgt = $(get-sources-sort:%=%.get-sources)
 .PHONY: get-sources $(get-sources-tgt)
 $(get-sources-tgt): build-info
@@ -333,14 +335,13 @@ sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
 
-qubes:: umount build-info
-qubes:: $(filter-out builder,$(COMPONENTS))
+qubes:: umount build-info $(COMPONENTS_NO_BUILDER)
 
 qubes-dom0:: umount build-info
-qubes-dom0:: $(addsuffix -dom0,$(filter-out builder linux-template-builder,$(COMPONENTS)))
+qubes-dom0:: $(addsuffix -dom0,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
 
 qubes-vm:: umount build-info
-qubes-vm:: $(addsuffix -vm,$(filter-out builder linux-template-builder,$(COMPONENTS)))
+qubes-vm:: $(addsuffix -vm,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
@@ -721,7 +722,7 @@ check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
 	@echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"
-	for C in $(filter-out builder,$(COMPONENTS)); do \
+	for C in $(COMPONENTS_NO_BUILDER); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
 			continue; \
