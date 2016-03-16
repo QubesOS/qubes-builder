@@ -329,10 +329,9 @@ template-in-dispvm-%:
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
-sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%)
-sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%)
-sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%)
-	@true
+sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
+sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
+sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
 
 qubes:: umount build-info
 qubes:: $(filter-out builder,$(COMPONENTS))
