@@ -117,13 +117,3 @@ if [ $COMPONENT == $INSTALLER_COMPONENT ]; then
         fi
     fi
 fi
-if [ $COMPONENT == "dom0-updates" ]; then
-    # include additional dirs
-    for dir in nvidia-prioprietary-drivers; do
-	for i in $DIST_SRC/$dir/rpm/*; do
-	    ARCH_RPM_DIR=$ORIG_SRC/$dir/rpm/`basename $i`
-	    mkdir -p $ARCH_RPM_DIR
-	    mv -t $ARCH_RPM_DIR $i/*
-	done
-    done
-fi

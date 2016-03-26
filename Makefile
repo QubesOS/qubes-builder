@@ -191,7 +191,7 @@ check-depend.%:
 	@echo "Currently installed dependencies:" && rpm -q $(DEPENDENCIES)
 check-depend: check.rpm check-depend.$(VERBOSE)
 
-$(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(COMPONENTS)): % : %-dom0 %-vm
+$(filter-out linux-template-builder builder, $(COMPONENTS)): % : %-dom0 %-vm
 
 $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	@$(call check_branch,$*)
