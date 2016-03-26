@@ -176,10 +176,12 @@ help:
 
 get-sources-sort = $(BUILDER_PLUGINS) $(filter-out $(BUILDER_PLUGINS), $(COMPONENTS_NO_BUILDER))
 get-sources-tgt = $(get-sources-sort:%=%.get-sources)
-.PHONY: get-sources $(get-sources-tgt)
+.PHONY: get-sources builder.get-sources $(get-sources-tgt)
 $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
-get-sources: $(get-sources-tgt)
+builder.get-sources: build-info
+	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+get-sources: builder.get-sources $(get-sources-tgt)
 
 .PHONY: check.rpm check-depend
 check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);

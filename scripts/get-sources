@@ -111,7 +111,12 @@ fi
 # For additionally download sources
 MAKE=${MAKE:-make}
 
-if $MAKE -C $REPO -n get-sources verify-sources > /dev/null 2> /dev/null; then
+have_src_targets() {
+    [ "$REPO" == "." ] && return 1;
+    $MAKE -C $REPO -n get-sources verify-sources >/dev/null 2>/dev/null
+}
+
+if have_src_targets; then
     export GNUPGHOME="$PWD/keyrings/$COMPONENT"
     mkdir -m 700 -p "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
