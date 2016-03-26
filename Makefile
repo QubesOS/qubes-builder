@@ -345,7 +345,7 @@ qubes-vm:: $(addsuffix -vm,$(filter-out linux-template-builder,$(COMPONENTS_NO_B
 
 qubes-os-iso: get-sources qubes sign-all iso
 
-.PHONY: clean-installer-rpms clean-rpms clean
+.PHONY: clean-installer-rpms clean-rpms
 clean-installer-rpms:
 	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
@@ -357,21 +357,15 @@ clean-rpms:: clean-installer-rpms
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'
 	@sudo rm -f $(SRC_DIR)/*/pkgs/*/*/*.rpm || true
 
-clean::
-	@for REPO in $(GIT_REPOS); do \
-		echo "$$REPO" ;\
-		if ! [ -d $$REPO ]; then \
-			continue; \
-		elif [ $$REPO == "$(SRC_DIR)/linux-template-builder" ]; then \
-			for DIST in $(DISTS_VM_NO_FLAVOR); do \
-				DIST=$$DIST $(MAKE) -s -C $$REPO clean || exit 1; \
-			done ;\
-		elif [ $$REPO == "." ]; then \
-			echo ;\
-		else \
-			$(MAKE) -s -C $$REPO clean; \
-		fi ;\
-	done
+clean-makefiles = $(filter-out ./Makefile,$(wildcard $(GIT_REPOS:%=%/Makefile)))
+clean-tgt = $(filter-out linux-template-builder.clean,$(clean-makefiles:$(SRC_DIR)/%/Makefile=%.clean))
+clean-builder-tgt = $(DISTS_VM_NO_FLAVOR:%=linux-template-builder.clean.%)
+.PHONY: clean $(clean-tgt) $(clean-builder-tgt)
+$(clean-tgt):
+	@-$(MAKE) -s -i -k -C $(SRC_DIR)/$(@:%.clean=% clean)
+$(clean-builder-tgt):
+	@-DIST=$(subst .,,$(suffix $@)) $(MAKE) -s -i -k -C $(SRC_DIR)/linux-template-builder clean
+clean:: $(clean-tgt) $(clean-builder-tgt);
 
 clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
 .PHONY: clean-chroot $(clean-chroot-tgt)
