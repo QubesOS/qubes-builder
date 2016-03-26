@@ -181,10 +181,13 @@ $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 get-sources: $(get-sources-tgt)
 
-.PHONY: check-depend
-check-depend-cmd := $(if $(wildcard /usr/bin/rpm), rpm -q, dpkg -I)
-check-depend:
-	@$(check-depend-cmd) $(DEPENDENCIES) >/dev/null 2>&1 || { echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
+.PHONY: check.rpm check-depend
+check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
+check-depend.0:
+	@rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || { echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
+check-depend.%:
+	@echo "Currently installed dependencies:" && rpm -q $(DEPENDENCIES)
+check-depend: check.rpm check-depend.$(VERBOSE)
 
 $(filter-out template linux-template-builder kde-dom0 dom0-updates builder, $(COMPONENTS)): % : %-dom0 %-vm
 
