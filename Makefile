@@ -405,10 +405,12 @@ mostlyclean:: clean-chroot clean-rpms clean
 	    popd; \
 	fi
 
-.PHONY: iso
-iso:
+.PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+iso.clean-repos:
 	@echo "-> Preparing for ISO build..."
-	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos || exit 1
+	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos
+
+iso.copy-rpms:
 	@echo "--> Copying RPMs from individual repos..."
 	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
 	    if [ -r $$repo/Makefile.builder ]; then
@@ -425,6 +427,8 @@ iso:
 			fi \
 	    fi; \
 	done
+
+iso.copy-template-builder-rpms:
 	@for DIST in $(DISTS_VM); do \
 		if ! DIST=$$DIST UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
@@ -432,7 +436,9 @@ iso:
 				exit 1; \
 		fi \
 	done
-	if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
+
+iso: iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+	@if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
 		ln -f $(SRC_DIR)/linux-kernel*/pkgs/fc*/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
 	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
