@@ -13,13 +13,13 @@ SHELL = /bin/bash
 # Load "builder.config" from every plugin
 
 LOADING_PLUGINS = 1
-undefine BUILDER_MAKEFILE 
+BUILDER_MAKEFILE := 
 BUILDER_PLUGINS_COMBINED = $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_$(DIST))
 -include $(BUILDER_PLUGINS_COMBINED:%=$(SRC_DIR)/%/Makefile.builder)
 ifeq ($(BUILDER_MAKEFILE),)
 $(error Building packages for $(DIST) not supported by any of configured plugins)
 endif
-undefine LOADING_PLUGINS
+LOADING_PLUGINS :=
 
 THIS_MAKEFILE = Makefile.generic
 
