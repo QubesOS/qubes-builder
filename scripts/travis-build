@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+set -x
+
+repo_name="$(basename $PWD)"
+repo_dir="$PWD"
+
+# drop qubes- prefix
+repo_name=${repo_name#qubes-}
+
+# go to builder main directory
+cd "$(dirname $0)/.."
+
+# place cachedir outside qubes-builder (to not restore qubes-builder itself
+# from Travis-CI cache)
+mv cache $HOME/qubes-builder-cache
+ln -s $HOME/qubes-builder-cache cache
+
+# use specific builder conf for Travis-CI builds
+export BUILDERCONF=scripts/travis-builder.conf
+
+if [ -z "$DISTS_VM" -a -z "$DIST_DOM0" ]; then
+    echo "Specify either DISTS_VM or DIST_DOM0 in .travis.yml" >&2
+    exit 1
+fi
+
+if [ -z "$USE_QUBES_REPO_VERSION" ]; then
+    echo "Specify target Qubes version with USE_QUBES_REPO_VERSION in .travis.yml" >&2
+    exit 1
+fi
+
+# install required packages
+make install-deps
+
+sudo apt-get -y install dpkg-dev debootstrap
+
+# download builder plugins
+make get-sources
+
+# place Travis-CI downloaded sources in qubes-src
+cp -al $repo_dir qubes-src/$repo_name
+
+# and compile
+make COMPONENTS=$repo_name qubes
