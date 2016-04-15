@@ -90,6 +90,7 @@ DISTS_VM := $(shell echo $(DISTS_VM))
 NO_CHECK := $(shell echo $(NO_CHECK))
 TEMPLATE_FLAVOR := $(shell echo $(TEMPLATE_FLAVOR))
 DEPENDENCIES := $(shell echo $(DEPENDENCIES))
+PKG_MANAGER := $(if $(wildcard /etc/debian_version),dpkg,rpm)
 
 DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
 	$(firstword $(subst +, ,$(_dist)))))
@@ -183,13 +184,16 @@ builder.get-sources: build-info
 	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 get-sources: builder.get-sources $(get-sources-tgt)
 
-.PHONY: check.rpm check-depend
+.PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
 check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
-check-depend.0:
-	@rpm -q $(DEPENDENCIES) >/dev/null 2>&1 || { echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
-check-depend.%:
-	@echo "Currently installed dependencies:" && rpm -q $(DEPENDENCIES)
-check-depend: check.rpm check-depend.$(VERBOSE)
+check.dpkg: $(if $(shell which dpkg 2>/dev/null), /bin/true, please.install.dpkg.and.try.again);
+check-depend.rpm:
+	@echo "Currently installed dependencies:" && rpm -q $(DEPENDENCIES) || \
+		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
+check-depend.dpkg:
+	@test $$(dpkg -l $(DEPENDENCIES) | tail -n +5 | grep '^i' | wc -l) -eq $(words $(DEPENDENCIES)) || \
+		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
+check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
 $(filter-out linux-template-builder builder, $(COMPONENTS)): % : %-dom0 %-vm
 
@@ -832,8 +836,15 @@ get-var::
 	echo "$${GET_VAR}"
 
 .PHONY: install-deps
-install-deps::
+install-deps: install-deps.$(PKG_MANAGER)
+
+.PHONY: install-deps.rpm
+install-deps.rpm::
 	@sudo yum install -y $(DEPENDENCIES)
+
+.PHONY: install-deps.dpkg
+install-deps.dpkg::
+	@sudo apt-get -y install $(DEPENDENCIES)
 
 .PHONY: about
 about::
