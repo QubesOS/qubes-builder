@@ -41,7 +41,7 @@ make install-deps
 sudo apt-get -y install dpkg-dev debootstrap
 
 # download builder plugins
-make get-sources
+make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
 
 if [ -n "$override_components" ]; then
     make COMPONENTS="$override_components" get-sources
