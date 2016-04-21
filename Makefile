@@ -180,7 +180,7 @@ $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 builder.get-sources: build-info
 	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
-get-sources: builder.get-sources $(get-sources-tgt)
+get-sources: $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
 
 .PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
 check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
