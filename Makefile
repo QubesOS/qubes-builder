@@ -281,56 +281,53 @@ linux-template-builder:: template
 
 template:: $(DISTS_VM:%=template-local-%)
 
+# Allow template flavors to be declared within the DISTS_VM declaration
+# <distro>+<template flavor>+<template options>+<template options>...
 template-local-%::
-	@DIST=$*
-	# Allow template flavors to be declared within the DISTS_VM declaration
-	# <distro>+<template flavor>+<template options>+<template options>...
-	dist_array=($${DIST//+/ })
-	DIST=$${dist_array[0]}
-	TEMPLATE_FLAVOR=$${dist_array[1]}
-	TEMPLATE_OPTIONS="$${dist_array[@]:2}"
-	plugins_var="BUILDER_PLUGINS_$$DIST"
-	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"
-	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`
-	export BUILDER_PLUGINS_DIRS
-	CACHEDIR=$(BUILDER_DIR)/cache/$$DIST
-	export CACHEDIR
-	MAKE_TARGET=rpms
-	if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then
-		MAKE_TARGET=rootimg-build
-	fi
-
-	# some sources can be downloaded and verified during template building
-	# process - e.g. archlinux template
-	export GNUPGHOME="$(BUILDER_DIR)/keyrings/template-$$DIST"
-	mkdir -m 700 -p "$$GNUPGHOME"
-	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS
-	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1
+	@DIST=$*; \
+	dist_array=($${DIST//+/ }); \
+	DIST=$${dist_array[0]}; \
+	TEMPLATE_FLAVOR=$${dist_array[1]}; \
+	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
+	plugins_var="BUILDER_PLUGINS_$$DIST"; \
+	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
+	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
+	export BUILDER_PLUGINS_DIRS; \
+	CACHEDIR=$(BUILDER_DIR)/cache/$$DIST; \
+	export CACHEDIR; \
+	MAKE_TARGET=rpms; \
+	if [ "0$(TEMPLATE_ROOT_IMG_ONLY)" -eq "1" ]; then \
+		MAKE_TARGET=rootimg-build; \
+	fi; \
+	export GNUPGHOME="$(BUILDER_DIR)/keyrings/template-$$DIST"; \
+	mkdir -m 700 -p "$$GNUPGHOME"; \
+	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS; \
+	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1; \
 	for repo in $(GIT_REPOS); do \
-		if [ -r $$repo/Makefile.builder ]; then
+		if [ -r $$repo/Makefile.builder ]; then \
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
 				COMPONENT=`basename $$repo` \
 				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/linux-template-builder/pkgs-for-template/$$DIST \
-				update-repo || exit 1
-		elif $(MAKE) -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then
-			$(MAKE) -s -C $$repo update-repo-template || exit 1
-		fi
-	done
-	if [ "$(VERBOSE)" -eq 0 ]; then
-		echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."
-		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1
-		echo "--> Done."
-	else
-		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1
+				update-repo || exit 1; \
+		elif $(MAKE) -C $$repo -n update-repo-template > /dev/null 2> /dev/null; then \
+			$(MAKE) -s -C $$repo update-repo-template || exit 1; \
+		fi; \
+	done; \
+	if [ "$(VERBOSE)" -eq 0 ]; then \
+		echo "-> Building template $$DIST (logfile: build-logs/template-$$DIST.log)..."; \
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET > build-logs/template-$$DIST.log 2>&1 || exit 1; \
+		echo "--> Done."; \
+	else \
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder $$MAKE_TARGET || exit 1; \
 	fi
 
 template-in-dispvm: $(DISTS_VM:%=template-in-dispvm-%)
 
 template-in-dispvm-%: DIST=$*
 template-in-dispvm-%:
-	@BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF)))
-	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."
+	@BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF))); \
+	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."; \
 	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
