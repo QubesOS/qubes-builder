@@ -39,6 +39,9 @@ sudo apt-get -y install dpkg-dev debootstrap
 make get-sources
 
 # place Travis-CI downloaded sources in qubes-src
+if [ -d qubes-src/${repo_name} ]; then
+    rm -rf qubes-src/${repo_name}
+fi
 cp -al $repo_dir qubes-src/$repo_name
 
 # and compile
