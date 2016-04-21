@@ -9,6 +9,11 @@ repo_dir="$PWD"
 # drop qubes- prefix
 repo_name=${repo_name#qubes-}
 
+if [ -n "$1" ]; then
+    # Build this component(s) instead, but still use what Travis-CI downloaded
+    override_components="$1"
+fi
+
 # go to builder main directory
 cd "$(dirname $0)/.."
 
@@ -38,6 +43,10 @@ sudo apt-get -y install dpkg-dev debootstrap
 # download builder plugins
 make get-sources
 
+if [ -n "$override_components" ]; then
+    make COMPONENTS="$override_components" get-sources
+fi
+
 # place Travis-CI downloaded sources in qubes-src
 if [ -d qubes-src/${repo_name} ]; then
     rm -rf qubes-src/${repo_name}
@@ -45,4 +54,8 @@ fi
 cp -al $repo_dir qubes-src/$repo_name
 
 # and compile
-make COMPONENTS=$repo_name qubes
+if [ -n "$override_components" ]; then
+    make COMPONENTS="$override_components" qubes
+else
+    make COMPONENTS=$repo_name qubes
+fi
