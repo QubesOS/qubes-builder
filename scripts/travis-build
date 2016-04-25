@@ -53,6 +53,9 @@ if [ -d qubes-src/${repo_name} ]; then
 fi
 cp -al $repo_dir qubes-src/$repo_name
 
+# download additional sources if needed
+make COMPONENTS="$override_components" get-sources-extra
+
 # and compile
 if [ -n "$override_components" ]; then
     make COMPONENTS="$override_components" qubes
