@@ -53,12 +53,10 @@ if [ -d qubes-src/${repo_name} ]; then
 fi
 cp -al $repo_dir qubes-src/$repo_name
 
-# download additional sources if needed
-make COMPONENTS="$override_components" get-sources-extra
 
-# and compile
+# download additional sources if needed and compile
 if [ -n "$override_components" ]; then
-    make COMPONENTS="$override_components" qubes
+    make COMPONENTS="$override_components" get-sources-extra qubes
 else
-    make COMPONENTS=$repo_name qubes
+    make COMPONENTS=$repo_name get-sources-extra qubes
 fi
