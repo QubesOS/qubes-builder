@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Configuration by env:
+#  - REPO=dir - specify repository directory, component will be guessed based
+#    on basename
+
+# For additionally download sources
+MAKE=${MAKE:-make}
+
+[ -n "$REPO" ] && COMPONENT="`basename $REPO`"
+
+have_src_targets() {
+    [ "$REPO" == "." ] && return 1;
+    $MAKE -C $REPO -n get-sources verify-sources >/dev/null 2>/dev/null
+}
+
+if have_src_targets; then
+    export GNUPGHOME="$PWD/keyrings/$COMPONENT"
+    mkdir -m 700 -p "$GNUPGHOME"
+    echo "--> Downloading additional sources for $COMPONENT..."
+    $MAKE --quiet -C $REPO get-sources
+    echo "--> Verifying the sources..."
+    $MAKE --quiet -C $REPO verify-sources
+fi

@@ -138,7 +138,8 @@ help:
 	@echo "make qubes-dom0       -- download and build all dom0 components"
 	@echo "make qubes-vm         -- download and build all VM components"
 	@echo "make template-in-dispvm -- start new DispVM and build the whole template there"
-	@echo "make get-sources      -- download/update all sources"
+	@echo "make get-sources      -- download/update all sources (including source tarballs)"
+	@echo "make get-sources-extra -- download source tarballs required for some components"
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make qubes-os-iso     -- same as \"make get-sources qubes sign-all iso\""
 	@echo "make build-info       -- show current build options"
@@ -179,12 +180,16 @@ help:
 
 get-sources-sort = $(BUILDER_PLUGINS) $(filter-out $(BUILDER_PLUGINS), $(COMPONENTS_NO_BUILDER))
 get-sources-tgt = $(get-sources-sort:%=%.get-sources)
-.PHONY: get-sources builder.get-sources $(get-sources-tgt)
+get-sources-extra-tgt = $(get-sources-sort:%=%.get-sources-extra)
+.PHONY: get-sources builder.get-sources $(get-sources-tgt) $(get-sources-extra-tgt)
 $(get-sources-tgt): build-info
 	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+$(get-sources-extra-tgt):
+	@REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
 builder.get-sources: build-info
 	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
-get-sources: $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
+get-sources: $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt) get-sources-extra
+get-sources-extra: $(get-sources-extra-tgt)
 
 .PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
 check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
