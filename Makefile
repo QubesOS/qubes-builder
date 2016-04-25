@@ -70,6 +70,11 @@ endif
 
 COMPONENTS_NO_BUILDER := $(filter-out builder,$(COMPONENTS))
 
+# The package manager used to install dependencies. builder.conf
+# files may depend on this variable to determine the correct
+# dependency names.
+PKG_MANAGER := $(if $(wildcard /etc/debian_version),dpkg,rpm)
+
 # Include any BUILDER_PLUGINS builder.conf configurations
 BUILDER_PLUGINS_ALL := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
 -include $(BUILDER_PLUGINS:%=$(SRC_DIR)/%/builder.conf)
@@ -88,7 +93,6 @@ DISTS_VM := $(shell echo $(DISTS_VM))
 NO_CHECK := $(shell echo $(NO_CHECK))
 TEMPLATE_FLAVOR := $(shell echo $(TEMPLATE_FLAVOR))
 DEPENDENCIES := $(shell echo $(DEPENDENCIES))
-PKG_MANAGER := $(if $(wildcard /etc/debian_version),dpkg,rpm)
 
 DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
 	$(firstword $(subst +, ,$(_dist)))))
