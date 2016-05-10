@@ -76,8 +76,7 @@ url         : https://www.whonix.org/wiki/Whonix_Signing_Key
 [mgmt-salt]
 id          : mgmt-salt
 type        : builder
-description : Salt Configuration Flavor - Adds Qubes management and configuration files
-optional    : fc wheezy jessie stretch trusty utopic vivid
+description : Build Salt Stack management components
 require     : None
 require_in  : None
 
@@ -85,7 +84,6 @@ require_in  : None
 id          : mgmt-salt-dev
 type        : builder
 description : Build and install all optional Salt Management Formulas
-optional    : fc wheezy jessie stretch trusty utopic vivid
 require     : mgmt-salt
 require_in  : None
 development : True
