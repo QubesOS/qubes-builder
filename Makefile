@@ -178,7 +178,7 @@ help:
 	@echo "to operate on subset of components. Example: make COMPONENTS=\"gui\" get-sources"
 
 
-get-sources-sort = $(BUILDER_PLUGINS) $(filter-out $(BUILDER_PLUGINS), $(COMPONENTS_NO_BUILDER))
+get-sources-sort = $(filter $(BUILDER_PLUGINS), $(COMPONENTS)) $(filter-out $(BUILDER_PLUGINS), $(COMPONENTS_NO_BUILDER))
 get-sources-tgt = $(get-sources-sort:%=%.get-sources)
 get-sources-extra-tgt = $(get-sources-sort:%=%.get-sources-extra)
 .PHONY: get-sources builder.get-sources $(get-sources-tgt) $(get-sources-extra-tgt)
