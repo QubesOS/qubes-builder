@@ -151,7 +151,7 @@ packages:
 		fi;\
 		if [ $$BUILD_RETCODE -gt 0 ]; then\
 			echo "--> build failed!";\
-			[ $(VERBOSE) -eq 0 ] && tail "$(BUILD_LOG)";\
+			[ $(VERBOSE) -eq 0 ] && tail -n 30 "$(BUILD_LOG)";\
 			exit 1;\
 		fi;\
 	done
