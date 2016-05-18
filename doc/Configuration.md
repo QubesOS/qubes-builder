@@ -206,9 +206,11 @@ by `builder-debian` plugin and it get rid of most fsync() calls.
 ### REPO_PROXY
 > Default: no value
 
-Use specified http proxy for downloading packages from the network. This can be
-used to speedup the process when build environment is frequently recreated. It
-should be set to full URL of the proxy.
+Use the specified http proxy for downloading packages from the network. This
+can be used to speed up the process when the build environment is frequently
+recreated. It should be set to the full URL of the proxy.
+
+An example proxy setup is documented [here](./RepoProxy.md).
 
 Windows specific settings
 -------------------------
