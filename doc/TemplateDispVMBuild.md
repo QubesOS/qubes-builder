@@ -3,6 +3,7 @@ Building template using Disposable VM
 
 Qubes builder do support building the whole template (including all the VM
 components) in DispVM. This has two advantages:
+
 1. You start with clean environment, so the build process do not depend on any
    local (potentially uncommited) changes.
 2. You do not need to trust all the build scripts, including postinstallation
@@ -13,6 +14,7 @@ components) in DispVM. This has two advantages:
    only that VMs.
 
 To use this feature you'll need to install a few Qubes RPC services:
+
 1. In dom0:
   * qubesbuilder.ExportDisk
   * qubesbuilder.AttachDisk
@@ -27,6 +29,7 @@ devel VM name in qubesbuilder.ExportDisk and qubesbuilder.CopyTemplateBack
 policy.
 
 When you've done, you probably want to adjust some builder.conf settings. You have two options:
+
 1. You can use the same `builder.conf` for building the template in DispVM. In
    this case you don't need to do anything.
 2. You can use separate `builder.conf`, even different one for every template
@@ -60,6 +63,7 @@ Or alternatively you can build just selected one by appending its code name:
 Details on building template in Disposable VM
 ---------------------------------------------
 When you execute *make template-in-dispvm* it call script `scripts/build_full_template_in_dispvm`, which:
+
 1. Create an empty disk image.
 2. Mount it, copy qubes-builder there, including provided config or key to
    verify git tag.
