@@ -16,10 +16,11 @@ components) in DispVM. This has two advantages:
 To use this feature you'll need to install a few Qubes RPC services:
 
 1. In dom0:
-  * qubesbuilder.ExportDisk
-  * qubesbuilder.AttachDisk
+  * `qubesbuilder.ExportDisk`
+  * `qubesbuilder.AttachDisk`
 2. In your VM (from where you start the build process);
-  * qubesbuilder.CopyTemplateBack
+  * `qubesbuilder.CopyTemplateBack`
+
 And respective policies for them.
 RPC services file are in `rpc-services` subdirectory, to install them - copy
 those files to `/etc/qubes-rpc` (in dom0 for first two services, in VM for the
@@ -34,7 +35,7 @@ When you've done, you probably want to adjust some builder.conf settings. You ha
    this case you don't need to do anything.
 2. You can use separate `builder.conf`, even different one for every template
    type. The `builder.conf` file can be provided using *BUILDER\_TEMPLATE\_CONF*
-   setting. That variable contains space-separated list of *<dist>:<location>*
+   setting. That variable contains space-separated list of *\<dist\>:\<location\>*
    pairs, where *<dist>* is code name of template (like `fc20`, or
    `wheezy+whonix-workstation`), and *<location>* is path to the config
    file. Alternatively you can, instead of plain path, provide git repo
@@ -56,8 +57,11 @@ the template, especially how it should be named (TEMPLATE\_LABEL option).
 
 Then you can start the build process. To build all selected templates
 (according to *DISTS\_VM* setting) - each in new DispVM:
+
     $ make template-in-dispvm
+
 Or alternatively you can build just selected one by appending its code name:
+
     $ make template-in-dispvm-fc21
 
 Details on building template in Disposable VM
