@@ -421,18 +421,18 @@ iso.clean-repos:
 iso.copy-rpms:
 	@echo "--> Copying RPMs from individual repos..."
 	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
-	    if [ -r $$repo/Makefile.builder ]; then
+	    if [ -r $$repo/Makefile.builder ]; then \
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=dom0 \
 				DIST=$(DIST_DOM0) \
 				COMPONENT=`basename $$repo` \
 				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-				update-repo || exit 1
+				update-repo || exit 1; \
 	    elif $(MAKE) -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
 	        if ! $(MAKE) -s -C $$repo update-repo-installer ; then \
 				echo "make update-repo-installer failed for repo $$repo"; \
 				exit 1; \
-			fi \
+			fi; \
 	    fi; \
 	done
 
@@ -442,7 +442,7 @@ iso.copy-template-builder-rpms:
 			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 				echo "make update-repo-installer failed for template dist=$$DIST"; \
 				exit 1; \
-		fi \
+		fi; \
 	done
 
 iso: iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
