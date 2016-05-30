@@ -127,6 +127,23 @@ This setting is used only when building the template in DispVM
 
 Set release version of result iso
 
+### USE_QUBES_REPO_VERSION
+> Default: no value
+
+Use Qubes packages repository (yum.qubes-os.org/deb.qubes-os.org) to satisfy
+build dependents. Set to target version of Qubes you are building packages for
+(like "3.1", "3.2" etc).
+
+This option allow to build a single component without building all required parts first.
+
+### USE_QUBES_REPO_TESTING
+> Default: no value
+
+When used with `USE_QUBES_REPO_VERSION`, enable testing repository for that
+version (in addition to stable). Set to "1" to enable this option.
+
+Have no effect when `USE_QUBES_REPO_VERSION` is not set.
+
 ### ISO_INSTALLER
 > Default: 1
 
