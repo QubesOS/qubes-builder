@@ -6,6 +6,7 @@ released, which changes should be included in each package release, and finally
 managing packages repository - including building the packages.
 
 When the package is ready to be released, Release Manager does the following things:
+
 1. Increment version number, commit that **as a separate commit** and add a
    signed version tag.
 2. Transfer that commits to release build VM (used only for building packages
