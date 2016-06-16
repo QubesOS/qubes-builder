@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -e
+
+case "$TRAVIS_BRANCH"
+in
+*-staging) ;;
+*)
+    echo Skipping deployment from non-staging branch
+    exit 0
+    ;;
+esac
+
+if test -z "$GITHUB_API_TOKEN"
+then
+    echo No GitHub API token specified
+    exit 1
+fi
+
+curl \
+    -X PATCH \
+    -H "Authorization: token ${GITHUB_API_TOKEN}" \
+    -d "{\"sha\": \"${TRAVIS_COMMIT}\"}" \
+    https://api.github.com/repos/"${TRAVIS_REPO_SLUG}"/git/refs/heads/"${TRAVIS_BRANCH%-staging}"
