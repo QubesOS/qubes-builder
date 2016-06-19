@@ -1,4 +1,4 @@
 *.iso
 *.iso.asc
 *.iso.DIGESTS
-*.iso.torrent
+*.torrent
