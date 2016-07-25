@@ -73,7 +73,7 @@ COMPONENTS_NO_BUILDER := $(filter-out builder,$(COMPONENTS))
 # The package manager used to install dependencies. builder.conf
 # files may depend on this variable to determine the correct
 # dependency names.
-PKG_MANAGER := $(if $(wildcard /etc/debian_version),dpkg,rpm)
+PKG_MANAGER ?= $(if $(wildcard /etc/debian_version),dpkg,rpm)
 
 # Include any BUILDER_PLUGINS builder.conf configurations
 BUILDER_PLUGINS_ALL := $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS)
