@@ -345,12 +345,12 @@ sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
 
-qubes:: umount build-info $(COMPONENTS_NO_BUILDER)
+qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
-qubes-dom0:: umount build-info
+qubes-dom0:: build-info
 qubes-dom0:: $(addsuffix -dom0,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
 
-qubes-vm:: umount build-info
+qubes-vm:: build-info
 qubes-vm:: $(addsuffix -vm,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
 
 qubes-os-iso: get-sources qubes sign-all iso
