@@ -94,7 +94,7 @@ generic-copy-in:
 	@mkdir -p $(CHROOT_DIR)/$(DIST_SRC_ROOT)
 	@cp $(THIS_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
 	@cp $(BUILDER_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
-	@sudo rm -rf $(CHROOT_DIR)/$(DIST_SRC)
+	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
 	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
 
 .PHONY: windows-image-extract
