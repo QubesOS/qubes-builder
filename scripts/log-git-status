@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+shopt -s nullglob
+
+script_path="$(readlink -f "$0")"
+base_dir="$(readlink -f "$(dirname "$script_path")/..")"
+
+repo_abs=.
+if [ $# -gt 0 ]; then
+    repo_abs="$1"
+fi
+cd "$repo_abs"
+repo_abs="$(readlink -f $(git rev-parse --show-toplevel))"
+
+
+repo="${repo_abs#$base_dir}"
+
+echo ">> qubes-builder$repo $(git rev-parse 'HEAD^{}')"
+
+ignore_args=""
+if [ -n "$repo" ]; then
+    ignore_args="--ignored"
+fi
+
+git status --porcelain -uall $ignore_args --ignore-submodules=all
+git status -z -uall $ignore_args --ignore-submodules=all | sed -zn 'h; /^R/n; g; s/^...//; p' | xargs -r0 sha512sum
+
+if [ -z "$repo" ]; then
+    for d in qubes-src/*/; do
+        $script_path $d
+    done
+else
+    git submodule -q foreach $script_path
+fi
