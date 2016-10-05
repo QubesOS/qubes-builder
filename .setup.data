@@ -1,8 +1,9 @@
 [releases]
-default     : 3.1
+default     : 3.2
 2           : Qubes Release 2.0
 3           : Qubes Release 3.0
 3.1         : Qubes Release 3.1
+3.2         : Qubes Release 3.2
 
 [0x36879494]
 type        : gpg
