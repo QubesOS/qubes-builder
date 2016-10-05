@@ -259,6 +259,10 @@ Releasing new major version
 
 *This is draft*
 
+1. Build ISO
+
+        make iso QUBES_RELEASE=R3.2
+
 1. Create new config in builder/example-configs
 
 		cp example-configs/qubes-os-master.conf example-configs/qubes-os-r3.2.conf
@@ -267,6 +271,10 @@ Releasing new major version
 	- Change `BRANCH` to appropriate stable branch (`release3.2`).
 	- Add exceptions from above (copy from previous stable release config), ensure all addons are listed
 	- Adjust templates (`DISTS_VM`)
+    - adjust `setup` configuration
+
+        vim .setup.data  # add new release to [releases] section
+        vim example-configs/templates.conf  # add inclusion of new config, change default `RELEASE`
 
 1. Create tags:
 
@@ -282,5 +290,18 @@ Releasing new major version
 		make switch-branch 
 		make show-vtags # verify result
 		make push GIT_REMOTE=qubesos
+
+1. Create yum/deb repositories for the next release
+
+        cd qubes-src/linux-yum
+        cp -a r3.2 r4.0
+        git add r4.0
+        git commit -m 'r4.0 repositories'
+        cd ../linux-deb
+        cp -a r3.2 r4.0
+        git add r4.0
+        git commit -m 'r4.0 repositories'
+
+    Adjust directries for added/dropped supported releases.
 
 
