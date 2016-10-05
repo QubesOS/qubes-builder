@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# This script is used to postprocess Qubes OS release ISO. This include:
+# - renaming file
+# - creating all required signatures and hashes
+# - creating torrent file
+
+set -e
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 BASE_NAME"
+    echo " BASE_NAME is iso filename without ".iso" suffix, for example Qubes-3.1-x86_64"
+    echo " Script will take care of renaming the file from old naming convention (with DVD)"
+    exit 1
+fi
+
+ISO_BASE="$1"
+
+# make sure we're in qubes-builder iso root directory
+cd `dirname $0`/../iso
+
+echo -n "Checking for iso presence... "
+if [ ! -r ${ISO_BASE}.iso ]; then
+    # maybe name not yet normalized?
+    OLD_BASE="Qubes-DVD-x86_64-${ISO_BASE#Qubes-}"
+    OLD_BASE="${OLD_BASE%-x86_64}"
+    if [ -r ${OLD_BASE}.iso ]; then
+        echo -n "renaming from ${OLD_BASE}.iso "
+        mv ${OLD_BASE}.iso ${ISO_BASE}.iso
+    else
+        echo "ERROR: no ISO file found: ${ISO_BASE}.iso, ${OLD_BASE}.iso"
+        exit 1
+    fi
+fi
+echo "ok"
+
+echo -n "Signing ISO... "
+if [ -n "$QUBES_GPG_DOMAIN" ]; then
+    GPG=qubes-gpg-client
+else
+    GPG=gpg
+fi
+$GPG -asb ${ISO_BASE}.iso > ${ISO_BASE}.iso.asc
+echo "ok"
+
+echo -n "Generating digests... "
+ALGOS="md5 sha1 sha256 sha512"
+
+echo -n > ${ISO_BASE}.iso.DIGESTS
+for algo in $ALGOS; do
+    echo -n "$algo "
+    openssl dgst -$algo -r ${ISO_BASE}.iso >> ${ISO_BASE}.iso.DIGESTS
+done
+echo "ok"
+
+echo -n "Signing digests... "
+
+$GPG -a --clearsign ${ISO_BASE}.iso.DIGESTS > ${ISO_BASE}.iso.DIGESTS.signed
+mv ${ISO_BASE}.iso.DIGESTS.signed ${ISO_BASE}.iso.DIGESTS
+
+echo "ok"
+
+echo "Creating torrent file... "
+(cd ..; scripts/create-torrent ${ISO_BASE})
+
+echo "ok"
+
+echo "Done:"
+ls -l ${ISO_BASE}.iso \
+    ${ISO_BASE}.iso.asc \
+    ${ISO_BASE}.iso.DIGESTS \
+    ${ISO_BASE}.torrent
