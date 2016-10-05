@@ -97,7 +97,7 @@ To streamline the task, this script can be used:
         V="$V-$R"
         add="$add `readlink -f rel`"
     fi
-    git commit -m "version $V" version $add
+    git commit -m "version $V" version $add "$@"
     git tag -s -m "version $V" v$V
 
 Example usage:
@@ -253,3 +253,34 @@ As the packages are already compiled you can just link them to the 'current' rep
     [user@build ~/qubes-R3]$ make DISTS_DOM0=fc20 DISTS_VM= COMPONENTS="core-admin core-admin-linux" update-repo-current
 
 The script will not allow you to upload there packages which were less than 7 days in 'current-testing' repository.
+
+Releasing new major version
+---------------------------
+
+*This is draft*
+
+1. Create new config in builder/example-configs
+
+		cp example-configs/qubes-os-master.conf example-configs/qubes-os-r3.2.conf
+		vim example-configs/qubes-os-r3.2.conf
+	
+	- Change `BRANCH` to appropriate stable branch (`release3.2`).
+	- Add exceptions from above (copy from previous stable release config), ensure all addons are listed
+	- Adjust templates (`DISTS_VM`)
+
+1. Create tags:
+
+        for i in qubes-src/* .; do QUBES_GPG_DOMAIN=keys-devel git -C $i tag -s -m R3.2 R3.2; done
+        for i in qubes-src/* .; do git -C $i push --tags; done
+
+1. Actually create stable branches
+		
+		make show-vtags # look for yellow branches - those need to be moved to stable (`release3.2`)
+		for i in core-libvirt core-vchan-xen core-qubesdb linux-utils core-admin core-admin-linux core-agent-linux artwork gui-common gui-daemon gui-agent-linux gui-agent-xen-hvm-stubdom mgmt-salt mgmt-salt-base mgmt-salt-base-topd mgmt-salt-base-config mgmt-salt-base-overrides mgmt-salt-dom0-qvm mgmt-salt-dom0-virtual-machines mgmt-salt-dom0-update manager installer-qubes-os vmm-xen-windows-pvdrivers windows-utils core-agent-windows gui-agent-windows installer-qubes-os-windows-tools; do git -C qubes-src/$i branch release3.2; done
+		git -C qubes-src/desktop-linux-xfce4 branch xfce-4.12
+		git -C qubes-src/desktop-linux-kde branch kde-5.12
+		make switch-branch 
+		make show-vtags # verify result
+		make push GIT_REMOTE=qubesos
+
+
