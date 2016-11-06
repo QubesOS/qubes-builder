@@ -48,7 +48,7 @@ id          : builder-debian
 type        : builder
 description : Debian Builder - Contains all Makefiles to build Debian based templates
 require     : None
-require_in  : wheezy jessie stretch whonix trusty utopic vivid
+require_in  : wheezy jessie stretch whonix trusty 
 
 [builder-archlinux]
 id          : builder-archlinux
