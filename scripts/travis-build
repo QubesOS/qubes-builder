@@ -46,6 +46,11 @@ make install-deps
 
 sudo apt-get -y install dpkg-dev debootstrap
 
+if [ ! -e /usr/share/debootstrap/scripts/stretch ]; then
+    # workaround for old debootstrap in Trusty
+    sudo ln -s sid /usr/share/debootstrap/scripts/stretch
+fi
+
 # download builder plugins
 make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
 
