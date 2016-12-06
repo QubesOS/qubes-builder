@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# This is script to automate build process in reaction to pushing updates
+# sources to git. The workflow is:
+# - fetch sources, check if properly signed
+# - check if version tag is on top
+# - fast-forward local repository
+# - build package(s) according to builder.conf
+# - upload to current-testing repository
+#
+# All the above should be properly logged
+
+usage() {
+    echo "Usage: $0 component-name" >&2
+}
+
+build_failure() {
+    component=$1
+    package_set=$2
+    dist=$3
+    # TODO create github issue
+    echo "Build failed: $component for $package_set ($dist)" >&2
+    exit 1
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit 1
+fi
+
+set -e
+
+cd $(dirname $0)/..
+
+# Sanity checks
+if [ "${1##*/}" != "${1}" ]; then
+    echo "Found '/' in argument" >&2
+    exit 1
+fi
+
+if [ ! -d qubes-src/$1 ]; then
+    echo "No such component: $1" >&2
+    exit 1
+fi
+
+component=$1
+export COMPONENTS=$component
+
+# enable logging (use qrexec policy to redirect to the right VM)
+export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog"
+
+# fetch sources and verify signed tags
+make prepare-merge do-merge get-sources-extra
+
+dists_vm=$(make -s get-var GET_VAR=DISTS_VM)
+dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
+built_for_dom0=
+built_for_vm=
+if [ -n "$dist_dom0" ]; then
+    release_status=$(scripts/check-release-status-for-component --no-print-version $component dom0 $dist_dom0)
+    if [ "$release_status" == "not released" ]; then
+        scripts/make-with-log \
+            DISTS_VM= \
+            DIST_DOM0=$dist_dom0 \
+            qubes || build_failure $component dom0 $dist_dom0
+        built_for_dom0=$dist_dom0
+    fi
+fi
+
+if [ -n "$dists_vm" ]; then
+    for dist_vm in $dists_vm; do
+        release_status=$(scripts/check-release-status-for-component --no-print-version $component vm $dist_vm)
+        if [ "$release_status" == "not released" ]; then
+            scripts/make-with-log \
+                DISTS_VM=$dist_vm \
+                DIST_DOM0= \
+                qubes || build_failure $component vm $dist_dom0
+            built_for_vm="$built_for_vm $dist_vm"
+        fi
+    done
+fi
+
+# sending a log should allow accessing signing keys
+make \
+    DISTS_VM="$built_for_vm" \
+    DIST_DOM0="$built_for_dom0" \
+    sign-all update-repo-current-testing
+
