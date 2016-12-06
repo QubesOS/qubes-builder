@@ -8,6 +8,7 @@ import sys
 import os
 import errno
 import shutil
+import subprocess
 from datetime import datetime
 
 def sanitize_line(untrusted_line):
@@ -85,3 +86,13 @@ while True:
     break
 
 shutil.move(tmp_log.name, file_name)
+
+# at the end execute post-log-hook if exists, for possible log uploading
+hook_path = '{}/QubesIncomingBuildLog/post-log-hook'.\
+    format(os.getenv('HOME', '/'))
+if os.path.exists(hook_path):
+    # connect I/O to /dev/null, as we're running as qrexec service, so that
+    # would be sent to the remote domain
+    subprocess.check_call([hook_path, file_name],
+        stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'),
+        stdin=open(os.devnull, 'r'))
