@@ -57,7 +57,11 @@ dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
 built_for_dom0=
 built_for_vm=
 if [ -n "$dist_dom0" ]; then
-    release_status=$(scripts/check-release-status-for-component --no-print-version $component dom0 $dist_dom0)
+    release_status=$(scripts/check-release-status-for-component \
+            --abort-no-version \
+            --abort-on-empty \
+            --no-print-version \
+            $component dom0 $dist_dom0 || :)
     if [ "$release_status" == "not released" ]; then
         scripts/make-with-log \
             DISTS_VM= \
@@ -69,7 +73,11 @@ fi
 
 if [ -n "$dists_vm" ]; then
     for dist_vm in $dists_vm; do
-        release_status=$(scripts/check-release-status-for-component --no-print-version $component vm $dist_vm)
+        release_status=$(scripts/check-release-status-for-component \
+                --abort-no-version \
+                --abort-on-empty \
+                --no-print-version \
+                $component vm $dist_vm || :)
         if [ "$release_status" == "not released" ]; then
             scripts/make-with-log \
                 DISTS_VM=$dist_vm \
