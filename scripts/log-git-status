@@ -28,7 +28,7 @@ git status --porcelain -uall $ignore_args --ignore-submodules=all
 git status -z -uall $ignore_args --ignore-submodules=all | sed -zn 'h; /^R/n; g; s/^...//; p' | xargs -r0 sha512sum
 
 if [ -z "$repo" ]; then
-    for d in qubes-src/*/; do
+    for d in $(make get-var GET_VAR=GIT_REPOS); do
         $script_path $d
     done
 else
