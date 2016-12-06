@@ -50,7 +50,7 @@ export COMPONENTS=$component
 export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog"
 
 # fetch sources and verify signed tags
-make prepare-merge do-merge get-sources-extra
+make GIT_MERGE_OPTS=--ff-only prepare-merge do-merge get-sources-extra
 
 dists_vm=$(make -s get-var GET_VAR=DISTS_VM)
 dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
