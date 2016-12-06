@@ -10,6 +10,11 @@
 
 .EXPORT_ALL_VARIABLES:
 SHELL = /bin/bash
+
+# should be defined by main Makefile, but set manually if called from outside
+# of it
+SRC_DIR ?= qubes-src
+
 # Load "builder.config" from every plugin
 
 LOADING_PLUGINS = 1

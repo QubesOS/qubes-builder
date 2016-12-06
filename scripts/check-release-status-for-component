@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 usage() {
     echo "$0 [opts] COMPONENT PACKAGE_SET DIST"
@@ -90,10 +90,15 @@ reset_color() {
     tput sgr0    || tput me
 }
 
-MAKE_ARGS="PACKAGE_SET=${PACKAGE_SET} DIST=${DIST} COMPONENT=${COMPONENT}"
+MAKE_ARGS=("PACKAGE_SET=${PACKAGE_SET}" "DIST=${DIST}" "COMPONENT=${COMPONENT}")
+
+if [ -z "$BUILDER_DIR" ]; then
+    # if called from outside of main Makefile, need to load builder.conf
+    MAKE_ARGS+=("--eval=include ${BUILDERCONF:-builder.conf}")
+fi
 
 check_single_repo() {
-    make -s -f Makefile.generic ${MAKE_ARGS} \
+    make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
         UPDATE_REPO=${PWD}/${repo_basedir}/$1/${PACKAGE_SET}/${DIST} \
         check-repo >/dev/null 2>&1
 }
@@ -103,7 +108,7 @@ check_single_repo() {
 #
 
 if [ "$abort_empty" = 1 ]; then
-    if [ -z "$(make -s -f Makefile.generic ${MAKE_ARGS} \
+    if [ -z "$(make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
             get-var GET_VAR=PACKAGE_LIST 2>/dev/null)" ]; then
         echo "No packages defined" >&2
         exit 1
