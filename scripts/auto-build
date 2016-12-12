@@ -18,9 +18,18 @@ build_failure() {
     component=$1
     package_set=$2
     dist=$3
-    # TODO create github issue
+
+    GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
+    GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
     echo "Build failed: $component for $package_set ($dist)" >&2
-    exit 1
+    if [ -z "$GITHUB_API_KEY" -o -z "$GITHUB_BUILD_ISSUES_REPO" ]; then
+        echo "No alternative way of build failure reporting (GITHUB_API_KEY, GITHUB_BUILD_ISSUES_REPO), exiting" >&2
+        exit 1
+    fi
+    curl -H "Authorization: token $GITHUB_API_KEY" \
+		-d "{ \"title\": \"Build failed: $component for $package_set ($dist)\",
+              \"body\": \"See https://github.com/QubesOS/build-logs/tree/master/$(hostname) for details\" }" \
+        https://api.github.com/repos/$GITHUB_BUILD_ISSUES_REPO/issues
 }
 
 if [ -z "$1" ]; then
@@ -79,11 +88,13 @@ if [ -n "$dists_vm" ]; then
                 --no-print-version \
                 $component vm $dist_vm || :)
         if [ "$release_status" == "not released" ]; then
-            scripts/make-with-log \
-                DISTS_VM=$dist_vm \
-                DIST_DOM0= \
-                qubes || build_failure $component vm $dist_dom0
-            built_for_vm="$built_for_vm $dist_vm"
+            if scripts/make-with-log \
+                    DISTS_VM=$dist_vm DIST_DOM0= qubes; then
+                built_for_vm="$built_for_vm $dist_vm"
+            else
+                # report failure but still upload other packages
+                build_failure $component vm $dist_dom0
+            fi
         fi
     done
 fi
