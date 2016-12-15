@@ -227,19 +227,16 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
+.PHONY: $(COMPONENTS:%=sign-%)
 $(COMPONENTS:%=sign-%): sign-% : sign-dom0-% sign-vm-%
-	@true
 
+.PHONY: $(COMPONENTS:%=sign-dom0-%)
 ifneq ($(DIST_DOM0),)
 $(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
-	@true
-else
-$(COMPONENTS:%=sign-dom0-%): sign-dom0-%
-	@true
 endif
 
+.PHONY: $(COMPONENTS:%=sign-vm-%)
 $(COMPONENTS:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
-	@true
 
 sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 sign-%: DIST        = $(word 2, $(subst -, ,$*))
@@ -342,6 +339,7 @@ template-in-dispvm-%:
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
+.PHONY: sign-all sign-dom0 sign-vm
 sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
