@@ -255,7 +255,7 @@ sign-%:
 			COMPONENT=$(COMPONENT) \
 			SIGN_KEY=$$SIGN_KEY \
 			sign || exit 1; \
-	else \
+	elif [ -d $(SRC_DIR)/$(COMPONENT)/rpm ]; then \
 		# Old mechanism supported only for RPM
 		FILE_LIST=""; for RPM in $(SRC_DIR)/$(COMPONENT)/rpm/*/*.rpm; do \
 			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
