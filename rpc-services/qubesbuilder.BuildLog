@@ -32,7 +32,9 @@ if not qrexec_remote:
     sys.exit(1)
 
 
-def log(msg, remote=True, now=datetime.utcnow()):
+def log(msg, remote=True, now=None):
+    if now is None:
+        now = datetime.utcnow()
     if remote:
         remote_str = '{}:'.format(qrexec_remote)
     else:
