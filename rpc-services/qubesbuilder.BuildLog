@@ -11,6 +11,7 @@ import shutil
 import subprocess
 from datetime import datetime
 
+
 def sanitize_line(untrusted_line):
     line = bytearray(untrusted_line)
     for i, c in enumerate(line):
@@ -20,7 +21,10 @@ def sanitize_line(untrusted_line):
             line[i] = 0x2e
     return bytearray(line).decode('ascii')
 
-sys.stdin = io.open(0, 'rb')
+try:
+    stdin = sys.stdin.buffer  # python3
+except AttributeError:
+    stdin = io.open(0, 'rb')  # python2
 
 start = datetime.utcnow()
 
@@ -47,7 +51,7 @@ def log(msg, remote=True, now=None):
 log('starting log', now=start, remote=False)
 
 while True:
-    untrusted_line = sys.stdin.readline()
+    untrusted_line = stdin.readline()
     if untrusted_line == b'':
         break
 
@@ -57,11 +61,13 @@ while True:
 log('closing log', remote=False)
 tmp_log.close()
 
-file_name_base = ('{home}/QubesIncomingBuildLog/{remote}/'
-        '{remote}_{time:%Y-%m-%d_%H-%M-%S}').format(
-                home=os.getenv('HOME', '/'),
-                remote=qrexec_remote,
-                time=start)
+file_name_base = os.path.join(
+    os.getenv('HOME', '/'),
+    'QubesIncomingBuildLog',
+    '{remote}',
+    '{remote}_{time:%Y-%m-%d_%H-%M-%S}').format(
+        remote=qrexec_remote,
+        time=start)
 
 try:
     os.makedirs(os.path.dirname(file_name_base))
@@ -70,10 +76,9 @@ except OSError as err:
         raise
 
 try_no = 0
+file_name = file_name_base
 while True:
-    if try_no == 0:
-        file_name = file_name_base
-    else:
+    if try_no > 0:
         file_name = '{}.{}'.format(file_name_base, try_no)
 
     try:
