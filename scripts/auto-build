@@ -72,11 +72,13 @@ if [ -n "$dist_dom0" ]; then
             --no-print-version \
             $component dom0 $dist_dom0 || :)
     if [ "$release_status" == "not released" ]; then
-        scripts/make-with-log \
-            DISTS_VM= \
-            DIST_DOM0=$dist_dom0 \
-            qubes || build_failure $component dom0 $dist_dom0
-        built_for_dom0=$dist_dom0
+        if scripts/make-with-log \
+                DISTS_VM= DIST_DOM0=$dist_dom0 qubes; then
+            built_for_dom0=$dist_dom0
+        else
+            # report failure but still upload other packages
+            build_failure $component dom0 $dist_dom0
+        fi
     fi
 fi
 
