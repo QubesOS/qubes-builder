@@ -86,11 +86,16 @@ disallowIncomingTemplateCopy() {
 }
 
 runBuild() {
+    if ! read -r key < <(
+        echo $'\n'"${PWD}/${IMAGE_NAME}" | /usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.ExportDisk
+    ) || [ -z "$key" ]; then
+        echo "ERROR: dom0 rpc-services must be installed or updated: qubesbuilder.ExportDisk, qubesbuilder.AttachDisk" >&2
+        exit 1
+    fi
+
     mkdir -p "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
-    key=`head -c 20 /dev/random | xxd -p`
     allowIncomingTemplateCopy "$key" "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
     trap "disallowIncomingTemplateCopy $key" ERR
-    /usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.ExportDisk /bin/echo -e "$key\n${PWD}/${IMAGE_NAME}"
     qvm-run --dispvm "/usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.AttachDisk /bin/echo $key;
         exec 2>&1;
         echo Waiting for /dev/xvdi;

@@ -10,6 +10,13 @@ install -m 02770 -g qubes -d "$xd"
 read -r key
 read -r path
 
+if [ -z "$key" ]; then
+    key=$( head -c 20 /dev/urandom | xxd -p )
+    key_is_generated=1
+else
+    key_is_generated=
+fi
+
 test -n "$QREXEC_REMOTE_DOMAIN"
 test -n "$key"
 test -n "$path"
@@ -22,3 +29,7 @@ chmod 0660 "$tmpfile"
 
 echo "$QREXEC_REMOTE_DOMAIN:$path" > "$tmpfile"
 mv -f "$tmpfile" "$xpfile"
+
+if [ -n "$key_is_generated" ]; then
+    echo "$key"
+fi
