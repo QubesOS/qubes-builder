@@ -1,7 +1,24 @@
 #!/bin/sh
+set -e
+umask 007
+xd=/tmp/qubesbuilder.exporteddisks
+install -m 02770 -g qubes -d "$xd"
 
-read key
-read path
+#exec 2>>"$xd/log"
+#set -x
 
-umask 000
-echo "$key $QREXEC_REMOTE_DOMAIN:$path" >> /var/tmp/qubesbuilder.shareddisks
+read -r key
+read -r path
+
+test -n "$QREXEC_REMOTE_DOMAIN"
+test -n "$key"
+test -n "$path"
+
+keyhash=$( echo -n "$key" | sha256sum | head -c64 )
+test -n "$keyhash"
+xpfile="$xd/export.$keyhash"
+tmpfile=$( mktemp "$xd/tmp.XXXXXX" )
+chmod 0660 "$tmpfile"
+
+echo "$QREXEC_REMOTE_DOMAIN:$path" > "$tmpfile"
+mv -f "$tmpfile" "$xpfile"

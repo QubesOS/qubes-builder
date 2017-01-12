@@ -1,12 +1,29 @@
 #!/bin/sh
+set -e
+umask 007
+xd=/tmp/qubesbuilder.exporteddisks
+install -m 02770 -g qubes -d "$xd"
 
-exec 2>/tmp/log
-set -x
+#exec 2>>"$xd/log"
+#set -x
 
-read attach_key
+read -r key
+test -n "$key"
 
-while read key path; do
-	if [ "x$attach_key" == "x$key" ]; then
-		qvm-block --force-root -A "$QREXEC_REMOTE_DOMAIN" "$path"
-	fi
-done < /var/tmp/qubesbuilder.shareddisks
+keyhash=$( echo -n "$key" | sha256sum | head -c64 )
+test -n "$keyhash"
+xpfile="$xd/export.$keyhash"
+
+# keys are one-time-use and expire after 1 day
+mv -f "$xpfile" "$xpfile.$$"
+trap 'rm -f "$xpfile.$$"' EXIT
+test -n "$( find "$xpfile.$$" -maxdepth 0 -mtime -1 )"
+
+IFS=: read -r vm path < "$xpfile.$$"
+
+test -n "$QREXEC_REMOTE_DOMAIN"
+test -n "$vm"
+test -n "$path"
+
+qvm-block --force-root -f xvdi -d "$QREXEC_REMOTE_DOMAIN"
+qvm-block --force-root -f xvdi -A "$QREXEC_REMOTE_DOMAIN" "$vm:$path"
