@@ -14,3 +14,4 @@ untrusted-builder-env-*
 
 *.py?
 .*.mk
+*.lock
