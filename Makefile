@@ -692,6 +692,8 @@ internal-update-repo-%: PACKAGE_SET = $(word 2, $(subst ., ,$*))
 internal-update-repo-%: DIST        = $(word 3, $(subst ., ,$*))
 internal-update-repo-%: COMPONENT   = $(word 4, $(subst ., ,$*))
 internal-update-repo-%: REPO 		= $(SRC_DIR)/$(COMPONENT)
+# set by scripts/auto-build
+internal-update-repo-%: BUILD_LOG_URL = $(word 2,$(subst =, ,$(filter $(COMPONENT)-$(PACKAGE_SET)-$(DIST)=%,$(BUILD_LOGS_URL))))
 internal-update-repo-%: $(REPO)
 
 # and the actual code
@@ -718,6 +720,7 @@ internal-update-repo-%:
 			TARGET_REPO=$(TARGET_REPO) \
 			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
 			SNAPSHOT_FILE=$(BUILDER_DIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
+			BUILD_LOG_URL=$(BUILD_LOG_URL) \
 			$(MAKE_TARGET) || exit 1; \
 	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \

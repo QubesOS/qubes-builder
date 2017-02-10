@@ -15,12 +15,14 @@ usage() {
 }
 
 build_failure() {
-    component=$1
-    package_set=$2
-    dist=$3
+    local component=$1
+    local package_set=$2
+    local dist=$3
+    local build_log_url=$4
 
-    GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
-    GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
+    # don't let the API key be logged...
+    local GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
+    local GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
     echo "Build failed: $component for $package_set ($dist)" >&2
     if [ -z "$GITHUB_API_KEY" -o -z "$GITHUB_BUILD_ISSUES_REPO" ]; then
         echo "No alternative way of build failure reporting (GITHUB_API_KEY, GITHUB_BUILD_ISSUES_REPO), exiting" >&2
@@ -28,8 +30,23 @@ build_failure() {
     fi
     curl -H "Authorization: token $GITHUB_API_KEY" \
 		-d "{ \"title\": \"Build failed: $component for $package_set ($dist)\",
-              \"body\": \"See https://github.com/QubesOS/build-logs/tree/master/$(hostname) for details\" }" \
+              \"body\": \"See $build_log_url for details\" }" \
         https://api.github.com/repos/$GITHUB_BUILD_ISSUES_REPO/issues
+}
+
+get_build_log_url() {
+    local log_name=$(cat $log_service_output_file 2>/dev/null || :)
+    if [ -z "$log_name" ]; then
+        echo "https://github.com/QubesOS/build-logs/tree/master/$(hostname)"
+    else
+        echo "https://github.com/QubesOS/build-logs/tree/master/$log_name"
+    fi
+}
+
+cleanup() {
+    if [ -d "$tmpdir" ]; then
+        rm -rf "$tmpdir"
+    fi
 }
 
 if [ -z "$1" ]; then
@@ -38,6 +55,10 @@ if [ -z "$1" ]; then
 fi
 
 set -e
+
+tmpdir=$(mktemp -d)
+
+trap "cleanup" EXIT
 
 cd $(dirname $0)/..
 
@@ -55,8 +76,10 @@ fi
 component=$1
 export COMPONENTS=$component
 
+log_service_output_file="$tmpdir/build-log-filename"
+
 # enable logging (use qrexec policy to redirect to the right VM)
-export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog"
+export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog >$log_service_output_file"
 
 # fetch sources and verify signed tags
 make GIT_MERGE_OPTS=--ff-only prepare-merge do-merge get-sources-extra
@@ -65,6 +88,7 @@ dists_vm=$(make -s get-var GET_VAR=DISTS_VM)
 dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
 built_for_dom0=
 built_for_vm=
+build_logs=
 if [ -n "$dist_dom0" ]; then
     release_status=$(scripts/check-release-status-for-component \
             --abort-no-version \
@@ -72,12 +96,15 @@ if [ -n "$dist_dom0" ]; then
             --no-print-version \
             $component dom0 $dist_dom0 || :)
     if [ "$release_status" == "not released" ]; then
+        rm -f "$log_service_output_file"
         if scripts/make-with-log \
                 DISTS_VM= DIST_DOM0=$dist_dom0 qubes; then
             built_for_dom0=$dist_dom0
+            build_logs="$build_logs ${component}-dom0-${dist_dom0}=$(get_build_log_url)"
         else
             # report failure but still upload other packages
-            build_failure $component dom0 $dist_dom0
+            build_failure $component dom0 $dist_dom0 $(get_build_log_url)
+            build_logs="$build_logs ${component}-dom0-${dist_dom0}=$(get_build_log_url)"
         fi
     fi
 fi
@@ -90,20 +117,31 @@ if [ -n "$dists_vm" ]; then
                 --no-print-version \
                 $component vm $dist_vm || :)
         if [ "$release_status" == "not released" ]; then
+            rm -f "$log_service_output_file"
             if scripts/make-with-log \
                     DISTS_VM=$dist_vm DIST_DOM0= qubes; then
                 built_for_vm="$built_for_vm $dist_vm"
+                build_logs="$build_logs ${component}-vm-${dist_vm}=$(get_build_log_url)"
             else
                 # report failure but still upload other packages
-                build_failure $component vm $dist_dom0
+                build_failure $component vm $dist_vm $(get_build_log_url)
+                build_logs="$build_logs ${component}-vm-${dist_vm}=$(get_build_log_url)"
             fi
         fi
     done
 fi
 
-# sending a log should allow accessing signing keys
-make \
-    DISTS_VM="$built_for_vm" \
-    DIST_DOM0="$built_for_dom0" \
-    sign-all update-repo-current-testing
+# cleanup
+rm -f "$log_service_output_file"
 
+# sending a log should allow accessing signing keys
+# if signing itself (or upload) fails log the failure as build failure too
+if ! scripts/make-with-log \
+        DISTS_VM="$built_for_vm" \
+        DIST_DOM0="$built_for_dom0" \
+        BUILD_LOGS_URL="$build_logs" \
+        sign-all update-repo-current-testing; then
+    build_failure $component upload \
+        "dom0:$built_for_dom0 vm:$built_for_vm" $(get_build_log_url)
+    exit 1
+fi

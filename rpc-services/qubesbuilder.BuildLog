@@ -65,7 +65,7 @@ file_name_base = os.path.join(
     os.getenv('HOME', '/'),
     'QubesIncomingBuildLog',
     '{remote}',
-    '{remote}_{time:%Y-%m-%d_%H-%M-%S}').format(
+    'log_{time:%Y-%m-%d_%H-%M-%S}').format(
         remote=qrexec_remote,
         time=start)
 
@@ -93,6 +93,10 @@ while True:
     break
 
 shutil.move(tmp_log.name, file_name)
+
+# report actually used file name to the build domain
+print(os.path.relpath(file_name, '{}/QubesIncomingBuildLog'.\
+            format(os.getenv('HOME', '/'))))
 
 # at the end execute post-log-hook if exists, for possible log uploading
 hook_path = '{}/QubesIncomingBuildLog/post-log-hook'.\
