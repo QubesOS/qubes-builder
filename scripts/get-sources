@@ -46,6 +46,7 @@ if [ -n "${!branch_var}" ]; then
     BRANCH="${!branch_var}"
 fi
 
+fresh_clone=0
 echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_URL $BRANCH..."
 if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
@@ -57,8 +58,11 @@ if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
     cd - >/dev/null
 else
     rm -rf $REPO
-    git clone -n -q -b $BRANCH $GIT_URL $REPO
+    if ! git clone -n -q -b $BRANCH $GIT_URL $REPO; then
+        if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
+    fi
     VERIFY_REF=HEAD
+    fresh_clone=1
 fi
 
 elementIn () {
@@ -78,7 +82,16 @@ fi
 
 if [ "$verify" == "true" ]; then
     echo "--> Verifying tags..."
-    $(dirname $0)/verify-git-tag $REPO $VERIFY_REF || exit 1
+    if ! $(dirname $0)/verify-git-tag $REPO $VERIFY_REF; then
+        # if verfication failed, remove fetched content to make sure we'll not
+        # use it
+        if [ "$fresh_clone" -eq 1 ]; then
+            rm -rf "$REPO"
+        else
+            rm -f "$REPO"/.git/FETCH_HEAD
+        fi
+        exit 1
+    fi
 fi
 
 if [ "$FETCH_ONLY" == "1" ]; then
