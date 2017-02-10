@@ -248,6 +248,33 @@ Public self-signed certificate (it will be generated if doesn't exists)
 ### WIN_BUILD_TYPE
 Build type: fre (default) - release build, chk - debug build
 
+Github integration
+------------------
+
+### GITHUB_API_KEY
+> Default: no value
+
+Github API key having access to create/comment issues in:
+
+* `$GITHUB_BUILD_ISSUES_REPO` repository (for reporting build failures)
+* `$GITHUB_BUILD_REPORT_REPO` repository (for reporting all builds)
+* any repository referenced in commit messages (see builder-github pluging)
+
+### GITHUB_BUILD_ISSUES_REPO
+> Default: no value
+
+Github repository name (in for of `owner/name`) where build failures will be
+reported (as github issues).
+
+### GITHUB_BUILD_REPORT_REPO
+> Default: no value
+
+Github repository name (in for of `owner/name`) where all finished builds will
+be reported (either successful or failed). The main purpose for this repository
+is to track packages in 'current-testing' repository. Issues there can be
+commented with GPG-signed command to move such package to 'current' repository
+and close the issue.
+This is implemented by builder-github pluging.
 
 Example for using local git dirs as repo
 ========================================
