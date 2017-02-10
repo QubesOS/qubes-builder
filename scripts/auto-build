@@ -68,7 +68,7 @@ if [ "${1##*/}" != "${1}" ]; then
     exit 1
 fi
 
-if [ ! -d qubes-src/$1 ]; then
+if [ ! -d "qubes-src/$1" ]; then
     echo "No such component: $1" >&2
     exit 1
 fi
@@ -84,7 +84,7 @@ export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog >$log_
 # fetch sources and verify signed tags
 make GIT_MERGE_OPTS=--ff-only prepare-merge do-merge-versions-only get-sources-extra
 
-dists_vm=$(make -s get-var GET_VAR=DISTS_VM)
+dists_vm=$(make -s get-var GET_VAR=DISTS_VM_NO_FLAVOR)
 dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
 built_for_dom0=
 built_for_vm=
