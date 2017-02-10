@@ -638,6 +638,18 @@ do-merge:
 		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
 	done
 
+do-merge-versions-only:
+	@set -a; \
+	REPOS="$(GIT_REPOS)"; \
+	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
+	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
+	for REPO in $$REPOS; do \
+		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
+		git -C $$REPO tag --points-at FETCH_HEAD | grep -q '^v' || continue; \
+		echo "Merging FETCH_HEAD into $$REPO"; \
+		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
+	done
+
 
 # update-repo-* targets only set appropriate variables and call
 # internal-update-repo-* targets for the actual work
