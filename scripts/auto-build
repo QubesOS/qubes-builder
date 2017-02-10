@@ -84,6 +84,14 @@ export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog >$log_
 # fetch sources and verify signed tags
 make GIT_MERGE_OPTS=--ff-only prepare-merge do-merge-versions-only get-sources-extra
 
+git_url=$(make -s get-var GET_VAR=GIT_URL_${component//-/_})
+if [ -z "$git_url" ]; then
+    git_baseurl=$(make -s get-var GET_VAR=GIT_BASEURL)
+    git_prefix=$(make -s get-var GET_VAR=GIT_PREFIX)
+    # skip .git suffix, if any
+    git_url="${git_baseurl}/${git_prefix}${component}"
+fi
+
 dists_vm=$(make -s get-var GET_VAR=DISTS_VM_NO_FLAVOR)
 dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
 built_for_dom0=
@@ -140,6 +148,7 @@ if ! scripts/make-with-log \
         DISTS_VM="$built_for_vm" \
         DIST_DOM0="$built_for_dom0" \
         BUILD_LOGS_URL="$build_logs" \
+        GIT_URL_$(echo $COMPONENT | tr - _)=$git_url \
         sign-all update-repo-current-testing; then
     build_failure $component upload \
         "dom0:$built_for_dom0 vm:$built_for_vm" $(get_build_log_url)
