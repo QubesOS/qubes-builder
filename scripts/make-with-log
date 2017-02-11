@@ -34,4 +34,4 @@ fi
 echo "> running make"
 make -f Makefile --trace "$@"
 echo "> done"
-) 2>&1 | tee /dev/fd/$real_stdout_fd | eval "$QUBES_BUILD_LOG_CMD"
+) 2>&1 | tee -a /dev/fd/$real_stdout_fd | eval "$QUBES_BUILD_LOG_CMD"
