@@ -41,6 +41,8 @@ if [ -z "$USE_QUBES_REPO_VERSION" ]; then
     exit 1
 fi
 
+sudo apt-get -qq update
+
 # install required packages
 make install-deps
 
