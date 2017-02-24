@@ -607,8 +607,7 @@ SHELL = /bin/bash
 prepare-merge: -prepare-merge show-unmerged
 
 show-unmerged:
-	@set -a; \
-	REPOS="$(GIT_REPOS)"; \
+	@REPOS="$(GIT_REPOS)"; \
 	echo "Changes to be merged:"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
@@ -628,8 +627,7 @@ show-unmerged:
 	done
 
 do-merge:
-	@set -a; \
-	REPOS="$(GIT_REPOS)"; \
+	@REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
@@ -639,8 +637,7 @@ do-merge:
 	done
 
 do-merge-versions-only:
-	@set -a; \
-	REPOS="$(GIT_REPOS)"; \
+	@REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \

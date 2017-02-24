@@ -263,7 +263,7 @@ Github API key having access to create/comment issues in:
 ### GITHUB_BUILD_ISSUES_REPO
 > Default: no value
 
-Github repository name (in for of `owner/name`) where build failures will be
+Github repository name (in form `owner/name`) where build failures will be
 reported (as github issues).
 
 ### GITHUB_BUILD_REPORT_REPO
