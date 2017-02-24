@@ -44,7 +44,7 @@ def log(msg, remote=True, now=None):
     else:
         remote_str = '>'
 
-    line = '{:%Y-%m-%d %H:%M:%S.%f} {} {}\n'.format(now, remote_str, msg)
+    line = '{:%F %T.%f} +0000 {} {}\n'.format(now, remote_str, msg)
 
     tmp_log.write(line.encode('utf-8'))
 
