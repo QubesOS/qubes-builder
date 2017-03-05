@@ -269,7 +269,7 @@ reported (as github issues).
 ### GITHUB_BUILD_REPORT_REPO
 > Default: no value
 
-Github repository name (in for of `owner/name`) where all finished builds will
+Github repository name (in form `owner/name`) where all finished builds will
 be reported (either successful or failed). The main purpose for this repository
 is to track packages in 'current-testing' repository. Issues there can be
 commented with GPG-signed command to move such package to 'current' repository
