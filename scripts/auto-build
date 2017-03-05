@@ -151,6 +151,11 @@ fi
 # cleanup
 rm -f "$log_service_output_file"
 
+if [ -z "$built_for_dom0" -a -z "$built_for_vm" ]; then
+    # nothing was built, something gone wrong
+    exit 1
+fi
+
 # sending a log should allow accessing signing keys
 # if signing itself (or upload) fails log the failure as build failure too
 if ! scripts/make-with-log \
