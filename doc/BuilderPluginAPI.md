@@ -43,6 +43,7 @@ In addition to above variables, environment will contain:
  * `CACHEDIR` - full path to a directory for some plugin cache (for example downloaded packages)
  * `CHROOT_ENV` - environment variables which should be set during the build process
  * `OUTPUT_DIR` - directory name (relative to `ORIG_SRC`) where build products should be saved
+ * `BUILD_LOG_URL` (optional) - URL to uploaded build log; this variable is available only for `update-repo` target and only when package(s) were just built
 
 The `BUILDER_MAKEFILE` file should at lest set:
  * `PACKAGE_LIST` - (space separated) list of packages to build; it doesn't

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+cd $(dirname "$0")/..
+
+# hide wrapper GNUmakefile
+if [ -n "$MAKELEVEL" ]; then
+    (( MAKELEVEL-=1 )) || true
+fi
+
+if [ -z "$QUBES_BUILD_LOG_CMD" ]; then
+    make -f Makefile "$@"
+    exit $?
+fi
+
+exec {real_stdout_fd}>&1
+
+(
+export LC_ALL=C.UTF-8
+echo "> starting build with log"
+echo ">> make args: $*"
+for v in MAKEFLAGS COMPONENTS DISTS_VM DIST_DOM0; do
+    echo ">> $v=${!v}"
+done
+$(dirname $0)/log-git-status
+make -f Makefile build-info NO_COLOR=1
+
+if [ -z "$VERBOSE"]; then
+    export VERBOSE=2
+fi
+
+echo "> running make"
+make -f Makefile --trace "$@"
+echo "> done"
+) 2>&1 | tee -a /dev/fd/$real_stdout_fd | eval "$QUBES_BUILD_LOG_CMD"

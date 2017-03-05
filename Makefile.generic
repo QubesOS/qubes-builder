@@ -10,6 +10,14 @@
 
 .EXPORT_ALL_VARIABLES:
 SHELL = /bin/bash
+
+# should be defined by main Makefile, but set manually if called from outside
+# of it
+SRC_DIR ?= qubes-src
+
+# this needs to be the first prerequisite, before any plugin-defined
+update-repo-from-snapshot: update-repo-date-check
+
 # Load "builder.config" from every plugin
 
 LOADING_PLUGINS = 1
@@ -166,8 +174,7 @@ get-var::
 	@GET_VAR=$${!GET_VAR}; \
 	echo "$${GET_VAR}"
 
-update-repo-from-snapshot: update-repo-date-check
-
+.PHONY: update-repo-date-check
 update-repo-date-check:
 	if ! [ -r $(SNAPSHOT_FILE) ]; then \
 		echo "`tput bold`*** Packages weren't uploaded to $(SNAPSHOT_REPO)! ***`tput sgr0`"; \

@@ -227,19 +227,16 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
+.PHONY: $(COMPONENTS:%=sign-%)
 $(COMPONENTS:%=sign-%): sign-% : sign-dom0-% sign-vm-%
-	@true
 
+.PHONY: $(COMPONENTS:%=sign-dom0-%)
 ifneq ($(DIST_DOM0),)
 $(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
-	@true
-else
-$(COMPONENTS:%=sign-dom0-%): sign-dom0-%
-	@true
 endif
 
+.PHONY: $(COMPONENTS:%=sign-vm-%)
 $(COMPONENTS:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
-	@true
 
 sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 sign-%: DIST        = $(word 2, $(subst -, ,$*))
@@ -258,7 +255,7 @@ sign-%:
 			COMPONENT=$(COMPONENT) \
 			SIGN_KEY=$$SIGN_KEY \
 			sign || exit 1; \
-	else \
+	elif [ -d $(SRC_DIR)/$(COMPONENT)/rpm ]; then \
 		# Old mechanism supported only for RPM
 		FILE_LIST=""; for RPM in $(SRC_DIR)/$(COMPONENT)/rpm/*/*.rpm; do \
 			if ! $(SRC_DIR)/$(INSTALLER_COMPONENT)/rpm_verify $$RPM > /dev/null; then \
@@ -342,6 +339,7 @@ template-in-dispvm-%:
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
+.PHONY: sign-all sign-dom0 sign-vm
 sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
@@ -609,8 +607,7 @@ SHELL = /bin/bash
 prepare-merge: -prepare-merge show-unmerged
 
 show-unmerged:
-	@set -a; \
-	REPOS="$(GIT_REPOS)"; \
+	@REPOS="$(GIT_REPOS)"; \
 	echo "Changes to be merged:"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
@@ -630,14 +627,24 @@ show-unmerged:
 	done
 
 do-merge:
-	@set -a; \
-	REPOS="$(GIT_REPOS)"; \
+	@REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
 		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff --no-edit FETCH_HEAD || exit 1; \
+		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
+	done
+
+do-merge-versions-only:
+	@REPOS="$(GIT_REPOS)"; \
+	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
+	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
+	for REPO in $$REPOS; do \
+		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
+		git -C $$REPO tag --points-at FETCH_HEAD | grep -q '^v' || continue; \
+		echo "Merging FETCH_HEAD into $$REPO"; \
+		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
 	done
 
 
@@ -682,6 +689,8 @@ internal-update-repo-%: PACKAGE_SET = $(word 2, $(subst ., ,$*))
 internal-update-repo-%: DIST        = $(word 3, $(subst ., ,$*))
 internal-update-repo-%: COMPONENT   = $(word 4, $(subst ., ,$*))
 internal-update-repo-%: REPO 		= $(SRC_DIR)/$(COMPONENT)
+# set by scripts/auto-build
+internal-update-repo-%: BUILD_LOG_URL = $(word 2,$(subst =, ,$(filter $(COMPONENT)-$(PACKAGE_SET)-$(DIST)=%,$(BUILD_LOGS_URL))))
 internal-update-repo-%: $(REPO)
 
 # and the actual code
@@ -708,6 +717,7 @@ internal-update-repo-%:
 			TARGET_REPO=$(TARGET_REPO) \
 			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
 			SNAPSHOT_FILE=$(BUILDER_DIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
+			BUILD_LOG_URL=$(BUILD_LOG_URL) \
 			$(MAKE_TARGET) || exit 1; \
 	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \

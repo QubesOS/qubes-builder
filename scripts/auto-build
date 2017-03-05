@@ -1,0 +1,165 @@
+#!/bin/sh
+
+# This is script to automate build process in reaction to pushing updates
+# sources to git. The workflow is:
+# - fetch sources, check if properly signed
+# - check if version tag is on top
+# - fast-forward local repository
+# - build package(s) according to builder.conf
+# - upload to current-testing repository
+#
+# All the above should be properly logged
+
+usage() {
+    echo "Usage: $0 component-name" >&2
+}
+
+build_failure() {
+    local component=$1
+    local package_set=$2
+    local dist=$3
+    local build_log_url=$4
+
+    # don't let the API key be logged...
+    local GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
+    local GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
+    echo "Build failed: $component for $package_set ($dist)" >&2
+    if [ -z "$GITHUB_API_KEY" -o -z "$GITHUB_BUILD_ISSUES_REPO" ]; then
+        echo "No alternative way of build failure reporting (GITHUB_API_KEY, GITHUB_BUILD_ISSUES_REPO), exiting" >&2
+        exit 1
+    fi
+    curl -H "Authorization: token $GITHUB_API_KEY" \
+		-d "{ \"title\": \"Build failed: $component for $package_set ($dist)\",
+              \"body\": \"See $build_log_url for details\" }" \
+        https://api.github.com/repos/$GITHUB_BUILD_ISSUES_REPO/issues
+}
+
+get_build_log_url() {
+    local log_name=$(cat $log_service_output_file 2>/dev/null || :)
+    if [ -z "$log_name" ]; then
+        echo "https://github.com/QubesOS/build-logs/tree/master/$(hostname)"
+    else
+        echo "https://github.com/QubesOS/build-logs/tree/master/$log_name"
+    fi
+}
+
+cleanup() {
+    if [ -d "$tmpdir" ]; then
+        rm -rf "$tmpdir"
+    fi
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit 1
+fi
+
+set -e
+
+tmpdir=$(mktemp -d)
+
+trap "cleanup" EXIT
+
+cd $(dirname $0)/..
+
+# Sanity checks
+if [ "${1##*/}" != "${1}" ]; then
+    echo "Found '/' in argument" >&2
+    exit 1
+fi
+
+if [ ! -d "qubes-src/$1" ]; then
+    echo "No such component: $1" >&2
+    exit 1
+fi
+
+component=$1
+export COMPONENTS=$component
+
+log_service_output_file="$tmpdir/build-log-filename"
+
+# enable logging (use qrexec policy to redirect to the right VM)
+export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog >$log_service_output_file"
+
+# first update the builder itself
+make GIT_MERGE_OPTS=--ff-only COMPONENTS='builder $(BUILDER_PLUGINS)' \
+                    prepare-merge \
+                    do-merge \
+                    get-sources-extra
+
+# fetch sources and verify signed tags
+make GIT_MERGE_OPTS=--ff-only \
+                    prepare-merge \
+                    do-merge-versions-only \
+                    get-sources-extra
+
+git_url=$(make -s get-var GET_VAR=GIT_URL_${component//-/_})
+if [ -z "$git_url" ]; then
+    git_baseurl=$(make -s get-var GET_VAR=GIT_BASEURL)
+    git_prefix=$(make -s get-var GET_VAR=GIT_PREFIX)
+    # skip .git suffix, if any
+    git_url="${git_baseurl}/${git_prefix}${component}"
+fi
+
+dists_vm=$(make -s get-var GET_VAR=DISTS_VM_NO_FLAVOR)
+dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
+built_for_dom0=
+built_for_vm=
+build_logs=
+if [ -n "$dist_dom0" ]; then
+    release_status=$(scripts/check-release-status-for-component \
+            --abort-no-version \
+            --abort-on-empty \
+            --no-print-version \
+            $component dom0 $dist_dom0 || :)
+    if [ "$release_status" == "not released" ]; then
+        rm -f "$log_service_output_file"
+        if scripts/make-with-log \
+                DISTS_VM= DIST_DOM0=$dist_dom0 qubes; then
+            built_for_dom0=$dist_dom0
+            build_logs="$build_logs ${component}-dom0-${dist_dom0}=$(get_build_log_url)"
+        else
+            # report failure but still upload other packages
+            build_failure $component dom0 $dist_dom0 $(get_build_log_url)
+            build_logs="$build_logs ${component}-dom0-${dist_dom0}=$(get_build_log_url)"
+        fi
+    fi
+fi
+
+if [ -n "$dists_vm" ]; then
+    for dist_vm in $dists_vm; do
+        release_status=$(scripts/check-release-status-for-component \
+                --abort-no-version \
+                --abort-on-empty \
+                --no-print-version \
+                $component vm $dist_vm || :)
+        if [ "$release_status" == "not released" ]; then
+            rm -f "$log_service_output_file"
+            if scripts/make-with-log \
+                    DISTS_VM=$dist_vm DIST_DOM0= qubes; then
+                built_for_vm="$built_for_vm $dist_vm"
+                build_logs="$build_logs ${component}-vm-${dist_vm}=$(get_build_log_url)"
+            else
+                # report failure but still upload other packages
+                build_failure $component vm $dist_vm $(get_build_log_url)
+                build_logs="$build_logs ${component}-vm-${dist_vm}=$(get_build_log_url)"
+            fi
+        fi
+    done
+fi
+
+# cleanup
+rm -f "$log_service_output_file"
+
+# sending a log should allow accessing signing keys
+# if signing itself (or upload) fails log the failure as build failure too
+if ! scripts/make-with-log \
+        DISTS_VM="$built_for_vm" \
+        DIST_DOM0="$built_for_dom0" \
+        BUILD_LOGS_URL="$build_logs" \
+        GIT_URL_$(echo $COMPONENT | tr - _)=$git_url \
+        sign-all update-repo-current-testing; then
+    build_failure $component upload \
+        "dom0:$built_for_dom0 vm:$built_for_vm" $(get_build_log_url)
+    exit 1
+fi
