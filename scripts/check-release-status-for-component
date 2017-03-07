@@ -152,7 +152,7 @@ for repo in current current-testing security-testing unstable; do
 done
 
 if [ "$found" = 0 ]; then
-    if make -s -f Makefile.generic ${MAKE_ARGS} \
+    if make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
             UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${DIST} \
             check-repo >/dev/null 2>&1; then
         echo "$(color built,unreleased)built, not released$(reset_color)"
