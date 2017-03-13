@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This is script to automate build process in reaction to pushing updates
 # sources to git. The workflow is:
