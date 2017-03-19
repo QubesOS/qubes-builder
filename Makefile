@@ -711,6 +711,15 @@ internal-update-repo-%:
 				exit 0; \
 			fi; \
 		fi; \
+		component_packages=$$($(MAKE) -s -f Makefile.generic \
+				DIST=$(DIST) \
+				PACKAGE_SET=$(PACKAGE_SET) \
+				COMPONENT=`basename $(REPO)` \
+				get-var GET_VAR=PACKAGE_LIST); \
+		if [ -z "$$component_packages" ]; then \
+			echo "no packages."; \
+			exit 0; \
+		fi; \
 		$(MAKE) -s -f Makefile.generic DIST=$(DIST) PACKAGE_SET=$(PACKAGE_SET) \
 			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
