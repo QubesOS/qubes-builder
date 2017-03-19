@@ -711,7 +711,7 @@ internal-update-repo-%:
 				exit 0; \
 			fi; \
 		fi; \
-		component_packages=$$($(MAKE) -s -f Makefile.generic \
+		component_packages=$$(MAKEFLAGS= $(MAKE) -s -f Makefile.generic \
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=`basename $(REPO)` \
