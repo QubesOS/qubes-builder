@@ -715,6 +715,7 @@ internal-update-repo-%:
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=`basename $(REPO)` \
+				UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
 				get-var GET_VAR=PACKAGE_LIST); \
 		if [ -z "$$component_packages" ]; then \
 			echo "no packages."; \
