@@ -115,7 +115,7 @@ if [ "$abort_empty" = 1 ]; then
     fi
 fi
 
-vtag=$(git -C ${SRC_DIR}/${COMPONENT} tag --points-at HEAD --list v*)
+vtag=$(git -C ${SRC_DIR}/${COMPONENT} tag --points-at HEAD --list 'v*')
 
 if [ -z "$vtag" ]; then
     if [ "$print_version" = 1 ]; then
