@@ -162,7 +162,7 @@ if ! scripts/make-with-log \
         DISTS_VM="$built_for_vm" \
         DIST_DOM0="$built_for_dom0" \
         BUILD_LOGS_URL="$build_logs" \
-        GIT_URL_${COMPONENT//-/_}="$git_url" \
+        GIT_URL_${component//-/_}="$git_url" \
         sign-all update-repo-current-testing; then
     build_failure $component upload \
         "dom0:$built_for_dom0 vm:$built_for_vm" "$(get_build_log_url)"
