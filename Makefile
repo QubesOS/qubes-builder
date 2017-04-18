@@ -112,7 +112,7 @@ check_branch = if [ -n "$(1)" -a "0$(CHECK_BRANCH)" -ne 0 ]; then \
 				   pushd $(SRC_DIR)/$(1) > /dev/null; \
 				   CURRENT_BRANCH=`git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match HEAD`; \
 				   if [ "$$BRANCH" != "$$CURRENT_BRANCH" ]; then \
-					   echo "-> ERROR: Wrong branch $$CURRENT_BRANCH (expected $$BRANCH)"; \
+					   echo "-> ERROR: Wrong branch $$branch_var=$$CURRENT_BRANCH (expected $$BRANCH)"; \
 					   exit 1; \
 				   fi; \
 				   popd > /dev/null; \
