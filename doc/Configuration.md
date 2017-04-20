@@ -144,6 +144,20 @@ version (in addition to stable). Set to "1" to enable this option.
 
 Have no effect when `USE_QUBES_REPO_VERSION` is not set.
 
+### INCREMENT_DEVEL_VERSIONS
+> Default: no value
+
+When set to `1`, each package built will have local build number appended to
+package release number. This way, it's easy to update test environment without
+manually forcing reinstall of packages with unchanged versions. As of time of
+writting this, the feature is supported by `builder-fedora` and
+`builder-debian` plugins.
+
+Example versions with devel build number:
+
+ - `qubes-core-dom0-3.2.13-1.13.fc23.x86_64` (`.13` is the additional version here)
+ - `qubes-gpg-split_2.0.24-1+deb8u1+devel1` (`+devel1` is the additional versio here)
+
 ### ISO_INSTALLER
 > Default: 1
 
