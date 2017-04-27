@@ -2,6 +2,8 @@ This repository contains an automated build system for Qubes, that downloads,
 builds and packages all the Qubes components, and finally should spit out a
 ready-to-use installation ISO.
 
+**Note: The build system has been improved since this file was last updated. The [Archlinux template building instructions](https://www.qubes-os.org/doc/building-archlinux-template/) contain more up-to-date and detailed information on how to use the build system.**
+
 In order to use it one should use an rpm-based distro, like Fedora,
 and should ensure the following packages are installed:
 
