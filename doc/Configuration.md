@@ -156,7 +156,7 @@ writting this, the feature is supported by `builder-fedora` and
 Example versions with devel build number:
 
  - `qubes-core-dom0-3.2.13-1.13.fc23.x86_64` (`.13` is the additional version here)
- - `qubes-gpg-split_2.0.24-1+deb8u1+devel1` (`+devel1` is the additional versio here)
+ - `qubes-gpg-split_2.0.24-1+deb8u1+devel1` (`+devel1` is the additional version here)
 
 ### ISO_INSTALLER
 > Default: 1
