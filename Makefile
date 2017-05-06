@@ -158,6 +158,7 @@ help:
 	@echo "make install-deps     -- install missing build dependencies ($(DEPENDENCIES))"
 	@echo "make diff             -- show diffs for any uncommitted changes"
 	@echo "make show REF=git_ref -- show git object git_ref regardless of what repo it's in"
+	@echo "make list-stashes     -- list git stashes for each repo"
 	@echo "make grep RE=regexp   -- grep for regexp in all components"
 	@echo "make push             -- do git push for all repos, including tags"
 	@echo "make show-vtags       -- list components version tags (only when HEAD have such) and branches"
@@ -493,6 +494,17 @@ show:
 	else \
 		echo "Error: show target needs REF= set" >&2; \
 	fi
+
+list-stashes:
+	@for REPO in $(GIT_REPOS); do \
+		pushd $$REPO > /dev/null; \
+		stashes=$$(git stash list); \
+		if [ -n "$$stashes" ]; then \
+			echo "$$REPO"; \
+			echo "$$stashes" | sed 's/^/\t/'; \
+		fi; \
+		popd > /dev/null; \
+	done
 
 grep-tgt = $(GIT_REPOS:$(SRC_DIR)/%=%.grep)
 RE ?= $(filter-out grep $(grep-tgt), $(MAKECMDGOALS))
