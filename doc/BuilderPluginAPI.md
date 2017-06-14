@@ -110,6 +110,7 @@ If the combination of above variables is supported by the plugin (*only* then), 
  * `TEMPLATE_SCRIPTS` - full path to a directory with scripts for template-builder (see below)
     /or/
  * add new entries to `TEMPLATE_FLAVOR_DIR`
+ * add entries to `TEMPLATE_ENV_WHITELIST` - environment variables (their names) that will be passed down to template build scripts (from `TEMPLATE_SCRIPTS` directory); this is useful for using configuration set in builder.conf (including custom options)
 
 Hint: you can get a full path to the plugin directory with this makefile
 expression: `$(dir $(abspath $(lastword $(MAKEFILE_LIST))))`
@@ -147,4 +148,5 @@ Variables available for TemplateBuilder scripts:
  - `CACHEDIR`
  - `INSTALLDIR` - target directory where the template OS should be installed; this is mounted root.img of the template, use chroot to run commands inside (when initial setup done)
  - `SCRIPTSDIR` - directory with plugin scripts (same as `TEMPLATE_SCRIPTS` set by Makefile.builder)
+ - variables set in builder.conf and included in `TEMPLATE_ENV_WHITELIST`
 

@@ -158,6 +158,14 @@ Example versions with devel build number:
  - `qubes-core-dom0-3.2.13-1.13.fc23.x86_64` (`.13` is the additional version here)
  - `qubes-gpg-split_2.0.24-1+deb8u1+devel1` (`+devel1` is the additional version here)
 
+### TEMPLATE_ROOT_WITH_PARTITIONS
+> Default: no value
+
+When set to `1`, linux-template-builder will include partition table in
+root.img, instead of placing filesystem directly from the start of the image.
+The system will installed in the first partition. Additionally, grub will be
+installed in MBR (if given builder plugin do support it).
+
 ### ISO_INSTALLER
 > Default: 1
 
