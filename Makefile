@@ -332,10 +332,18 @@ template-local-%::
 template-in-dispvm: $(DISTS_VM:%=template-in-dispvm-%)
 
 template-in-dispvm-%: DIST=$*
+template-in-dispvm-%: BUILD_LOG=build-logs/template-$(DIST).log
 template-in-dispvm-%:
 	@BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF))); \
-	echo "-> Building template $(DIST) (logfile: build-logs/template-$(DIST).log)..."; \
-	./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" > build-logs/template-$(DIST).log 2>&1 || exit 1
+	if [ -e "$(BUILD_LOG)" ]; then\
+		mv -f "$(BUILD_LOG)" "$(BUILD_LOG).old";\
+	fi
+	echo "-> Building template $(DIST) (logfile: $(BUILD_LOG))..."; \
+	if [ $(VERBOSE) -eq 0 ]; then\
+		./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" >> $(BUILD_LOG) 2>&1 || exit 1
+	else\
+		{ ./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" 2>&1 || exit 1; } | tee -a $(BUILD_LOG)
+	fi
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))

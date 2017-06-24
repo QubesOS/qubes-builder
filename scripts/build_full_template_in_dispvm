@@ -7,7 +7,7 @@ TEMPLATE_CONF="$2"
 IMAGE_SIZE=20G
 IMAGE_NAME="untrusted-builder-env-$$.img"
 TEMPLATE_BUILDER_COMPONENT=linux-template-builder
-TEMPLATE_NAME="`make --no-print-directory -C $SRC_DIR/$TEMPLATE_BUILDER_COMPONENT DIST=$DIST template-name`"
+TEMPLATE_NAME="`MAKEFLAGS= MFLAGS= make --no-print-directory -C $SRC_DIR/$TEMPLATE_BUILDER_COMPONENT DIST=$DIST template-name`"
 TEMPLATE_DIR=$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME
 
 prepareAndMountImage() {
@@ -110,7 +110,7 @@ runBuild() {
         make install-deps DISTS_VM=$DIST;
         make get-sources DISTS_VM=$DIST;
         make build-id DISTS_VM=$DIST;
-        make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
+        MAKEFLAGS=\"$MAKEFLAGS\" make TEMPLATE_ROOT_IMG_ONLY=1 DISTS_VM=$DIST TEMPLATE_NAME=$TEMPLATE_NAME qubes-vm template 2>&1 || exit 1;
         cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
         rm -rf untrusted_appmenus;
         ln -s ../../appmenus untrusted_appmenus;
