@@ -123,6 +123,14 @@ generic-prep:
 
 .PHONY: generic-prepare-chroot
 generic-prepare-chroot:
+	@if [ "`id -u`" = 0 ]; then \
+		echo "*******************************************************************************"; \
+		echo "***                               ERROR                                      ***"; \
+		echo "*** Start the build as normal user, it will use sudo (only) where necessary! ***"; \
+		echo "***                                                                          ***"; \
+		echo "*******************************************************************************"; \
+		exit 1; \
+	fi
 	@mkdir -p "$(CACHEDIR)"
 
 .PHONY: prepare-chroot
