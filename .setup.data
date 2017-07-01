@@ -4,6 +4,7 @@ default     : 3.2
 3           : Qubes Release 3.0
 3.1         : Qubes Release 3.1
 3.2         : Qubes Release 3.2
+4.0         : Qubes Release 4.0
 
 [0x36879494]
 type        : gpg
@@ -27,11 +28,6 @@ description : Unstable - Bleeding Edge Development
 prefix      : marmarek/qubes-
 
 [repo-1]
-type        : repo
-description : Unstable - The Big Boss Repo
-prefix      : joanna/qubes-
-
-[repo-2]
 type        : repo
 description : Unstable - Awesome Developer Repo
 prefix      : woju/qubes-
