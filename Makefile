@@ -221,7 +221,7 @@ $(filter-out qubes-dom0, $(COMPONENTS:%=%-dom0)) : %-dom0 : check-depend
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
+		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* COMPONENT_CC=$(CC_$*) COMPONENT_CFLAGS=$(CFLAGS_$*) COMPONENT_LDFLAGS=$(LDFLAGS_$*) all || exit 1; \
 	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
 	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
