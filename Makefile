@@ -209,7 +209,7 @@ $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
-			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
+			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* COMPONENT_CC=$(CC_$*) COMPONENT_CFLAGS=$(CFLAGS_$*) -f Makefile.generic all || exit 1; \
 		done; \
 	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM_NO_FLAVOR); do \
