@@ -54,26 +54,16 @@ Here you specify what you want to build. See example configs for sensible
 lists. The order of components is important - it should reflect build
 dependencies, otherwise build would fail.
 
-### CC_`component`
-> Default: Value set in Makefile of the component
+### ENV_`component`
+> Default: None
 
-Custom component specific compiler
+Specify environment variables for component build
 
-Example:
-CC_gui-daemon=clang
+For example:
+ENV_gui-daemon = "\
+    CC=clang \
+    CFLAGS=-fstack-protector-strong"
 
-### CFLAGS_`component`
-> Default: Value set in Makefile of the component
-
-Custom component specific compiler flags
-
-Example:
-CFLAGS_gui-daemon=-fstack-protector-strong
-
-### LDFLAGS_`component`
-> Default: Value set in Makefile of the component
-
-Custom component specific linker flags
 
 ### LINUX_INSTALLER_MULTIPLE_KERNELS
 > Default: "no"
