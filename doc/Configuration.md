@@ -54,6 +54,19 @@ Here you specify what you want to build. See example configs for sensible
 lists. The order of components is important - it should reflect build
 dependencies, otherwise build would fail.
 
+### ENV_`component`
+> Default: None
+
+Per component environment variables while building.
+Replace '-' with '_' in component name
+Spaces and newlines have to be escaped.
+
+For example:
+ENV_gui_daemon = "\
+    CC=clang \
+    CFLAGS=-fstack-protector-strong\ -Wall"
+
+
 ### LINUX_INSTALLER_MULTIPLE_KERNELS
 > Default: "no"
 

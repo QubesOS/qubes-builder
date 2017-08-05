@@ -30,7 +30,7 @@ ifdef GIT_SUBDIR
 endif
 
 # checking for make from Makefile is pointless
-DEPENDENCIES ?= git rpmdevtools rpm-build createrepo python-sh wget
+DEPENDENCIES ?= git rpmdevtools rpm-build createrepo python2-sh wget
 
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
@@ -209,7 +209,7 @@ $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
-			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* -f Makefile.generic all || exit 1; \
+			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) -f Makefile.generic all || exit 1; \
 		done; \
 	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
 	    for DIST in $(DISTS_VM_NO_FLAVOR); do \
@@ -221,7 +221,7 @@ $(filter-out qubes-dom0, $(COMPONENTS:%=%-dom0)) : %-dom0 : check-depend
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
-		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* all || exit 1; \
+		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) all || exit 1; \
 	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
 	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
@@ -839,6 +839,10 @@ build-info::
 	@$(call _info, $(text), TEMPLATE_FLAVOR_DIR,  $(TEMPLATE_FLAVOR_DIR), $(_ORIGINAL_TEMPLATE_FLAVOR_DIR))
 	@$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
 	@$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
+	@for component in $(COMPONENTS); do \
+		component_env_var=`$(MAKE) -s get-var GET_VAR=ENV_$${component//-/_}`; \
+		if [ ! -z "$$component_env_var" ]; then $(call _info, $(text), ENV_$${component//-/_}, $${component_env_var}, ""); fi; \
+	done
 else
 build-info::;
 endif

@@ -46,7 +46,8 @@ CACHEDIR = $(PWD)/cache/$(DIST)
 BUILD_LOG="build-logs/$(COMPONENT)-$(PACKAGE_SET)-$(DIST).log"
 
 # environment variables for build process (inside of chroot)
-CHROOT_ENV = BACKEND_VMM=$(BACKEND_VMM)
+
+CHROOT_ENV = BACKEND_VMM=$(BACKEND_VMM) $(ENV_COMPONENT)
 
 # default value
 ifndef MIN_AGE
