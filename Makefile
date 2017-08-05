@@ -839,6 +839,10 @@ build-info::
 	@$(call _info, $(text), TEMPLATE_FLAVOR_DIR,  $(TEMPLATE_FLAVOR_DIR), $(_ORIGINAL_TEMPLATE_FLAVOR_DIR))
 	@$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
 	@$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
+	@for component in $(COMPONENTS); do \
+		component_env_var=`$(MAKE) -s get-var GET_VAR=ENV_$${component//-/_}`; \
+		if [ ! -z "$$component_env_var" ]; then $(call _info, $(text), ENV_$${component//-/_}, $${component_env_var}, ""); fi; \
+	done
 else
 build-info::;
 endif
