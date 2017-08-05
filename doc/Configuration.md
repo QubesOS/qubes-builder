@@ -57,12 +57,14 @@ dependencies, otherwise build would fail.
 ### ENV_`component`
 > Default: None
 
-Specify environment variables for component build
+Per component environment variables while building.
+Replace '-' with '_' in component name
+Spaces and newlines have to be escaped.
 
 For example:
-ENV_gui-daemon = "\
+ENV_gui_daemon = "\
     CC=clang \
-    CFLAGS=-fstack-protector-strong"
+    CFLAGS=-fstack-protector-strong\ -Wall"
 
 
 ### LINUX_INSTALLER_MULTIPLE_KERNELS
