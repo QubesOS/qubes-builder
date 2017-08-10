@@ -1,5 +1,8 @@
 .DEFAULT_GOAL = help
 
+# Force bash for some advanced substitution (eg ${!...})
+SHELL = /bin/bash
+
 SRC_DIR := qubes-src
 BUILDER_DIR := $(shell readlink -m $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
@@ -597,8 +600,6 @@ push:
 	done; \
 	echo "All stuff pushed succesfully."
 	
-# Force bash for some advanced substitution (eg ${!...})
-SHELL = /bin/bash
 -prepare-merge:
 	@set -a; \
 	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
