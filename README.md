@@ -19,11 +19,11 @@ and should ensure the following packages are installed:
 
 Usually one can install those packages by just issuing:
 
-    $ sudo dnf install git createrepo rpm-build rpm-sign make python-sh rpmdevtools rpm-sign dialog perl-open
+    $ sudo dnf install git createrepo rpm-build rpm-sign make python2-sh rpmdevtools rpm-sign dialog perl-open
     
 for older Fedora or CentOS versions use:
 
-    $ sudo yum install git createrepo rpm-build rpm-sign make python-sh rpmdevtools rpm-sign dialog perl-open
+    $ sudo yum install git createrepo rpm-build rpm-sign make python2-sh rpmdevtools rpm-sign dialog perl-open
 
 Or just install them automatically by issuing:
 
