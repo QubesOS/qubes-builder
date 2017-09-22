@@ -13,7 +13,7 @@ and should ensure the following packages are installed:
 * rpm-sign (if signing of build packages is enabled)
 * rpmdevtools
 * make 
-* python-sh
+* python2-sh
 * dialog
 * perl-open
 

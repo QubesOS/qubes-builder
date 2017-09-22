@@ -1909,7 +1909,7 @@ def main(argv):  # pylint: disable=W0613
 try:
     import sh
 except ImportError:
-    install_deps(['python-sh'])
+    install_deps(['python2-sh'])
     import sh
 
 if __name__ == '__main__':
