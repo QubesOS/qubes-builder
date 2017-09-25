@@ -39,6 +39,13 @@ description : Fedora Builder - Contains all Makefiles to build Fedora based temp
 require     : None
 require_in  : fc
 
+[builder-centos]
+id          : builder-centos
+type        : builder
+description : CentOS Builder - Contains all Makefiles to build CentOS based templates
+require     : None
+require_in  : centos
+
 [builder-debian]
 id          : builder-debian
 type        : builder
