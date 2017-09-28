@@ -1615,6 +1615,7 @@ class Dialog(object):
                 if redir_child_stdin_from_fd is not None:
                     os.dup2(redir_child_stdin_from_fd, 0)
 
+                arglist = [x.encode('ascii', 'ignore') for x in arglist]
                 os.execve(self._dialog_prg, arglist, new_environ)
             except:
                 print(traceback.format_exc(), file=father_stderr)
