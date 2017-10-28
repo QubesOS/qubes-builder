@@ -671,6 +671,12 @@ update-repo-unstable: SNAPSHOT_REPO=unstable
 # exception here: update-repo-current uses snapshot of current-testing
 update-repo-current: SNAPSHOT_REPO=current-testing
 
+# the work for templates repositories is done by internal-templates-update-repo-* targets
+update-repo-templates-itl: TEMPLATES_REPO=templates-itl
+update-repo-templates-community: TEMPLATES_REPO=templates-community
+
+# we separate the work done for components from the one for templates repositories
+ifeq (,$(findstring update-repo-templates, $@))
 # add dependency on each combination of:
 # internal-update-repo-$(TARGET_REPO).$(PACKAGE_SET).$(DIST).$(COMPONENT)
 # use dots for separating "arguments" to not deal with dashes in component names
@@ -679,6 +685,10 @@ update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) $(a
 else
 update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) post-update-repo-%
 endif
+	@true
+endif
+
+update-repo-templates-%: $(addprefix internal-templates-update-repo-%.,$(DISTS_VM_NO_FLAVOR)) post-templates-update-repo
 	@true
 
 # do not include builder itself in the template (it would fail anyway)
@@ -763,6 +773,19 @@ post-update-repo-%:
 		[ -z "$$repo" ] && continue; \
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
+
+internal-templates-update-repo-%: DIST = $(subst .,,$(suffix $@))
+internal-templates-update-repo-%:
+	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(LINUX_REPO_BASEDIR)/$(TEMPLATES_REPO) \
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-$(TEMPLATES_REPO) ; then \
+			echo "make update-repo-$(TEMPLATES_REPO) failed for template dist=$$DIST"; \
+			exit 1; \
+	fi
+
+# this is executed only once for all update-repo-templates-* target
+post-templates-update-repo:
+	@repo_basedir="$(LINUX_REPO_BASEDIR)"; \
+	cd $$repo_basedir/.. && ./update_repo-template.sh `basename $$repo_basedir`;
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
