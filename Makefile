@@ -688,7 +688,7 @@ endif
 	@true
 endif
 
-update-repo-templates-%: $(addprefix internal-templates-update-repo-%.,$(DISTS_VM_NO_FLAVOR)) post-templates-update-repo
+update-repo-templates-%: $(addprefix internal-templates-update-repo-%.,$(DISTS_VM)) post-templates-update-repo-%
 	@true
 
 # do not include builder itself in the template (it would fail anyway)
@@ -774,6 +774,7 @@ post-update-repo-%:
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
 
+.PHONY: internal-templates-update-repo-%
 internal-templates-update-repo-%: DIST = $(subst .,,$(suffix $@))
 internal-templates-update-repo-%:
 	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(LINUX_REPO_BASEDIR)/$(TEMPLATES_REPO) \
@@ -783,7 +784,7 @@ internal-templates-update-repo-%:
 	fi
 
 # this is executed only once for all update-repo-templates-* target
-post-templates-update-repo:
+post-templates-update-repo-%:
 	@repo_basedir="$(LINUX_REPO_BASEDIR)"; \
 	cd $$repo_basedir/.. && ./update_repo-template.sh `basename $$repo_basedir`;
 
