@@ -264,6 +264,18 @@ recreated. It should be set to the full URL of the proxy.
 
 An example proxy setup is documented [here](./RepoProxy.md).
 
+### FEDORA_MIRROR
+> Default: no value
+
+Use the specified mirror for fetching Fedora packages.
+
+For a list of current Fedora mirrors see:
+- https://mirrors.fedoraproject.org/mirrorlist?repo=fedora-25&arch=x86_64
+  (replacing fedora-25 with the current dom0 version)
+
+Include the full path up to `/releases/...`, for example:
+ - `FEDORA_MIRROR=https://mirrors.kernel.org/fedora/`
+
 Windows specific settings
 -------------------------
 
