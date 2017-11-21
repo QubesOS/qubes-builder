@@ -490,7 +490,7 @@ diff:
 		pushd $$REPO > /dev/null; \
 		git status | grep "^nothing to commit" > /dev/null; \
 		if [ $$? -ne 0 ]; then \
-			(echo -e "Uncommited changes in $$REPO:\n\n"; git diff --color=always) | less -R -; \
+			(echo -e "Uncommited changes in $$REPO:\n\n"; git diff --color=always) | less -RM +Gg; \
 		fi; \
 	    popd > /dev/null; \
 	done
@@ -619,7 +619,7 @@ prepare-merge: -prepare-merge show-unmerged
 
 show-unmerged:
 	@REPOS="$(GIT_REPOS)"; \
-	echo "Changes to be merged:"; \
+	{ echo "Changes to be merged:"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
 		if [ -n "`git log ..FETCH_HEAD 2>/dev/null`" ]; then \
@@ -632,10 +632,10 @@ show-unmerged:
 			fi; \
 			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"; \
 			echo "> $${REPO#$(SRC_DIR)/} $$MERGE_TYPE: git merge FETCH_HEAD"; \
-			git log --pretty=oneline --abbrev-commit ..FETCH_HEAD; \
+			git log --pretty=oneline --abbrev-commit --color=always ..FETCH_HEAD; \
 		fi; \
 		popd > /dev/null; \
-	done
+	done } | less -RM +Gg
 
 do-merge:
 	@REPOS="$(GIT_REPOS)"; \
