@@ -192,7 +192,7 @@ $(get-sources-extra-tgt):
 	@REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
 builder.get-sources: build-info
 	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
-get-sources: $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt) get-sources-extra
+get-sources: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt) get-sources-extra
 get-sources-extra: $(get-sources-extra-tgt)
 
 .PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
