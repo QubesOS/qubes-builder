@@ -632,7 +632,7 @@ show-unmerged:
 			fi; \
 			MERGE_TYPE="$${MERGE_TYPE}`git config --get-color '' 'reset'`"; \
 			echo "> $${REPO#$(SRC_DIR)/} $$MERGE_TYPE: git merge FETCH_HEAD"; \
-			git log --pretty=oneline --abbrev-commit --color=always ..FETCH_HEAD; \
+			git log --topo-order --reverse --pretty=oneline --abbrev-commit --color=always ..FETCH_HEAD; \
 		fi; \
 		popd > /dev/null; \
 	done } | less -RM +Gg
