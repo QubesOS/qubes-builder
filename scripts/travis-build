@@ -41,6 +41,9 @@ if [ -z "$USE_QUBES_REPO_VERSION" ]; then
     exit 1
 fi
 
+# We don't need MongoDB, so don't care it their key is expired or not
+sudo rm -f /etc/apt/sources.list.d/mongodb*
+
 sudo apt-get -qq update
 
 # install required packages
