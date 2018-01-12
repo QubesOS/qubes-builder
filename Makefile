@@ -345,6 +345,7 @@ template-in-dispvm-%:
 	if [ $(VERBOSE) -eq 0 ]; then\
 		./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" >> $(BUILD_LOG) 2>&1 || exit 1
 	else\
+		set -o pipefail; \
 		{ ./scripts/build_full_template_in_dispvm $(DIST) "$${BUILDER_TEMPLATE_CONF#*:}" 2>&1 || exit 1; } | tee -a $(BUILD_LOG)
 	fi
 
