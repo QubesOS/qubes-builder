@@ -78,6 +78,18 @@ EOF
     cd ..
 fi
 
+# another case when trusty used in Travis-CI is too old, rejecting control.tar.xz
+if echo "$DISTS_VM$DIST_DOM0" | grep -q "buster"; then
+    cd cache
+    wget http://archive.ubuntu.com/ubuntu/pool/main/d/dpkg/dpkg_1.18.4ubuntu1.3_amd64.deb
+    sha256sum -c <<EOF
+5fda33409a31256c22cf37a5efcebd4e1495ea9700e932d74e95309d708525d1  dpkg_1.18.4ubuntu1.3_amd64.deb
+EOF
+    dpkg-deb -x dpkg_1.18.4ubuntu1.3_amd64.deb dpkg
+    sudo cp -f dpkg/usr/bin/dpkg-deb /usr/bin/dpkg-deb
+    cd ..
+fi
+
 # download builder plugins
 make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
 
