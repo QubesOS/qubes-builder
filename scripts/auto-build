@@ -89,7 +89,7 @@ export QUBES_BUILD_LOG_CMD="qrexec-client-vm 'dom0' qubesbuilder.BuildLog >$log_
 
 # first update the builder itself
 make GIT_MERGE_OPTS=--ff-only COMPONENTS='builder $(BUILDER_PLUGINS)' \
-                    prepare-merge \
+                    prepare-merge-fetch \
                     do-merge \
                     get-sources-extra
 
@@ -100,7 +100,7 @@ else
     # fetch new changes only, and only on new version (to not break pending
     # promotion current-testing->current)
     make GIT_MERGE_OPTS=--ff-only \
-                        prepare-merge \
+                        prepare-merge-fetch \
                         do-merge-versions-only \
                         get-sources-extra
 fi

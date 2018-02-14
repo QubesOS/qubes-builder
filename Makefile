@@ -603,7 +603,7 @@ push:
 	done; \
 	echo "All stuff pushed succesfully."
 	
--prepare-merge:
+prepare-merge-fetch:
 	@set -a; \
 	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
 	SRC_ROOT=$(BUILDER_DIR)/$(SRC_DIR); \
@@ -616,7 +616,7 @@ push:
 		$$SCRIPT_DIR/get-sources || exit 1; \
 	done
 
-prepare-merge: -prepare-merge show-unmerged
+prepare-merge: prepare-merge-fetch show-unmerged
 
 show-unmerged:
 	@REPOS="$(GIT_REPOS)"; \
