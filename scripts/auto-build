@@ -68,7 +68,13 @@ if [ "${1##*/}" != "${1}" ]; then
     exit 1
 fi
 
-if [ ! -d "qubes-src/$1" ]; then
+found=
+for c in $(make -s get-var GET_VAR=COMPONENTS); do
+    if [ "$c" = "$1" ]; then
+        found=1
+    fi
+done
+if [ -z "$found" ]; then
     echo "No such component: $1" >&2
     exit 1
 fi
@@ -87,11 +93,17 @@ make GIT_MERGE_OPTS=--ff-only COMPONENTS='builder $(BUILDER_PLUGINS)' \
                     do-merge \
                     get-sources-extra
 
-# fetch sources and verify signed tags
-make GIT_MERGE_OPTS=--ff-only \
-                    prepare-merge \
-                    do-merge-versions-only \
-                    get-sources-extra
+if [ ! -d "qubes-src/$component" ]; then
+    # new component, download fresh sources
+    make get-sources
+else
+    # fetch new changes only, and only on new version (to not break pending
+    # promotion current-testing->current)
+    make GIT_MERGE_OPTS=--ff-only \
+                        prepare-merge \
+                        do-merge-versions-only \
+                        get-sources-extra
+fi
 
 git_url=$(make -s get-var GET_VAR=GIT_URL_${component//-/_})
 if [ -z "$git_url" ]; then
