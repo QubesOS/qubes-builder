@@ -16,9 +16,7 @@ if [ $# -gt 2 ]; then
     RUN_AS_USER=$3
 fi
 
-SCRIPT_DIR=$PWD
-
-: ${MAKE_TARGET=rpms}
+: "${MAKE_TARGET=rpms}"
 
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
@@ -33,38 +31,39 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -d chroot-$DIST ]; then
+if ! [ -d "chroot-$DIST" ]; then
     echo "ERROR: You need to have build environment prepared first,"
     echo "compile any other component (for the same target distribution) first"
 fi
 
-if [ -r $REQ_PACKAGES ] && [ $REQ_PACKAGES -nt chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES` ]; then
-    sed "s/DIST/$DIST/g" $REQ_PACKAGES > build-pkgs-temp.list
+if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
+    sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
-    sudo chroot $PWD/chroot-$DIST yum install -y `cat build-pkgs-temp.list`
+    TMP_PACKAGES_ARR=( $(cat build-pkgs-temp.list) )
+    sudo chroot "$PWD/chroot-$DIST" yum install -y "${TMP_PACKAGES_ARR[@]}"
     rm -f build-pkgs-temp.list
-    touch chroot-$DIST/home/user/.installed_${COMPONENT}_`basename $REQ_PACKAGES`
+    touch "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
 
-if ! [ -r $PWD/chroot-$DIST/proc/cpuinfo ]; then
-    sudo mount -t proc proc $PWD/chroot-$DIST/proc
+if ! [ -r "$PWD/chroot-$DIST/proc/cpuinfo" ]; then
+    sudo mount -t proc proc "$PWD/chroot-$DIST/proc"
 fi
 
-if ! [ -d $PWD/chroot-$DIST/sys/devices ]; then
-    sudo mount -t sysfs sysfs $PWD/chroot-$DIST/sys
+if ! [ -d "$PWD/chroot-$DIST/sys/devices" ]; then
+    sudo mount -t sysfs sysfs "$PWD/chroot-$DIST/sys"
 fi
 
-mkdir -p $DIST_SRC_ROOT
-sudo rm -rf $DIST_SRC
-cp -alt $DIST_SRC_ROOT $ORIG_SRC
-rm -rf $DIST_SRC/rpm/{x86_64,i686,noarch,SOURCES}
-[ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
+mkdir -p "$DIST_SRC_ROOT"
+sudo rm -rf "$DIST_SRC"
+cp -alt "$DIST_SRC_ROOT" "$ORIG_SRC"
+rm -rf "$DIST_SRC"/rpm/{x86_64,i686,noarch,SOURCES}
+[ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
 # Disable rpm signing in chroot - there are no signing keys
-sed -i -e 's/rpm --addsign/@true \0/' $DIST_SRC/Makefile*
+sed -i -e 's/rpm --addsign/@true \0/' "$DIST_SRC"/Makefile*
 
 BUILD_INITIAL_INFO="-> Building $COMPONENT $MAKE_TARGET_ONLY for $DIST"
 BUILD_LOG=
-if [ $VERBOSE -eq 0 ]; then
+if [ "$VERBOSE" -eq 0 ]; then
     BUILD_LOG="build-logs/$COMPONENT-$MAKE_TARGET_ONLY-$DIST.log"
     if [ -e "$BUILD_LOG" ]; then
 	mv -f "$BUILD_LOG" "$BUILD_LOG.old"
@@ -72,48 +71,48 @@ if [ $VERBOSE -eq 0 ]; then
     BUILD_INITIAL_INFO="$BUILD_INITIAL_INFO (logfile: $BUILD_LOG)..."
 fi
 echo "$BUILD_INITIAL_INFO"
-if [ $VERBOSE -ge 1 ]; then
-    sed -i -e 's/rpmbuild/rpmbuild --quiet/' $DIST_SRC/Makefile*
+if [ "$VERBOSE" -ge 1 ]; then
+    sed -i -e 's/rpmbuild/rpmbuild --quiet/' "$DIST_SRC"/Makefile*
     MAKE_OPTS="$MAKE_OPTS -s"
 fi
-[ -x $ORIG_SRC/qubes-builder-pre-hook.sh ] && source $ORIG_SRC/qubes-builder-pre-hook.sh
+[ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
 set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
-if [ $VERBOSE -eq 0 ]; then
-    sudo -E chroot chroot-$DIST su -p -c "$MAKE_CMD" $RUN_AS_USER >$BUILD_LOG 2>&1
+if [ "$VERBOSE" -eq 0 ]; then
+    sudo -E chroot "chroot-$DIST" su -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
     BUILD_RETCODE=$?
 else
-    sudo -E chroot chroot-$DIST su -p -c "$MAKE_CMD" $RUN_AS_USER
+    sudo -E chroot "chroot-$DIST" su -p -c "$MAKE_CMD" "$RUN_AS_USER"
     BUILD_RETCODE=$?
 fi
 if [ $BUILD_RETCODE -gt 0 ]; then
     echo "--> build failed!"
     if [ -n "$BUILD_LOG" ]; then
-        tail $BUILD_LOG
+        tail "$BUILD_LOG"
     fi
     exit 1
 fi
 set -e
-[ -x $ORIG_SRC/qubes-builder-post-hook.sh ] && source $ORIG_SRC/qubes-builder-post-hook.sh
+[ -x "$ORIG_SRC/qubes-builder-post-hook.sh" ] && source "$ORIG_SRC/qubes-builder-post-hook.sh"
 echo "--> Done:"
-for i in $DIST_SRC/rpm/*; do
-    ARCH_RPM_DIR=$ORIG_SRC/rpm/`basename $i`
-    mkdir -p $ARCH_RPM_DIR
+for i in "$DIST_SRC"/rpm/*; do
+    ARCH_RPM_DIR="$ORIG_SRC/rpm/$(basename "$i")"
+    mkdir -p "$ARCH_RPM_DIR"
     for pkg in $i/*; do
-        echo "     qubes-src/$COMPONENT/rpm/`basename $i`/`basename $pkg`"
+        echo "     qubes-src/$COMPONENT/rpm/$(basename "$i")/$(basename "$pkg")"
     done
-    mkdir -p $BUILDER_REPO_DIR/rpm
-    ln -f -t $BUILDER_REPO_DIR/rpm $i/*
-    mv -t $ARCH_RPM_DIR $i/*
+    mkdir -p "$BUILDER_REPO_DIR/rpm"
+    ln -f -t "$BUILDER_REPO_DIR/rpm" "$i/"*
+    mv -t "$ARCH_RPM_DIR" "$i/"*
 done
-if [ $COMPONENT == $INSTALLER_COMPONENT ]; then
+if [ "$COMPONENT" == "$INSTALLER_COMPONENT" ]; then
     if [ "$MAKE_TARGET_ONLY" == "iso" ]; then
-        if [ -d $DIST_SRC/build/work ]; then
-            sudo rm -fr $ORIG_SRC/build/ISO
-            sudo rm -fr $ORIG_SRC/build/work
-            mkdir -p $ORIG_SRC/build/
-            sudo mv $DIST_SRC/build/work $ORIG_SRC/build/
-            sudo mv $DIST_SRC/build/ISO $ORIG_SRC/build/
+        if [ -d "$DIST_SRC/build/work" ]; then
+            sudo rm -fr "$ORIG_SRC/build/ISO"
+            sudo rm -fr "$ORIG_SRC/build/work"
+            mkdir -p "$ORIG_SRC/build/"
+            sudo mv "$DIST_SRC/build/work" "$ORIG_SRC/build/"
+            sudo mv "$DIST_SRC/build/ISO" "$ORIG_SRC/build/"
         fi
     fi
 fi
