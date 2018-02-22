@@ -57,6 +57,7 @@ mkdir -p "$DIST_SRC_ROOT"
 sudo rm -rf "$DIST_SRC"
 cp -alt "$DIST_SRC_ROOT" "$ORIG_SRC"
 rm -rf "$DIST_SRC"/rpm/{x86_64,i686,noarch,SOURCES}
+# shellcheck disable=SC1090
 [ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
 # Disable rpm signing in chroot - there are no signing keys
 sed -i -e 's/rpm --addsign/@true \0/' "$DIST_SRC"/Makefile*
@@ -75,10 +76,12 @@ if [ "$VERBOSE" -ge 1 ]; then
     sed -i -e 's/rpmbuild/rpmbuild --quiet/' "$DIST_SRC"/Makefile*
     MAKE_OPTS="$MAKE_OPTS -s"
 fi
+# shellcheck disable=SC1090
 [ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
 set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
 if [ "$VERBOSE" -eq 0 ]; then
+    # shellcheck disable=SC2024
     sudo -E chroot "chroot-$DIST" su -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
     BUILD_RETCODE=$?
 else
@@ -93,6 +96,7 @@ if [ $BUILD_RETCODE -gt 0 ]; then
     exit 1
 fi
 set -e
+# shellcheck disable=SC1090
 [ -x "$ORIG_SRC/qubes-builder-post-hook.sh" ] && source "$ORIG_SRC/qubes-builder-post-hook.sh"
 echo "--> Done:"
 for i in "$DIST_SRC"/rpm/*; do
