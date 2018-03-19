@@ -179,6 +179,14 @@ root.img, instead of placing filesystem directly from the start of the image.
 The system will installed in the first partition. Additionally, grub will be
 installed in MBR (if given builder plugin do support it).
 
+### TEMPLATE_ROOT_SIZE
+> Default: 10G
+
+Adjust template root volume size created by linux-template-builder. Note that
+if `TEMPLATE_ROOT_WITH_PARTITIONS=1`, this needs to be bigger than 220M, to fit
+EFI boot (200M) and bios boot (20M) partitions. Rest of the disk will be used
+for root filesystem.
+
 ### ISO_INSTALLER
 > Default: 1
 
