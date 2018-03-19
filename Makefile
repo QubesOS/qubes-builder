@@ -199,7 +199,7 @@ get-sources-extra: $(get-sources-extra-tgt)
 check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
 check.dpkg: $(if $(shell which dpkg 2>/dev/null), /bin/true, please.install.dpkg.and.try.again);
 check-depend.rpm:
-	@echo "Currently installed dependencies:" && rpm -q $(DEPENDENCIES) || \
+	@echo "Currently installed dependencies:" && rpm -q --whatprovides $(DEPENDENCIES) || \
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend.dpkg:
 	@test $$(dpkg -l $(DEPENDENCIES) | tail -n +5 | grep '^i' | wc -l) -eq $(words $(DEPENDENCIES)) || \
