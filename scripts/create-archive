@@ -6,7 +6,7 @@ set -e
 TAR_VERSION="$(tar --version | head -1 | awk '{print $4}')"
 
 GIT_ARCHIVE_SRC="$(readlink -f "$1")"
-GIT_TARBALL_NAME="$(basename "$2" .gz)"
+GIT_TARBALL_NAME="${2%.gz}"
 GIT_ARCHIVE_PREFIX="$3"
 
 # We enter in the qubes source component
