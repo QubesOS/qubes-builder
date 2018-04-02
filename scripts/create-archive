@@ -26,7 +26,7 @@ if [ "$(printf '%s\n' "$TAR_VERSION" "1.28" | sort -V | head -n1)" == "1.28" ]; 
         --mtime="@${SOURCE_DATE_EPOCH}" \
         --owner=0 --group=0 --numeric-owner \
         --xform="s%^\./%${GIT_ARCHIVE_PREFIX}%" \
-        --exclude pkgs --exclude .git* --exclude "${GIT_TARBALL_NAME}" \
+        --exclude pkgs --exclude '.git*' --exclude "${GIT_TARBALL_NAME}" \
         -cf "${GIT_TARBALL_NAME}" .
 else
     find . -not -path './.git*' -not -path './pkgs*' -print0 | LC_ALL=C sort -z |
@@ -38,6 +38,6 @@ else
         -cf "${GIT_TARBALL_NAME}"
 fi
 
-gzip -n "${GIT_TARBALL_NAME}"
+gzip -fn "${GIT_TARBALL_NAME}"
 
 popd
