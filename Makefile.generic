@@ -98,6 +98,16 @@ DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
 .PHONY: copy-in
 copy-in: generic-copy-in $(SOURCE_COPY_IN)
 
+ifneq (,$(GIT_TARBALL_NAME))
+copy-in: make-git-tarball
+endif
+
+.PHONY: make-git-tarball
+make-git-tarball: prefix = $(subst _,-,$(subst .orig,,$(subst .tar.gz,,$(notdir $(GIT_TARBALL_NAME)))))/
+make-git-tarball:
+	mkdir -p $(CHROOT_DIR)$(DIST_SRC)
+	$(BUILDER_DIR)/scripts/create-archive $(CHROOT_DIR)$(DIST_SRC) $(GIT_TARBALL_NAME) $(prefix)
+
 .PHONY: generic-copy-in
 generic-copy-in:
 	@mkdir -p $(CHROOT_DIR)/$(DIST_SRC_ROOT)

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+[ "$DEBUG" = "1" ] && set -x
+
+GIT_ARCHIVE_SRC="$(readlink -f "$1")"
+GIT_TARBALL_NAME="$2"
+GIT_ARCHIVE_PREFIX="$3"
+
+# We enter in the qubes source component
+pushd "$GIT_ARCHIVE_SRC"
+
+# Define SOURCE_DATE_EPOCH from git latest commit timestamp
+SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+
+# Create the archive:
+# - based on https://reproducible-builds.org/docs/archives/
+# - excluding .git, pkgs folder and prevent probable not so
+#   clever implementation of 'tar' which would result in
+#   an infinity loop due to tar '.'
+tar --sort=name \
+    --mtime="@${SOURCE_DATE_EPOCH}" \
+    --owner=0 --group=0 --numeric-owner \
+    --xform="s%^\./%${GIT_ARCHIVE_PREFIX}%" \
+    --exclude pkgs --exclude .git* --exclude "${GIT_TARBALL_NAME}" \
+    -cf "${GIT_TARBALL_NAME}" .
+
+popd
