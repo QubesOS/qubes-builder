@@ -35,7 +35,6 @@ else
         --mtime="@${SOURCE_DATE_EPOCH}" \
         --owner=0 --group=0 --numeric-owner \
         --xform="s%^\./%${GIT_ARCHIVE_PREFIX}%" \
-        --exclude-vcs-ignores \
         --exclude "${GIT_TARBALL_NAME}" \
         -cf "${GIT_TARBALL_NAME}"
 fi
