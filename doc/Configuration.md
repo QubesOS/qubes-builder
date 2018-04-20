@@ -104,7 +104,7 @@ This list can contain also flavors for template - appended after `+` sign. For e
 qubes-builder and template-builder plugins (can be a list
 - separate with space). You need to set the plugin(s) to be able to produce
 any package - all the distribution-specific code is now in the plugins. For
-base Qubes OS build you probably want to enable 'builder-fedora' plugin.
+base Qubes OS build you probably want to enable 'builder-rpm' plugin.
 Note: you need to also add the plugin(s) to COMPONENTS, to have it
 downloaded.
 
@@ -113,7 +113,7 @@ downloaded.
 
 plugins enabled only for particular
 distribution/version. For example:
-BUILDER_PLUGINS_fc20 = builder-fedora
+BUILDER_PLUGINS_fc20 = builder-rpm
 
 ### BUILDER_TEMPLATE_CONF
 > Default: no value
@@ -163,7 +163,7 @@ Have no effect when `USE_QUBES_REPO_VERSION` is not set.
 When set to `1`, each package built will have local build number appended to
 package release number. This way, it's easy to update test environment without
 manually forcing reinstall of packages with unchanged versions. As of time of
-writting this, the feature is supported by `builder-fedora` and
+writting this, the feature is supported by `builder-rpm` and
 `builder-debian` plugins.
 
 Example versions with devel build number:

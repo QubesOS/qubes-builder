@@ -16,7 +16,7 @@ echo my-gpg-backend-vm > /rw/config/gpg-split-domain
 
 Signing-related options in builder.conf
 ---------------------------------------
-### SIGN_KEY (plugin builder-fedora)
+### SIGN_KEY (plugin builder-rpm)
 Key ID used to sign rpm packages
 
 ### DEBIAN_SIGN_KEY (plugin builder-debian)

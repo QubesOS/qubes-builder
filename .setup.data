@@ -33,19 +33,12 @@ type        : repo
 description : Unstable - Awesome Developer Repo
 prefix      : woju/qubes-
 
-[builder-fedora]
-id          : builder-fedora
+[builder-rpm]
+id          : builder-rpm
 type        : builder
-description : Fedora Builder - Contains all Makefiles to build Fedora based templates
+description : RPM-based Linux Builder - Contains all Makefiles to build RPM based templates (e.g. Fedora and CentOS)
 require     : None
 require_in  : fc
-
-[builder-centos]
-id          : builder-centos
-type        : builder
-description : CentOS Builder - Contains all Makefiles to build CentOS based templates
-require     : None
-require_in  : centos
 
 [builder-debian]
 id          : builder-debian
