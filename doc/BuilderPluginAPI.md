@@ -31,7 +31,7 @@ If the combination of above variables is supported by the plugin (*only* then), 
    If the plugin is an overlay over other plugin, it can append itself to that variable.
    Filename there should be unique, because it can be copied to a common
    directory. It is a good idea to base filename on plugin name - for
-   example Makefile.fedora, Makefile.debian
+   example Makefile.rpm, Makefile.debian
 
 File pointed by `BUILDER_MAKEFILE` will be included after resolving all plugins
 configuration and including component configuration (Makefile.builder there).
