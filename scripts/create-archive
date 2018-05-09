@@ -6,8 +6,14 @@ set -e
 TAR_VERSION="$(tar --version | head -1 | awk '{print $4}')"
 
 GIT_ARCHIVE_SRC="$(readlink -f "$1")"
-GIT_TARBALL_NAME="${2%.gz}"
-GIT_ARCHIVE_PREFIX="$3"
+GIT_ARCHIVE_TYPE="${2##*.}"
+GIT_TARBALL_NAME="${2%.$GIT_ARCHIVE_TYPE}"
+
+if [ "x$3" != "x" ]; then
+    GIT_ARCHIVE_PREFIX="$3"
+else
+    GIT_ARCHIVE_PREFIX="${GIT_TARBALL_NAME%.tar}/"
+fi
 
 # We enter in the qubes source component
 pushd "$GIT_ARCHIVE_SRC"
@@ -39,6 +45,13 @@ else
         -cf "${GIT_TARBALL_NAME}"
 fi
 
-gzip -fn "${GIT_TARBALL_NAME}"
+case "$GIT_ARCHIVE_TYPE" in
+    "gz") gzip -fn "${GIT_TARBALL_NAME}"
+        ;;
+    "bz2") bzip2 -f "${GIT_TARBALL_NAME}"
+        ;;
+    *) echo "Unsupported archive format..."
+        exit 1;;
+esac
 
 popd
