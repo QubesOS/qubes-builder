@@ -88,7 +88,7 @@ disallowIncomingTemplateCopy() {
     key=$1
     sed -i -e "/^$key/d" /tmp/qubesbuilder.allowedtransfers
     if [ -n "$IMAGE_DEV" ]; then
-        sudo losetup -d "$IMAGE_DEV"
+        sudo losetup -d "$IMAGE_DEV" || true
     fi
 }
 
