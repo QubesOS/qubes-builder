@@ -6,9 +6,11 @@ export DIST=$1
 TEMPLATE_CONF="$2"
 IMAGE_SIZE=20G
 IMAGE_NAME="untrusted-builder-env-$$.img"
+IMAGE_DEV=""
 TEMPLATE_BUILDER_COMPONENT=linux-template-builder
 TEMPLATE_NAME="`MAKEFLAGS= MFLAGS= make --no-print-directory -C $SRC_DIR/$TEMPLATE_BUILDER_COMPONENT DIST=$DIST template-name`"
 TEMPLATE_DIR=$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME
+QVM_RUN=$(which qvm-run-vm qvm-run 2>/dev/null | head -n 1)
 
 prepareAndMountImage() {
     umountImage
@@ -18,8 +20,10 @@ prepareAndMountImage() {
     fi
     truncate -s ${IMAGE_SIZE} "${IMAGE_NAME}"
     mkfs.ext4 -F -L BUILDER "${IMAGE_NAME}"
+    IMAGE_DEV=$(sudo losetup --find --show "$IMAGE_NAME")
+    udevadm settle
     mkdir -p mnt
-    sudo mount "${IMAGE_NAME}" mnt/ -o loop,discard
+    sudo mount "${IMAGE_DEV}" mnt/ -o discard
     sudo chown ${UID} mnt/
 }
 
@@ -83,6 +87,9 @@ allowIncomingTemplateCopy() {
 disallowIncomingTemplateCopy() {
     key=$1
     sed -i -e "/^$key/d" /tmp/qubesbuilder.allowedtransfers
+    if [ -n "$IMAGE_DEV" ]; then
+        sudo losetup -d "$IMAGE_DEV"
+    fi
 }
 
 runBuild() {
@@ -96,7 +103,7 @@ runBuild() {
     mkdir -p "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
     allowIncomingTemplateCopy "$key" "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
     trap "disallowIncomingTemplateCopy $key" ERR
-    qvm-run --dispvm "/usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.AttachDisk /bin/echo $key;
+    $QVM_RUN --dispvm "/usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.AttachDisk /bin/echo $key;
         exec 2>&1;
         echo Waiting for /dev/xvdi;
         set -x -e;

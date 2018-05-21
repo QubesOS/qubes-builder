@@ -25,5 +25,22 @@ test -n "$QREXEC_REMOTE_DOMAIN"
 test -n "$vm"
 test -n "$path"
 
-qvm-block --force-root -f xvdi -d "$QREXEC_REMOTE_DOMAIN"
-qvm-block --force-root -f xvdi -A "$QREXEC_REMOTE_DOMAIN" "$vm:$path"
+if qvm-block list "$vm" >/dev/null 2>&1; then
+    # Qubes 4.0+
+    devname=$(qvm-block list "$vm" | grep "$path  $" | cut -f 1 -d ' ')
+    if [ -z "$devname" ]; then
+        echo "$vm:$path is inaccessible, make sure loop device is set" >&2
+        exit 1
+    fi
+    attached_dev=$(qvm-block list \
+        |grep "  $QREXEC_REMOTE_DOMAIN (frontend-dev=xvdi, read-only=[^ ]*)$" \
+        |cut -f 1 -d ' ')
+    if [ -n "$attached_dev" ]; then
+        qvm-block detach "$QREXEC_REMOTE_DOMAIN" "$attached_dev"
+    fi
+    qvm-block attach -o frontend-dev=xvdi "$QREXEC_REMOTE_DOMAIN" "$devname"
+else
+    # Qubes 3.x
+    qvm-block --force-root -f xvdi -d "$QREXEC_REMOTE_DOMAIN"
+    qvm-block --force-root -f xvdi -A "$QREXEC_REMOTE_DOMAIN" "$vm:$path"
+fi
