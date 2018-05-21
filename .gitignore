@@ -2,6 +2,7 @@ chroot-*
 qubes-src
 
 builder*.conf
+/*.conf*
 setup*.conf
 *.conf.old
 
@@ -13,5 +14,6 @@ windows-sources.img
 untrusted-builder-env-*
 
 *.py?
+*.sw?
 .*.mk
 *.lock
