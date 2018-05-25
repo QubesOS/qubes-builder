@@ -38,7 +38,7 @@ id          : builder-rpm
 type        : builder
 description : RPM-based Linux Builder - Contains all Makefiles to build RPM based templates (e.g. Fedora and CentOS)
 require     : None
-require_in  : fc
+require_in  : fc dom0
 
 [builder-debian]
 id          : builder-debian

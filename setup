@@ -1539,7 +1539,8 @@ class Wizard(Config):
             items = builder[key]
             # Filter builder depends to only dists_vm_selected
             for item in items:  # dist in dists from require_in
-                for dist in self.dists_vm_selected:
+                for dist in self.dists_vm_selected + \
+                        (['dom0'] if not self.template_only else []):
                     alias = self.template_aliases.get(dist, dist)
                     if item in alias:
                         if dist not in depends:
@@ -1551,7 +1552,8 @@ class Wizard(Config):
             for builder in self.builders.values():
                 # Check to see if a disabled builder has dist vms selected and warn
                 if builder['id'] not in self.builders_selected:
-                    for dist in self.dists_vm_selected:
+                    for dist in self.dists_vm_selected + \
+                            (['dom0'] if not self.template_only else []):
                         alias = self.template_aliases.get(dist, dist)
                         for item in builder['require_in']:
                             if item in alias:
