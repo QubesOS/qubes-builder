@@ -258,6 +258,19 @@ sign-%:
 			COMPONENT=$(COMPONENT) \
 			SIGN_KEY=$$SIGN_KEY \
 			sign || exit 1; \
+	elif [ "$(COMPONENT)" = linux-template-builder ]; then \
+		if [ "$(PACKAGE_SET)" = "dom0" ]; then \
+			exit 0; \
+		fi; \
+		# Special handling for templates
+		RPMSIGN_OPTS=--digest-algo=sha256; \
+		if [ -n "$$SIGN_KEY" ]; then \
+			RPMSIGN_OPTS="$$RPMSIGN_OPTS --key-id=$$SIGN_KEY"; \
+		fi; \
+		export RPMSIGN_OPTS; \
+		$(MAKE) --no-print-directory -C $(SRC_DIR)/$(COMPONENT) \
+			DIST=$(DIST) \
+			sign || exit 1; \
 	elif [ -d $(SRC_DIR)/$(COMPONENT)/rpm ]; then \
 		# Old mechanism supported only for RPM
 		FILE_LIST=""; for RPM in $(SRC_DIR)/$(COMPONENT)/rpm/*/*.rpm; do \
