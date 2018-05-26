@@ -18,6 +18,7 @@ then
 fi
 
 curl \
+    --fail \
     -X PATCH \
     -H "Authorization: token ${GITHUB_API_TOKEN}" \
     -d "{\"sha\": \"${TRAVIS_COMMIT}\"}" \
