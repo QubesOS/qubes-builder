@@ -72,6 +72,7 @@ ifeq ($(TEMPLATE_ONLY), 1)
 endif
 
 COMPONENTS_NO_BUILDER := $(filter-out builder,$(COMPONENTS))
+COMPONENTS_NO_TPL_BUILDER := $(filter-out linux-template-builder builder,$(COMPONENTS))
 
 # The package manager used to install dependencies. builder.conf
 # files may depend on this variable to determine the correct
@@ -206,7 +207,7 @@ check-depend.dpkg:
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
-$(filter-out linux-template-builder builder, $(COMPONENTS)): % : %-dom0 %-vm
+$(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
 
 $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	@$(call check_branch,$*)
@@ -372,10 +373,10 @@ sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
 qubes-dom0:: build-info
-qubes-dom0:: $(addsuffix -dom0,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
+qubes-dom0:: $(addsuffix -dom0,$(COMPONENTS_NO_TPL_BUILDER))
 
 qubes-vm:: build-info
-qubes-vm:: $(addsuffix -vm,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
+qubes-vm:: $(addsuffix -vm,$(COMPONENTS_NO_TPL_BUILDER))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
