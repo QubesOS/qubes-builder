@@ -22,6 +22,9 @@ VERBOSE ?= 0
 COMPONENTS ?= builder
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
+# set default RELEASE based on LINUX_REPO_BASEDIR, assuming it was set to
+# something sensible (not the value above)
+RELEASE ?= $(patsubst r%,%,$(lastword $(subst /, ,$(LINUX_REPO_BASEDIR))))
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
 KEYRING_DIR_GIT ?= $(BUILDER_DIR)/keyrings/git
@@ -809,7 +812,7 @@ post-update-repo-%:
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
 		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
-		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
+		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE)); \
 	done
 
 template-name:
