@@ -243,7 +243,9 @@ $(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
 endif
 
 .PHONY: $(COMPONENTS:%=sign-vm-%)
-$(COMPONENTS:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
+$(COMPONENTS_NO_TPL_BUILDER:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
+# don't strip flavors for template signing
+sign-vm-linux-template-builder : $(addsuffix -linux-template-builder, $(DISTS_VM:%=sign-vm-%))
 
 sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 sign-%: DIST        = $(word 2, $(subst -, ,$*))
