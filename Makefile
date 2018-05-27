@@ -826,16 +826,29 @@ template-name:
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
 ifneq (,$(DIST_DOM0))
-check-release-status: check-release-status-dom0-$(DIST_DOM0)
+check-release-status: check-release-status-dom0-$(DIST_DOM0) check-release-status-templates
 	@true
 endif
 
+check-release-status-templates:
+	@echo "-> Checking $(c.bold)templates$(c.normal)"
+	for DIST in $(DISTS_VM); do \
+		if ! [ -e $(SRC_DIR)/linux-template-builder/Makefile.builder ]; then \
+			# Old style components not supported
+			continue; \
+		fi; \
+		TEMPLATE_NAME=$$(DISTS_VM=$$DIST make -s template-name); \
+		echo -n "$$TEMPLATE_NAME: "; \
+		$(BUILDER_DIR)/scripts/check-release-status-for-component --color \
+			"linux-template-builder" "vm" "$$DIST"
+	done
+
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
-check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
+check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
 	@echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"
-	for C in $(COMPONENTS_NO_BUILDER); do \
+	for C in $(COMPONENTS_NO_TPL_BUILDER); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
 			continue; \
@@ -849,7 +862,7 @@ check-release-status-%:
 		fi
 		echo -n "$$C: "; \
 		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
-	done; \
+	done
 
 windows-image:
 	./win-mksrcimg.sh

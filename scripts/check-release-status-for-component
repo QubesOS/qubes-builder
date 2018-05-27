@@ -35,20 +35,16 @@ COMPONENT="$1"
 PACKAGE_SET="$2"
 DIST="$3"
 
+ALL_REPOSITORIES="current current-testing security-testing unstable"
+UPDATE_REPO_SUBDIR="${PACKAGE_SET}/${DIST}"
+
 #
 # import required builder.conf settings if not already present
 #
 
 cd "$(dirname $0)/.."
 
-repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${DIST}_BASEDIR)
-if [ -n "${repo_dist_basedir}" ]; then
-    repo_basedir="${repo_dist_basedir}"
-else
-    repo_basedir=$(make -s get-var GET_VAR=LINUX_REPO_BASEDIR)
-fi
-
-for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST}; do
+for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST%%+*}; do
     if [ -n "${!var}" ]; then
         continue
     fi
@@ -57,6 +53,32 @@ for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST}; do
         eval "export $var=\"$value\""
     fi
 done
+
+repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${DIST%%+*}_BASEDIR)
+
+# a little more/different settings needed for templates
+if [ "$COMPONENT" = "linux-template-builder" ]; then
+    TEMPLATE_NAME=$(MAKEFLAGS= MFLAGS= DISTS_VM=$DIST \
+            make -s template-name)
+    export TEMPLATE_NAME DIST
+    UPDATE_REPO_SUBDIR=""
+    ALL_REPOSITORIES="templates-itl templates-itl-testing templates-community templates-community-testing"
+    repo_dist_basedir=$(make -s get-var GET_VAR='LINUX_REPO_$(DIST_DOM0)_BASEDIR')
+fi
+
+if [ -n "${repo_dist_basedir}" ]; then
+    repo_basedir="${repo_dist_basedir}"
+else
+    repo_basedir=$(make -s get-var GET_VAR=LINUX_REPO_BASEDIR)
+fi
+
+MAKE_ARGS=("PACKAGE_SET=${PACKAGE_SET}" "DIST=${DIST}" "COMPONENT=${COMPONENT}")
+
+if [ -z "$BUILDER_DIR" ]; then
+    # if called from outside of main Makefile, need to load builder.conf
+    MAKE_ARGS+=("--eval=include ${BUILDERCONF:-${PWD}/builder.conf}")
+fi
+
 
 #
 # helper functions
@@ -68,11 +90,12 @@ color() {
     fi
     case "$1" in
         current)          tput setaf 2 || tput AF 2 ;; # green
-        current-testing)  tput setaf 3 || tput AF 3 ;; # yellow
-        security-testing) tput setaf 3 || tput AF 3 ;; # yellow
+        *-testing)        tput setaf 3 || tput AF 3 ;; # yellow
         unstable)         tput setaf 4 || tput AF 4 ;; # blue
         unreleased)       tput setaf 1 || tput AF 1 ;; # red
         built,unreleased) tput setaf 7 || tput AF 7 ;; # white
+        templates-itl)    tput setaf 2 || tput AF 2 ;; # green
+        templates-community)    tput setaf 2 || tput AF 2 ;; # green
         days-testing)     tput setaf 3 || tput AF 3 ;; # yellow
         days-stable)      tput setaf 2 || tput AF 2 ;; # green
         no-version)
@@ -90,16 +113,9 @@ reset_color() {
     tput sgr0    || tput me
 }
 
-MAKE_ARGS=("PACKAGE_SET=${PACKAGE_SET}" "DIST=${DIST}" "COMPONENT=${COMPONENT}")
-
-if [ -z "$BUILDER_DIR" ]; then
-    # if called from outside of main Makefile, need to load builder.conf
-    MAKE_ARGS+=("--eval=include ${BUILDERCONF:-builder.conf}")
-fi
-
 check_single_repo() {
     make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
-        UPDATE_REPO=${PWD}/${repo_basedir}/$1/${PACKAGE_SET}/${DIST} \
+        UPDATE_REPO=${PWD}/${repo_basedir}/$1/${UPDATE_REPO_SUBDIR} \
         check-repo >/dev/null 2>&1
 }
 
@@ -132,7 +148,7 @@ else
 fi
 
 found=0
-for repo in current current-testing security-testing unstable; do
+for repo in $ALL_REPOSITORIES; do
     if check_single_repo $repo; then
         echo -n "$(color ${repo})${repo}$(reset_color)"
         snap_file="${PWD}/repo-latest-snapshot/${repo}-${PACKAGE_SET}-${DIST}-${COMPONENT}"
