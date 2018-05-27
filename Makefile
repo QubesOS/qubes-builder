@@ -812,6 +812,11 @@ post-update-repo-%:
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
 
+template-name:
+	@for DIST in $(DISTS_VM); do \
+		export DIST; \
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder template-name; \
+	done
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
