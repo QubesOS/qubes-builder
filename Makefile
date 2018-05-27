@@ -328,6 +328,9 @@ template-local-%::
 	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS; \
 	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1; \
 	for repo in $(GIT_REPOS); do \
+		if [ "$$repo" = "$(SRC_DIR)/linux-template-builder" ]; then \
+			continue; \
+		fi
 		if [ -r $$repo/Makefile.builder ]; then \
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
@@ -673,7 +676,6 @@ do-merge-versions-only:
 		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
 	done
 
-
 # update-repo-* targets only set appropriate variables and call
 # internal-update-repo-* targets for the actual work
 update-repo-%: MAKE_TARGET=update-repo
@@ -686,12 +688,14 @@ update-repo-unstable: SNAPSHOT_REPO=unstable
 # exception here: update-repo-current uses snapshot of current-testing
 update-repo-current: SNAPSHOT_REPO=current-testing
 
-# the work for templates repositories is done by internal-templates-update-repo-* targets
-update-repo-templates-itl: TEMPLATES_REPO=templates-itl
-update-repo-templates-community: TEMPLATES_REPO=templates-community
+update-repo-templates-itl-testing: SNAPSHOT_REPO=templates-itl-testing
+update-repo-templates-itl: SNAPSHOT_REPO=templates-itl-testing
+update-repo-templates-itl: MAKE_TARGET=update-repo-from-snapshot
+update-repo-templates-community-testing: SNAPSHOT_REPO=templates-community-testing
+update-repo-templates-community: SNAPSHOT_REPO=templates-community-testing
+update-repo-templates-community: MAKE_TARGET=update-repo-from-snapshot
 
-# we separate the work done for components from the one for templates repositories
-ifeq (,$(findstring update-repo-templates, $@))
+
 # add dependency on each combination of:
 # internal-update-repo-$(TARGET_REPO).$(PACKAGE_SET).$(DIST).$(COMPONENT)
 # use dots for separating "arguments" to not deal with dashes in component names
@@ -701,22 +705,27 @@ else
 update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) post-update-repo-%
 endif
 	@true
-endif
 
-update-repo-templates-%: $(addprefix internal-templates-update-repo-%.,$(DISTS_VM)) post-templates-update-repo-%
+# similar for templates, but set PACKAGE_SET to "dom0" and use full DISTS_VM
+# instead of DISTS_VM_NO_FLAVOR
+update-repo-templates-%: $(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM:%=%.linux-template-builder)) post-update-repo-templates-%
 	@true
+
 
 # do not include builder itself in the template (it would fail anyway)
 update-repo-template:
 	@true
 
-$(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
+	@true
+
+$(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM_NO_FLAVOR)):
 	@true
 
 # setup arguments
@@ -725,14 +734,21 @@ internal-update-repo-%: PACKAGE_SET = $(word 2, $(subst ., ,$*))
 internal-update-repo-%: DIST        = $(word 3, $(subst ., ,$*))
 internal-update-repo-%: COMPONENT   = $(word 4, $(subst ., ,$*))
 internal-update-repo-%: REPO 		= $(SRC_DIR)/$(COMPONENT)
+internal-update-repo-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)/$(PACKAGE_SET)/$(DIST)
 # set by scripts/auto-build
 internal-update-repo-%: BUILD_LOG_URL = $(word 2,$(subst =, ,$(filter $(COMPONENT)-$(PACKAGE_SET)-$(DIST)=%,$(BUILD_LOGS_URL))))
 internal-update-repo-%: $(REPO)
 
+# for templates skip $(PACKAGE_SET)/$(DIST)
+internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # and the actual code
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
 	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
+	if [ "$(COMPONENT)" = linux-template-builder ]; then \
+		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
+		repo_base_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
+	fi; \
 	if [ -n "$${!repo_base_var}" ]; then \
 		repo_basedir="$${!repo_base_var}"; \
 	else \
@@ -747,11 +763,16 @@ internal-update-repo-%:
 				exit 0; \
 			fi; \
 		fi; \
+		if [ "$(COMPONENT)" = linux-template-builder ]; then
+			export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+					DIST=$(DIST) \
+					template-name)
+		fi
 		component_packages=$$(MAKEFLAGS= $(MAKE) -s -f Makefile.generic \
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=`basename $(REPO)` \
-				UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+				UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 				get-var GET_VAR=PACKAGE_LIST); \
 		if [ -z "$$component_packages" ]; then \
 			echo "no packages."; \
@@ -761,12 +782,13 @@ internal-update-repo-%:
 			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
 			TARGET_REPO=$(TARGET_REPO) \
-			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 			SNAPSHOT_FILE=$(BUILDER_DIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
 			BUILD_LOG_URL=$(BUILD_LOG_URL) \
 			$(MAKE_TARGET) || exit 1; \
 	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \
+		DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 		$(MAKE) -s -C $(REPO) update-repo-$(TARGET_REPO) || exit 1; \
 	else \
 		echo -n "Updating $(REPO)... skipping."; \
@@ -786,22 +808,10 @@ post-update-repo-%:
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
+		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
 		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
 	done
 
-.PHONY: internal-templates-update-repo-%
-internal-templates-update-repo-%: DIST = $(subst .,,$(suffix $@))
-internal-templates-update-repo-%:
-	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(LINUX_REPO_BASEDIR)/$(TEMPLATES_REPO) \
-		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-$(TEMPLATES_REPO) ; then \
-			echo "make update-repo-$(TEMPLATES_REPO) failed for template dist=$$DIST"; \
-			exit 1; \
-	fi
-
-# this is executed only once for all update-repo-templates-* target
-post-templates-update-repo-%:
-	@repo_basedir="$(LINUX_REPO_BASEDIR)"; \
-	cd $$repo_basedir/.. && ./update_repo-template.sh `basename $$repo_basedir`;
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 

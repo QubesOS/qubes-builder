@@ -20,6 +20,13 @@ update-repo-from-snapshot: update-repo-date-check
 
 # Load "builder.config" from every plugin
 
+# force dom0's builder plugin for handling template packages
+ifeq ($(COMPONENT),linux-template-builder)
+TEMPLATE_NAME := $(shell $(MAKE) -s -C $(SRC_DIR)/linux-template-builder DIST=$(DIST) template-name)
+DIST_ORIG := $(DIST)
+override DIST := $(DIST_DOM0)
+endif
+
 LOADING_PLUGINS = 1
 BUILDER_MAKEFILE := 
 BUILDER_PLUGINS_COMBINED = $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_$(DIST))
