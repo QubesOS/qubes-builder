@@ -255,27 +255,18 @@ sign-%: $(SRC_DIR)/$(COMPONENT)
 sign-%:
 	@$(call check_branch,$(COMPONENT))
 	@SIGN_KEY=$(SIGN_KEY); \
-	sign_key_var="SIGN_KEY_$(DIST)"; \
+	sign_key_var="SIGN_KEY_$${DIST%%+*}"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
+	if [ "$(COMPONENT)" = linux-template-builder ]; then
+		export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+				template-name)
+	fi
 	if [ -r $(SRC_DIR)/$(COMPONENT)/Makefile.builder ]; then \
 		$(MAKE) --no-print-directory -f Makefile.generic \
 			DIST=$(DIST) \
 			PACKAGE_SET=$(PACKAGE_SET) \
 			COMPONENT=$(COMPONENT) \
 			SIGN_KEY=$$SIGN_KEY \
-			sign || exit 1; \
-	elif [ "$(COMPONENT)" = linux-template-builder ]; then \
-		if [ "$(PACKAGE_SET)" = "dom0" ]; then \
-			exit 0; \
-		fi; \
-		# Special handling for templates
-		RPMSIGN_OPTS=--digest-algo=sha256; \
-		if [ -n "$$SIGN_KEY" ]; then \
-			RPMSIGN_OPTS="$$RPMSIGN_OPTS --key-id=$$SIGN_KEY"; \
-		fi; \
-		export RPMSIGN_OPTS; \
-		$(MAKE) --no-print-directory -C $(SRC_DIR)/$(COMPONENT) \
-			DIST=$(DIST) \
 			sign || exit 1; \
 	elif [ -d $(SRC_DIR)/$(COMPONENT)/rpm ]; then \
 		# Old mechanism supported only for RPM
