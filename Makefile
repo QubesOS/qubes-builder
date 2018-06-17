@@ -439,39 +439,46 @@ mostlyclean:: clean-chroot clean-rpms clean
 	    popd; \
 	fi
 
-.PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+.PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 iso.clean-repos:
 	@echo "-> Preparing for ISO build..."
 	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos
 
-iso.copy-rpms:
-	@echo "--> Copying RPMs from individual repos..."
-	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
-	    if [ -r $$repo/Makefile.builder ]; then \
-			$(MAKE) --no-print-directory -f Makefile.generic \
-				PACKAGE_SET=dom0 \
-				DIST=$(DIST_DOM0) \
-				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-				update-repo || exit 1; \
-	    elif $(MAKE) -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
-	        if ! $(MAKE) -s -C $$repo update-repo-installer ; then \
-				echo "make update-repo-installer failed for repo $$repo"; \
-				exit 1; \
-			fi; \
+iso.copy-rpms: $(COMPONENTS_NO_TPL_BUILDER:%=iso.copy-rpms.%)
+
+iso.copy-rpms.%: COMPONENT=$*
+iso.copy-rpms.%: REPO=$(SRC_DIR)/$(COMPONENT)
+iso.copy-rpms.%: $(SRC_DIR)/%/Makefile.builder
+	@echo "--> Copying $(COMPONENT) RPMs..."
+	@$(MAKE) --no-print-directory -f Makefile.generic \
+		PACKAGE_SET=dom0 \
+		DIST=$(DIST_DOM0) \
+		COMPONENT=$(COMPONENT) \
+		UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		update-repo
+
+iso.copy-rpms.%: $(SRC_DIR)/%/Makefile
+	@echo "--> Copying $(COMPONENT) RPMs..."
+	if $(MAKE) -s -C $(REPO) -n update-repo-installer > /dev/null 2> /dev/null; then \
+		if ! $(MAKE) -s -C $(REPO) update-repo-installer ; then \
+			echo "make update-repo-installer failed for $(COMPONENT)"; \
+			exit 1; \
 	    fi; \
-	done
+	fi
 
-iso.copy-template-builder-rpms:
-	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
-				echo "make update-repo-installer failed for template dist=$$DIST"; \
-				exit 1; \
-		fi; \
-	done
+iso.copy-template-rpms: $(DISTS_VM:%=iso.copy-template-rpms.%)
 
-iso: iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+iso.copy-template-rpms.%: DIST=$*
+
+iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile
+	@echo "--> Copying template $(DIST) RPM..."
+	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		DIST=$(DIST) $(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
+			echo "make update-repo-installer failed for template dist=$$DIST"; \
+			exit 1; \
+	fi
+
+iso: iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 	@if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
 		ln -f $(SRC_DIR)/linux-kernel*/pkgs/fc*/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
