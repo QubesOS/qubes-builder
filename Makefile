@@ -470,6 +470,18 @@ iso.copy-template-rpms: $(DISTS_VM:%=iso.copy-template-rpms.%)
 
 iso.copy-template-rpms.%: DIST=$*
 
+iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
+	@echo "--> Copying template $(DIST) RPM..."
+	@export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+			DIST=$(DIST) \
+			template-name); \
+	$(MAKE) --no-print-directory -f Makefile.generic \
+		PACKAGE_SET=vm \
+		DIST=$(DIST) \
+		COMPONENT=linux-template-builder \
+		UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		update-repo
+
 iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile
 	@echo "--> Copying template $(DIST) RPM..."
 	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
