@@ -212,7 +212,7 @@ check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
 $(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
 
-$(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
+$(COMPONENTS_NO_TPL_BUILDER:%=%-vm) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
@@ -224,7 +224,7 @@ $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	    done; \
 	fi
 
-$(filter-out qubes-dom0, $(COMPONENTS:%=%-dom0)) : %-dom0 : check-depend
+$(COMPONENTS_NO_TPL_BUILDER:%=%-dom0) : %-dom0 : check-depend
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
