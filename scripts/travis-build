@@ -57,7 +57,7 @@ if [ ! -e /usr/share/debootstrap/scripts/stretch ]; then
 fi
 
 # and old sfdisk (missing gpt support), get it from xenial
-if [ "0$TEMPLATE_ROOT_WITH_PARTITIONS" -eq 1 ]; then
+if [ "0$TEMPLATE_ROOT_WITH_PARTITIONS" -eq 1 ] || [ "$DISTS_VM" = "archlinux" ]; then
     cd cache
     wget http://archive.ubuntu.com/ubuntu/pool/main/u/util-linux/libsmartcols1_2.27.1-6ubuntu3_amd64.deb
     wget http://archive.ubuntu.com/ubuntu/pool/main/u/util-linux/libfdisk1_2.27.1-6ubuntu3_amd64.deb
@@ -75,6 +75,7 @@ EOF
     sudo dpkg -i mount_*deb
     dpkg-deb -x util-linux_*deb util-linux
     sudo cp -f util-linux/sbin/sfdisk /sbin/sfdisk
+    sudo cp -f util-linux/usr/bin/unshare /usr/bin/unshare
     cd ..
 fi
 
