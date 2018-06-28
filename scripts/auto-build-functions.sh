@@ -1,3 +1,4 @@
+#!/bin/bash
 
 build_failure() {
     local component=$1
@@ -5,23 +6,27 @@ build_failure() {
     local dist=$3
     local build_log_url=$4
 
-    local RELEASE=$(make -s get-var GET_VAR=RELEASE)
+    local RELEASE
     # don't let the API key be logged...
-    local GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
-    local GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
+    local GITHUB_API_KEY
+    local GITHUB_BUILD_ISSUES_REPO
+    RELEASE=$(make -s get-var GET_VAR=RELEASE)
+    GITHUB_API_KEY=$(make -s get-var GET_VAR=GITHUB_API_KEY)
+    GITHUB_BUILD_ISSUES_REPO=$(make -s get-var GET_VAR=GITHUB_BUILD_ISSUES_REPO)
     echo "Build failed: $component for $package_set (r$RELEASE $dist)" >&2
-    if [ -z "$GITHUB_API_KEY" -o -z "$GITHUB_BUILD_ISSUES_REPO" ]; then
+    if [ -z "$GITHUB_API_KEY" ] || [ -z "$GITHUB_BUILD_ISSUES_REPO" ]; then
         echo "No alternative way of build failure reporting (GITHUB_API_KEY, GITHUB_BUILD_ISSUES_REPO), exiting" >&2
         exit 1
     fi
     curl -H "Authorization: token $GITHUB_API_KEY" \
 		-d "{ \"title\": \"Build failed: $component for $package_set ($RELEASE $dist)\",
               \"body\": \"See $build_log_url for details\" }" \
-        https://api.github.com/repos/$GITHUB_BUILD_ISSUES_REPO/issues
+        "https://api.github.com/repos/$GITHUB_BUILD_ISSUES_REPO/issues"
 }
 
 get_build_log_url() {
-    local log_name=$(cat $log_service_output_file 2>/dev/null || :)
+    local log_name
+    log_name=$(cat "$log_service_output_file" 2>/dev/null || :)
     if [ -z "$log_name" ]; then
         echo "https://github.com/QubesOS/build-logs/tree/master/$(hostname)"
     else
