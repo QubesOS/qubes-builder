@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# This is script to automate template build process in reaction to properly signed
+# command.
+
+# shellcheck source=scripts/auto-build-functions.sh
+. "$(dirname "$0")/auto-build-functions.sh"
+
+usage() {
+    echo "Usage: $0 dist timestamp" >&2
+    echo "dist as configured in builder.conf" >&2
+    echo "timestamp expected in format %Y%m%d%H%M" >&2
+    echo "Repository the template is uploaded to is taken from builder.conf DEFAULT_TEMPLATE_REPOSITORY" >&2
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit 1
+fi
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Sanity checks
+if [ "${1##*/}" != "${1}" ]; then
+    echo "Found '/' in argument" >&2
+    exit 1
+fi
+
+# resolve template aliases, if any
+template_dist=$(DISTS_VM="$1" make get-var GET_VAR=DISTS_VM)
+
+# then check if this template is enabled in builder.conf
+found=
+for d in $(make -s get-var GET_VAR=DISTS_VM); do
+    if [ "$d" = "$template_dist" ]; then
+        found=1
+    fi
+done
+if [ -z "$found" ]; then
+    echo "Template not enabled here: $template_dist" >&2
+    exit 1
+fi
+
+if ! printf "%s" "$2" | grep -q "^[0-9]\{12\}$"; then
+    echo "Invalid timestamp format" >&2
+    exit 1
+fi
+timestamp="$2"
+
+# check if template is already built
+template_name=$(DISTS_VM="$template_dist" make -s template-name)
+timestamp_file="qubes-src/linux-template-builder/build_timestamp_$template_name"
+if [ -r "$timestamp_file" ]; then
+    timestamp_existing=$(cat "$timestamp_file")
+    if [ "$timestamp" -lt "$timestamp_existing" ]; then
+        echo "Newer template ($timestamp_existing) already built" >&2
+        exit 0
+    elif [ "$timestamp_existing" -eq "$timestamp" ]; then
+        template_status=$(scripts/check-release-status-for-component \
+                --abort-on-empty \
+                --no-print-version \
+                linux-template-builder vm "$template_dist" || :)
+        if [ "$template_status" != "not released" ]; then
+            echo "Template already built" >&2
+            exit 0
+        fi
+    fi
+fi
+
+repo=$(make -s get-var GET_VAR=DEFAULT_TEMPLATE_REPOSITORY)
+if [ -z "$repo" ]; then
+    echo "DEFAULT_TEMPLATE_REPOSITORY in builder.conf not set" >&2
+    exit 1
+fi
+
+TEMPLATE_TIMESTAMP="$timestamp"
+export TEMPLATE_TIMESTAMP
+
+if ! DISTS_VM="$template_dist" scripts/make-with-log template-in-dispvm; then
+    build_failure template vm "$template_dist" "$(get_build_log_url)"
+    exit 1
+fi
+
+build_logs="linux-template-builder-vm-${template_dist}=$(get_build_log_url)"
+
+if ! DISTS_VM="$template_dist" scripts/make-with-log \
+               COMPONENTS=linux-template-builder \
+               BUILD_LOGS_URL="$build_logs" \
+               sign-all "update-repo-$repo"; then
+    build_failure template upload "$template_dist" "$(get_build_log_url)"
+    exit 1
+fi

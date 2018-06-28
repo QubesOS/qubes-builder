@@ -135,6 +135,12 @@ even main builder modifications.
 This setting is used only when building the template in DispVM
 (template-in-dispvm target)
 
+### DEFAULT_TEMPLATE_REPOSITORY
+> Default: no value
+
+Repository where auto-build-template script should upload newly build
+templates. Recommended templates-itl-testing or templates-itl-community.
+
 ### QUBES_RELEASE
 > Default: test-build
 
