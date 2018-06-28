@@ -258,7 +258,9 @@ sign-%:
 	sign_key_var="SIGN_KEY_$${DIST%%+*}"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then
-		export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+		export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+				-C $(SRC_DIR)/linux-template-builder \
+				DIST=$(DIST) \
 				template-name)
 	fi
 	if [ -r $(SRC_DIR)/$(COMPONENT)/Makefile.builder ]; then \
@@ -472,7 +474,8 @@ iso.copy-template-rpms.%: DIST=$*
 
 iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
 	@echo "--> Copying template $(DIST) RPM..."
-	@export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+	@export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+			-C $(SRC_DIR)/linux-template-builder \
 			DIST=$(DIST) \
 			template-name); \
 	$(MAKE) --no-print-directory -f Makefile.generic \
@@ -779,7 +782,8 @@ internal-update-repo-%:
 			fi; \
 		fi; \
 		if [ "$(COMPONENT)" = linux-template-builder ]; then
-			export TEMPLATE_NAME=$$(make -s -C $(SRC_DIR)/linux-template-builder \
+			export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+					-C $(SRC_DIR)/linux-template-builder \
 					DIST=$(DIST) \
 					template-name)
 		fi
