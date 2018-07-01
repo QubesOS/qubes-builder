@@ -337,6 +337,17 @@ commented with GPG-signed command to move such package to 'current' repository
 and close the issue.
 This is implemented by builder-github pluging.
 
+### ALLOWED_DISTS_*
+> Default: no value
+
+Use `ALLOWED_DISTS_fingerprint` to set what what target distributions can be
+controlled with a signed commands by given key (replace `fingerprint` with a
+full key fingerprint). Value should be a list, as in `DISTS_VM` option. Include
+also `dom0` to allow touching dom0 packages.
+
+This is implemented by builder-github pluging.
+
+
 Example for using local git dirs as repo
 ========================================
 
