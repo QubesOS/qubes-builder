@@ -22,6 +22,9 @@ VERBOSE ?= 0
 COMPONENTS ?= builder
 
 LINUX_REPO_BASEDIR ?= $(SRC_DIR)/linux-yum/current-release
+# set default RELEASE based on LINUX_REPO_BASEDIR, assuming it was set to
+# something sensible (not the value above)
+RELEASE ?= $(patsubst r%,%,$(lastword $(subst /, ,$(LINUX_REPO_BASEDIR))))
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
 KEYRING_DIR_GIT ?= $(BUILDER_DIR)/keyrings/git
@@ -72,6 +75,7 @@ ifeq ($(TEMPLATE_ONLY), 1)
 endif
 
 COMPONENTS_NO_BUILDER := $(filter-out builder,$(COMPONENTS))
+COMPONENTS_NO_TPL_BUILDER := $(filter-out linux-template-builder builder,$(COMPONENTS))
 
 # The package manager used to install dependencies. builder.conf
 # files may depend on this variable to determine the correct
@@ -206,9 +210,9 @@ check-depend.dpkg:
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
-$(filter-out linux-template-builder builder, $(COMPONENTS)): % : %-dom0 %-vm
+$(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
 
-$(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
+$(COMPONENTS_NO_TPL_BUILDER:%=%-vm) : %-vm : check-depend
 	@$(call check_branch,$*)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
@@ -220,7 +224,7 @@ $(filter-out qubes-vm, $(COMPONENTS:%=%-vm)) : %-vm : check-depend
 	    done; \
 	fi
 
-$(filter-out qubes-dom0, $(COMPONENTS:%=%-dom0)) : %-dom0 : check-depend
+$(COMPONENTS_NO_TPL_BUILDER:%=%-dom0) : %-dom0 : check-depend
 	@$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
@@ -239,7 +243,9 @@ $(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
 endif
 
 .PHONY: $(COMPONENTS:%=sign-vm-%)
-$(COMPONENTS:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
+$(COMPONENTS_NO_TPL_BUILDER:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
+# don't strip flavors for template signing
+sign-vm-linux-template-builder : $(addsuffix -linux-template-builder, $(DISTS_VM:%=sign-vm-%))
 
 sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 sign-%: DIST        = $(word 2, $(subst -, ,$*))
@@ -249,27 +255,20 @@ sign-%: $(SRC_DIR)/$(COMPONENT)
 sign-%:
 	@$(call check_branch,$(COMPONENT))
 	@SIGN_KEY=$(SIGN_KEY); \
-	sign_key_var="SIGN_KEY_$(DIST)"; \
+	sign_key_var="SIGN_KEY_$${DIST%%+*}"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
+	if [ "$(COMPONENT)" = linux-template-builder ]; then
+		export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+				-C $(SRC_DIR)/linux-template-builder \
+				DIST=$(DIST) \
+				template-name)
+	fi
 	if [ -r $(SRC_DIR)/$(COMPONENT)/Makefile.builder ]; then \
 		$(MAKE) --no-print-directory -f Makefile.generic \
 			DIST=$(DIST) \
 			PACKAGE_SET=$(PACKAGE_SET) \
 			COMPONENT=$(COMPONENT) \
 			SIGN_KEY=$$SIGN_KEY \
-			sign || exit 1; \
-	elif [ "$(COMPONENT)" = linux-template-builder ]; then \
-		if [ "$(PACKAGE_SET)" = "dom0" ]; then \
-			exit 0; \
-		fi; \
-		# Special handling for templates
-		RPMSIGN_OPTS=--digest-algo=sha256; \
-		if [ -n "$$SIGN_KEY" ]; then \
-			RPMSIGN_OPTS="$$RPMSIGN_OPTS --key-id=$$SIGN_KEY"; \
-		fi; \
-		export RPMSIGN_OPTS; \
-		$(MAKE) --no-print-directory -C $(SRC_DIR)/$(COMPONENT) \
-			DIST=$(DIST) \
 			sign || exit 1; \
 	elif [ -d $(SRC_DIR)/$(COMPONENT)/rpm ]; then \
 		# Old mechanism supported only for RPM
@@ -327,6 +326,9 @@ template-local-%::
 	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS; \
 	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1; \
 	for repo in $(GIT_REPOS); do \
+		if [ "$$repo" = "$(SRC_DIR)/linux-template-builder" ]; then \
+			continue; \
+		fi
 		if [ -r $$repo/Makefile.builder ]; then \
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
@@ -372,10 +374,10 @@ sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
 qubes-dom0:: build-info
-qubes-dom0:: $(addsuffix -dom0,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
+qubes-dom0:: $(addsuffix -dom0,$(COMPONENTS_NO_TPL_BUILDER))
 
 qubes-vm:: build-info
-qubes-vm:: $(addsuffix -vm,$(filter-out linux-template-builder,$(COMPONENTS_NO_BUILDER)))
+qubes-vm:: $(addsuffix -vm,$(COMPONENTS_NO_TPL_BUILDER))
 
 qubes-os-iso: get-sources qubes sign-all iso
 
@@ -439,39 +441,59 @@ mostlyclean:: clean-chroot clean-rpms clean
 	    popd; \
 	fi
 
-.PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+.PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 iso.clean-repos:
 	@echo "-> Preparing for ISO build..."
 	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos
 
-iso.copy-rpms:
-	@echo "--> Copying RPMs from individual repos..."
-	@for repo in $(filter-out linux-template-builder .,$(GIT_REPOS)); do \
-	    if [ -r $$repo/Makefile.builder ]; then \
-			$(MAKE) --no-print-directory -f Makefile.generic \
-				PACKAGE_SET=dom0 \
-				DIST=$(DIST_DOM0) \
-				COMPONENT=`basename $$repo` \
-				UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-				update-repo || exit 1; \
-	    elif $(MAKE) -s -C $$repo -n update-repo-installer > /dev/null 2> /dev/null; then \
-	        if ! $(MAKE) -s -C $$repo update-repo-installer ; then \
-				echo "make update-repo-installer failed for repo $$repo"; \
-				exit 1; \
-			fi; \
+iso.copy-rpms: $(COMPONENTS_NO_TPL_BUILDER:%=iso.copy-rpms.%)
+
+iso.copy-rpms.%: COMPONENT=$*
+iso.copy-rpms.%: REPO=$(SRC_DIR)/$(COMPONENT)
+iso.copy-rpms.%: $(SRC_DIR)/%/Makefile.builder
+	@echo "--> Copying $(COMPONENT) RPMs..."
+	@$(MAKE) --no-print-directory -f Makefile.generic \
+		PACKAGE_SET=dom0 \
+		DIST=$(DIST_DOM0) \
+		COMPONENT=$(COMPONENT) \
+		UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		update-repo
+
+iso.copy-rpms.%: $(SRC_DIR)/%/Makefile
+	@echo "--> Copying $(COMPONENT) RPMs..."
+	if $(MAKE) -s -C $(REPO) -n update-repo-installer > /dev/null 2> /dev/null; then \
+		if ! $(MAKE) -s -C $(REPO) update-repo-installer ; then \
+			echo "make update-repo-installer failed for $(COMPONENT)"; \
+			exit 1; \
 	    fi; \
-	done
+	fi
 
-iso.copy-template-builder-rpms:
-	@for DIST in $(DISTS_VM); do \
-		if ! DIST=$$DIST UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
-			$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
-				echo "make update-repo-installer failed for template dist=$$DIST"; \
-				exit 1; \
-		fi; \
-	done
+iso.copy-template-rpms: $(DISTS_VM:%=iso.copy-template-rpms.%)
 
-iso: iso.clean-repos iso.copy-rpms iso.copy-template-builder-rpms
+iso.copy-template-rpms.%: DIST=$*
+
+iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
+	@echo "--> Copying template $(DIST) RPM..."
+	@export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+			-C $(SRC_DIR)/linux-template-builder \
+			DIST=$(DIST) \
+			template-name); \
+	$(MAKE) --no-print-directory -f Makefile.generic \
+		PACKAGE_SET=vm \
+		DIST=$(DIST) \
+		COMPONENT=linux-template-builder \
+		UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		update-repo
+
+iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile
+	@echo "--> Copying template $(DIST) RPM..."
+	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+		DIST=$(DIST) $(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
+			echo "make update-repo-installer failed for template dist=$$DIST"; \
+			exit 1; \
+	fi
+
+iso: iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 	@if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
 		ln -f $(SRC_DIR)/linux-kernel*/pkgs/fc*/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
@@ -672,7 +694,6 @@ do-merge-versions-only:
 		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
 	done
 
-
 # update-repo-* targets only set appropriate variables and call
 # internal-update-repo-* targets for the actual work
 update-repo-%: MAKE_TARGET=update-repo
@@ -685,12 +706,14 @@ update-repo-unstable: SNAPSHOT_REPO=unstable
 # exception here: update-repo-current uses snapshot of current-testing
 update-repo-current: SNAPSHOT_REPO=current-testing
 
-# the work for templates repositories is done by internal-templates-update-repo-* targets
-update-repo-templates-itl: TEMPLATES_REPO=templates-itl
-update-repo-templates-community: TEMPLATES_REPO=templates-community
+update-repo-templates-itl-testing: SNAPSHOT_REPO=templates-itl-testing
+update-repo-templates-itl: SNAPSHOT_REPO=templates-itl-testing
+update-repo-templates-itl: MAKE_TARGET=update-repo-from-snapshot
+update-repo-templates-community-testing: SNAPSHOT_REPO=templates-community-testing
+update-repo-templates-community: SNAPSHOT_REPO=templates-community-testing
+update-repo-templates-community: MAKE_TARGET=update-repo-from-snapshot
 
-# we separate the work done for components from the one for templates repositories
-ifeq (,$(findstring update-repo-templates, $@))
+
 # add dependency on each combination of:
 # internal-update-repo-$(TARGET_REPO).$(PACKAGE_SET).$(DIST).$(COMPONENT)
 # use dots for separating "arguments" to not deal with dashes in component names
@@ -700,22 +723,27 @@ else
 update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) post-update-repo-%
 endif
 	@true
-endif
 
-update-repo-templates-%: $(addprefix internal-templates-update-repo-%.,$(DISTS_VM)) post-templates-update-repo-%
+# similar for templates, but set PACKAGE_SET to "dom0" and use full DISTS_VM
+# instead of DISTS_VM_NO_FLAVOR
+update-repo-templates-%: $(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM:%=%.linux-template-builder)) post-update-repo-templates-%
 	@true
+
 
 # do not include builder itself in the template (it would fail anyway)
 update-repo-template:
 	@true
 
-$(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
 	@true
-$(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS))
+$(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
+	@true
+
+$(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM_NO_FLAVOR)):
 	@true
 
 # setup arguments
@@ -724,14 +752,21 @@ internal-update-repo-%: PACKAGE_SET = $(word 2, $(subst ., ,$*))
 internal-update-repo-%: DIST        = $(word 3, $(subst ., ,$*))
 internal-update-repo-%: COMPONENT   = $(word 4, $(subst ., ,$*))
 internal-update-repo-%: REPO 		= $(SRC_DIR)/$(COMPONENT)
+internal-update-repo-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)/$(PACKAGE_SET)/$(DIST)
 # set by scripts/auto-build
 internal-update-repo-%: BUILD_LOG_URL = $(word 2,$(subst =, ,$(filter $(COMPONENT)-$(PACKAGE_SET)-$(DIST)=%,$(BUILD_LOGS_URL))))
 internal-update-repo-%: $(REPO)
 
+# for templates skip $(PACKAGE_SET)/$(DIST)
+internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # and the actual code
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
 	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
+	if [ "$(COMPONENT)" = linux-template-builder ]; then \
+		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
+		repo_base_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
+	fi; \
 	if [ -n "$${!repo_base_var}" ]; then \
 		repo_basedir="$${!repo_base_var}"; \
 	else \
@@ -746,11 +781,17 @@ internal-update-repo-%:
 				exit 0; \
 			fi; \
 		fi; \
+		if [ "$(COMPONENT)" = linux-template-builder ]; then
+			export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+					-C $(SRC_DIR)/linux-template-builder \
+					DIST=$(DIST) \
+					template-name)
+		fi
 		component_packages=$$(MAKEFLAGS= $(MAKE) -s -f Makefile.generic \
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=`basename $(REPO)` \
-				UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+				UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 				get-var GET_VAR=PACKAGE_LIST); \
 		if [ -z "$$component_packages" ]; then \
 			echo "no packages."; \
@@ -760,12 +801,13 @@ internal-update-repo-%:
 			COMPONENT=`basename $(REPO)` \
 			SNAPSHOT_REPO=$(SNAPSHOT_REPO) \
 			TARGET_REPO=$(TARGET_REPO) \
-			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(TARGET_REPO)/$(PACKAGE_SET)/$(DIST) \
+			UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 			SNAPSHOT_FILE=$(BUILDER_DIR)/repo-latest-snapshot/$(SNAPSHOT_REPO)-$(PACKAGE_SET)-$(DIST)-`basename $(REPO)` \
 			BUILD_LOG_URL=$(BUILD_LOG_URL) \
 			$(MAKE_TARGET) || exit 1; \
 	elif $(MAKE) -C $(REPO) -n update-repo-$(TARGET_REPO) >/dev/null 2>/dev/null; then \
 		echo "Updating $(REPO)... "; \
+		DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$$repo_basedir/$(UPDATE_REPO_SUBDIR) \
 		$(MAKE) -s -C $(REPO) update-repo-$(TARGET_REPO) || exit 1; \
 	else \
 		echo -n "Updating $(REPO)... skipping."; \
@@ -785,36 +827,42 @@ post-update-repo-%:
 	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
-		(cd $$repo/.. && ./update_repo-$*.sh `basename $$repo`); \
+		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
+		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE)); \
 	done
 
-.PHONY: internal-templates-update-repo-%
-internal-templates-update-repo-%: DIST = $(subst .,,$(suffix $@))
-internal-templates-update-repo-%:
-	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(LINUX_REPO_BASEDIR)/$(TEMPLATES_REPO) \
-		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-$(TEMPLATES_REPO) ; then \
-			echo "make update-repo-$(TEMPLATES_REPO) failed for template dist=$$DIST"; \
-			exit 1; \
-	fi
-
-# this is executed only once for all update-repo-templates-* target
-post-templates-update-repo-%:
-	@repo_basedir="$(LINUX_REPO_BASEDIR)"; \
-	cd $$repo_basedir/.. && ./update_repo-template.sh `basename $$repo_basedir`;
+template-name:
+	@for DIST in $(DISTS_VM); do \
+		export DIST; \
+		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder template-name; \
+	done
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
 ifneq (,$(DIST_DOM0))
-check-release-status: check-release-status-dom0-$(DIST_DOM0)
+check-release-status: check-release-status-dom0-$(DIST_DOM0) check-release-status-templates
 	@true
 endif
 
+check-release-status-templates:
+	@echo "-> Checking $(c.bold)templates$(c.normal)"
+	for DIST in $(DISTS_VM); do \
+		if ! [ -e $(SRC_DIR)/linux-template-builder/Makefile.builder ]; then \
+			# Old style components not supported
+			continue; \
+		fi; \
+		TEMPLATE_NAME=$$(DISTS_VM=$$DIST make -s template-name); \
+		echo -n "$$TEMPLATE_NAME: "; \
+		$(BUILDER_DIR)/scripts/check-release-status-for-component --color \
+			"linux-template-builder" "vm" "$$DIST"
+	done
+
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
-check-release-status-%: DIST        = $(word 2, $(subst -, ,$*))
+check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
 	@echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"
-	for C in $(COMPONENTS_NO_BUILDER); do \
+	for C in $(COMPONENTS_NO_TPL_BUILDER); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
 			continue; \
@@ -828,7 +876,7 @@ check-release-status-%:
 		fi
 		echo -n "$$C: "; \
 		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
-	done; \
+	done
 
 windows-image:
 	./win-mksrcimg.sh
