@@ -978,7 +978,7 @@ install-deps: install-deps.$(PKG_MANAGER)
 
 .PHONY: install-deps.rpm
 install-deps.rpm::
-	@sudo yum install -y $(DEPENDENCIES)
+	@sudo dnf install -y $(DEPENDENCIES) || sudo yum install -y $(DEPENDENCIES)
 
 .PHONY: install-deps.dpkg
 install-deps.dpkg::
