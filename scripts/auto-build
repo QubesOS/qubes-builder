@@ -63,6 +63,12 @@ else
                         get-sources-extra
 fi
 
+# for template builder only refresh sources, but build only on explicit request
+if [ "$component" = "linux-template-builder" ]; then
+    echo "Template build requires explicit request" >&2
+    exit 0
+fi
+
 git_url=$(make -s get-var GET_VAR=GIT_URL_${component//-/_})
 if [ -z "$git_url" ]; then
     git_baseurl=$(make -s get-var GET_VAR=GIT_BASEURL)
