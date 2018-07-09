@@ -328,7 +328,7 @@ template-local-%::
 	for repo in $(GIT_REPOS); do \
 		if [ "$$repo" = "$(SRC_DIR)/linux-template-builder" ]; then \
 			continue; \
-		fi
+		fi; \
 		if [ -r $$repo/Makefile.builder ]; then \
 			$(MAKE) --no-print-directory -f Makefile.generic \
 				PACKAGE_SET=vm \
