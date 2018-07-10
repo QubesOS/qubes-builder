@@ -41,6 +41,7 @@ sudo mount $DEV $MNT -o norecover,uid=`id -u` || exit 1
 rsync -r $WINDOWS_BUILDER_CONTENT $MNT/ || exit 1
 cp $BUILDERCONF $MNT/builder.conf || exit 1
 mkdir -p $MNT/qubes-src
+mkdir -p $MNT/build-logs
 
 for C in $COMPONENTS; do
     if [ $C = builder ]; then
