@@ -890,7 +890,6 @@ windows-image-extract:
 			$(MAKE) -s -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 \
 				WINDOWS_IMAGE_DIR=$(BUILDER_DIR)/mnt \
 				COMPONENT=`basename $$REPO` \
-				DIST=dummy \
 				windows-image-extract; \
 		fi; \
 	done; \
