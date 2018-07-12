@@ -234,25 +234,25 @@ ifneq ($(DIST_DOM0),)
 	fi
 endif
 
-.PHONY: $(COMPONENTS:%=sign-%)
-$(COMPONENTS:%=sign-%): sign-% : sign-dom0-% sign-vm-%
+.PHONY: $(COMPONENTS:%=sign.%)
+$(COMPONENTS:%=sign.%): sign.% : sign.dom0.% sign.vm.%
 
-.PHONY: $(COMPONENTS:%=sign-dom0-%)
+.PHONY: $(COMPONENTS:%=sign.dom0.%)
 ifneq ($(DIST_DOM0),)
-$(COMPONENTS:%=sign-dom0-%): sign-dom0-% : sign-dom0-$(DIST_DOM0)-%
+$(COMPONENTS:%=sign.dom0.%): sign.dom0.% : sign.dom0.$(DIST_DOM0).%
 endif
 
-.PHONY: $(COMPONENTS:%=sign-vm-%)
-$(COMPONENTS_NO_TPL_BUILDER:%=sign-vm-%): sign-vm-% : $(addsuffix -%, $(DISTS_VM_NO_FLAVOR:%=sign-vm-%))
+.PHONY: $(COMPONENTS:%=sign.vm.%)
+$(COMPONENTS_NO_TPL_BUILDER:%=sign.vm.%): sign.vm.% : $(addsuffix .%, $(DISTS_VM_NO_FLAVOR:%=sign.vm.%))
 # don't strip flavors for template signing
-sign-vm-linux-template-builder : $(addsuffix -linux-template-builder, $(DISTS_VM:%=sign-vm-%))
+sign.vm.linux-template-builder : $(addsuffix .linux-template-builder, $(DISTS_VM:%=sign.vm.%))
 
-sign-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
-sign-%: DIST        = $(word 2, $(subst -, ,$*))
-sign-%: _space      = $(_empty) $(_empty)
-sign-%: COMPONENT   = $(subst $(_space),-,$(strip $(wordlist 3, 10, $(subst -, ,$*))))
-sign-%: $(SRC_DIR)/$(COMPONENT)
-sign-%:
+sign.%: PACKAGE_SET = $(word 1, $(subst ., ,$*))
+sign.%: DIST        = $(word 2, $(subst ., ,$*))
+sign.%: _space      = $(_empty) $(_empty)
+sign.%: COMPONENT   = $(word 3, $(subst ., ,$*))
+sign.%: $(SRC_DIR)/$(COMPONENT)
+sign.%:
 	@$(call check_branch,$(COMPONENT))
 	@SIGN_KEY=$(SIGN_KEY); \
 	sign_key_var="SIGN_KEY_$${DIST%%+*}"; \
@@ -367,9 +367,9 @@ template-in-dispvm-%:
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
 .PHONY: sign-all sign-dom0 sign-vm
-sign-all:: $(COMPONENTS_TO_SIGN:%=sign-%);
-sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign-dom0-%);
-sign-vm:: $(COMPONENTS_TO_SIGN:%=sign-vm-%);
+sign-all:: $(COMPONENTS_TO_SIGN:%=sign.%);
+sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign.dom0.%);
+sign-vm:: $(COMPONENTS_TO_SIGN:%=sign.vm.%);
 
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
