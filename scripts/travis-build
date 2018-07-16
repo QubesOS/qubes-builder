@@ -56,6 +56,14 @@ if [ ! -e /usr/share/debootstrap/scripts/stretch ]; then
     sudo ln -s sid /usr/share/debootstrap/scripts/stretch
 fi
 
+if [ -L /dev/shm ]; then
+    # don't use symlink for /dev/shm, as it will break when bind-mounting /dev
+    # into chroot (archlinux)
+    sudo rm -f /dev/shm
+    sudo mkdir /dev/shm
+    sudo mount -t tmpfs shm /dev/shm
+fi
+
 # and old sfdisk (missing gpt support), get it from xenial
 if [ "0$TEMPLATE_ROOT_WITH_PARTITIONS" -eq 1 ] || [ "$DISTS_VM" = "archlinux" ]; then
     cd cache
