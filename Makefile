@@ -176,6 +176,7 @@ help:
 	@echo "make switch-branch    -- checkout branch listed in builder.conf for each component"
 	@echo "make update-repo-*    -- copy binary packages to the updates repository (yum/apt/...)"
 	@echo "make get-var GET_VAR=... -- print content of requested configuration variable"
+	@echo "make add-remote       -- add remote git repository"
 	@echo "make COMPONENT        -- build both dom0 and VM part of COMPONENT"
 	@echo "make COMPONENT-dom0   -- build only dom0 part of COMPONENT"
 	@echo "make COMPONENT-vm     -- build only VM part of COMPONENT"
@@ -693,6 +694,17 @@ do-merge-versions-only:
 		echo "Merging FETCH_HEAD into $$REPO"; \
 		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
 	done
+
+add-remote:
+	@if [ "x$${GIT_REMOTE//-/_}" != "x" ]; then \
+		for REPO in $(GIT_REPOS); do \
+			pushd $$REPO > /dev/null; \
+				COMPONENT=$$(basename $$REPO | sed 's/\./builder/g'); \
+				git remote add $${GIT_REMOTE//-/_} $(GIT_BASEURL)/$(GIT_PREFIX)$$COMPONENT$(GIT_SUFIX); \
+				git fetch $${GIT_REMOTE//-/_}; \
+			popd > /dev/null; \
+		done; \
+	fi; \
 
 # update-repo-* targets only set appropriate variables and call
 # internal-update-repo-* targets for the actual work
