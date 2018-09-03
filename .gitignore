@@ -17,3 +17,4 @@ untrusted-builder-env-*
 *.sw?
 .*.mk
 *.lock
+.netrc*
