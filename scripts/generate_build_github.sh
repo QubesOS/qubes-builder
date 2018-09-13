@@ -29,7 +29,7 @@ if $GNUPG --list-secret-keys "$SIGN_KEY" &> /dev/null; then
     data=$(echo "Build-template r$RELEASE $DIST $TIMESTAMP" | $GNUPG --digest-algo SHA256 --clearsign -u $SIGN_KEY | sed ':a;N;$!ba;s/\n/\\n/g')
 
     # POST json containing the signed build command
-    echo "{\"body\": \"$data\"}" | curl --netrc-file "$GITHUB_API_FILE" POST "$GITHUB_URL" --data-binary @-
+    echo "{\"body\": \"$data\"}" | curl --netrc-file "$GITHUB_API_FILE" "$GITHUB_URL" --data-binary @-
 else
     echo "Unable to find key $SIGN_KEY"; exit 1
 fi
