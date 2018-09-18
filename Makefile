@@ -316,6 +316,7 @@ template-local-%::
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
 	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
 	export BUILDER_PLUGINS_DIRS; \
+	export TEMPLATE_FLAVOR_DIR; \
 	CACHEDIR=$(BUILDER_DIR)/cache/$$DIST; \
 	export CACHEDIR; \
 	MAKE_TARGET=rpms; \
