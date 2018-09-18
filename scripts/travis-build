@@ -51,6 +51,11 @@ make install-deps
 
 sudo apt-get -y install dpkg-dev debootstrap
 
+if ! getent group mock >/dev/null; then
+    # mock require group with this specific name
+    sudo groupadd mock
+fi
+
 if [ ! -e /usr/share/debootstrap/scripts/stretch ]; then
     # workaround for old debootstrap in Trusty
     sudo ln -s sid /usr/share/debootstrap/scripts/stretch
