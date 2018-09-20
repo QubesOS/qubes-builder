@@ -36,7 +36,7 @@ ifdef GIT_SUBDIR
 endif
 
 # checking for make from Makefile is pointless
-DEPENDENCIES ?= git rpmdevtools rpm-build createrepo python2-sh wget
+DEPENDENCIES ?= git rpmdevtools rpm-build createrepo python2-sh wget perl-Digest-MD perl-Digest-SHA
 
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
