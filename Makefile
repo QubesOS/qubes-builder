@@ -99,7 +99,7 @@ endif
 DISTS_VM := $(shell echo $(DISTS_VM))
 NO_CHECK := $(shell echo $(NO_CHECK))
 TEMPLATE_FLAVOR := $(shell echo $(TEMPLATE_FLAVOR))
-DEPENDENCIES := $(shell echo $(DEPENDENCIES))
+DEPENDENCIES := $(sort $(DEPENDENCIES))
 
 DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
 	$(firstword $(subst +, ,$(_dist)))))
