@@ -147,7 +147,7 @@ def install_deps(packages=None):
 
     # Only add packages to dependency list if they are not installed
     for package in packages:
-        proc = Popen(['rpm', '-q', package], stdout=DEVNULL, stderr=DEVNULL)
+        proc = Popen(['rpm', '-q', '--whatprovides', package], stdout=DEVNULL, stderr=DEVNULL)
         proc.wait()
         if proc.returncode:
             dependencies.add(package)
