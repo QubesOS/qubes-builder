@@ -18,6 +18,11 @@ fi
 
 : "${MAKE_TARGET=rpms}"
 
+if [ -x /usr/bin/dnf ]; then
+    YUM=dnf
+else
+    YUM=yum
+fi
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/chroot-$DIST/home/user/qubes-src/
@@ -40,7 +45,7 @@ if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-$DIST/home/user/.inst
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
     TMP_PACKAGES_ARR=( $(cat build-pkgs-temp.list) )
-    sudo chroot "$PWD/chroot-$DIST" yum install -y "${TMP_PACKAGES_ARR[@]}"
+    sudo chroot "$PWD/chroot-$DIST" $YUM install -y "${TMP_PACKAGES_ARR[@]}"
     rm -f build-pkgs-temp.list
     touch "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
