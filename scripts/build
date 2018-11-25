@@ -45,7 +45,13 @@ if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-$DIST/home/user/.inst
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
     TMP_PACKAGES_ARR=( $(cat build-pkgs-temp.list) )
-    sudo chroot "$PWD/chroot-$DIST" $YUM install -y "${TMP_PACKAGES_ARR[@]}"
+
+    if [ "x${FEDORA_MIRROR}" != "x" ]; then
+        YUM_OPTS="$YUM_OPTS --setopt=fedora.baseurl=${FEDORA_MIRROR%/}/releases/${DIST#fc}/Everything/x86_64/os/"
+        YUM_OPTS="$YUM_OPTS --setopt=updates.baseurl=${FEDORA_MIRROR%/}/updates/${DIST#fc}/Everything/x86_64/"
+    fi
+
+    sudo chroot "$PWD/chroot-$DIST" $YUM $YUM_OPTS install -y "${TMP_PACKAGES_ARR[@]}"
     rm -f build-pkgs-temp.list
     touch "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
