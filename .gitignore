@@ -18,3 +18,5 @@ untrusted-builder-env-*
 .*.mk
 *.lock
 .netrc*
+
+build-pkgs-temp.list
