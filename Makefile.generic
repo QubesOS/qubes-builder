@@ -114,10 +114,9 @@ copy-in: make-git-tarball
 endif
 
 .PHONY: make-git-tarball
-make-git-tarball: prefix = $(subst _,-,$(subst .orig,,$(subst .tar.gz,,$(notdir $(GIT_TARBALL_NAME)))))/
 make-git-tarball:
 	mkdir -p $(CHROOT_DIR)$(DIST_SRC)
-	$(BUILDER_DIR)/scripts/create-archive $(CHROOT_DIR)$(DIST_SRC) $(GIT_TARBALL_NAME) $(prefix)
+	$(BUILDER_DIR)/scripts/create-archive $(CHROOT_DIR)$(DIST_SRC) $(GIT_TARBALL_NAME)
 
 .PHONY: generic-copy-in
 generic-copy-in:

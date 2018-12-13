@@ -12,7 +12,10 @@ GIT_TARBALL_NAME="${2%.$GIT_ARCHIVE_TYPE}"
 if [ "x$3" != "x" ]; then
     GIT_ARCHIVE_PREFIX="$3"
 else
-    GIT_ARCHIVE_PREFIX="${GIT_TARBALL_NAME%.tar}/"
+    GIT_ARCHIVE_PREFIX=${GIT_TARBALL_NAME##*/}
+    GIT_ARCHIVE_PREFIX=${GIT_ARCHIVE_PREFIX%.tar}
+    GIT_ARCHIVE_PREFIX=${GIT_ARCHIVE_PREFIX%.orig}
+    GIT_ARCHIVE_PREFIX="${GIT_ARCHIVE_PREFIX}/"
 fi
 
 # We enter in the qubes source component
