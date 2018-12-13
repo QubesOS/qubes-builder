@@ -55,6 +55,8 @@ case "$GIT_ARCHIVE_TYPE" in
         ;;
     "bz2") bzip2 -f "${GIT_TARBALL_NAME}"
         ;;
+    "xz") xz -f "${GIT_TARBALL_NAME}"
+        ;;
     *) echo "Unsupported archive format..."
         exit 1;;
 esac
