@@ -117,6 +117,9 @@ if [ -d qubes-src/${repo_name} ]; then
 fi
 cp -al $repo_dir qubes-src/$repo_name
 
+# install extra packages - after downloading builder plugins and other sources
+make install-deps
+
 if [ "0$VERBOSE" -eq 0 ]; then
     # if not showing build log, echo some text to prevent Travis-CI timeout
     keep_alive &
