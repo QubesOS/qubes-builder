@@ -104,6 +104,18 @@ EOF
     cd ..
 fi
 
+# we need this commit to use pbuilder with stretch+
+# https://salsa.debian.org/pbuilder-team/pbuilder/commit/de914ad814fe51179ef35993c5336b9355e84ccf
+if echo "$DISTS_VM$DIST_DOM0" | grep -q 'stretch\|buster'; then
+    cd cache
+    wget http://archive.ubuntu.com/ubuntu/pool/main/p/pbuilder/pbuilder_0.229.1_all.deb
+    sha256sum -c <<EOF
+314ef4af137903dfb13e8c3ef1e6ea56cfdb23808d52ec4f5f50e288c73610c5  pbuilder_0.229.1_all.deb
+EOF
+    sudo dpkg -i pbuilder_0.229.1_all.deb
+    cd ..
+fi
+
 # download builder plugins
 make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
 
