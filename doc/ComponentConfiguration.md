@@ -9,9 +9,10 @@ Components Makefile.builder file
 Variables for Linux build:
 
 -   `RPM_SPEC_FILES` List (space separated) of spec files for RPM package build. Path should be relative to component root directory. [QubesBuilder](/wiki/QubesBuilder) will install all [BuildRequires?](/wiki/BuildRequires) (in chroot environment) before the build. In most Qubes components all spec files are kept in *rpm\_spec* directory. This is mainly used for Fedora packages build.
--   `ARCH_BUILD_DIRS` List (space separated) of directories with PKGBUILD files for Archlinux package build. Similar to RPM build, [QubesBuilder](/wiki/QubesBuilder) will install all makedepends, then build the package.
-
-Most components uses *archlinux* directory for this purpose, so its good to keep this style.
+-   `ARCH_BUILD_DIRS` List (space separated) of directories with PKGBUILD files for Archlinux package build. Similar to RPM build, [QubesBuilder](/wiki/QubesBuilder) will install all makedepends, then build the package. Most components uses *archlinux* directory for this purpose, so its good to keep this style.
+-   `DEBIAN_BUILD_DIRS` - relative path to *debian* directory. Just *debian* in most cases, where it's at repository top-level. In cases where upstream tarball (or multiple tarballs) is used directly, this directory can be placed in subdirectory, like *debian-pkg/debian*, to avoid top-level files conflicts with upstream tarball content (`dpkg-source` complains about files not found in upstream tarball)
+-   `NO_ARCHIVE` - do not automatically create source tarball out of git repository content - useful if package use upstream tarball directly; in such a case, there should be a `Makefile` with `get-sources` and `verify-sources` target to actually download that tarball
+-   `SOURCE_COPY_IN` - name of make target (also defined in `Makefile.builder`) that perform additional steps while preparing sources to build; see [BuilderPluginAPI.md] for environment variables useful for this step
 
 Variables for Windows build:
 
