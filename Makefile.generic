@@ -110,7 +110,9 @@ DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
 copy-in: generic-copy-in $(SOURCE_COPY_IN)
 
 ifneq (,$(GIT_TARBALL_NAME))
+  ifneq (1,$(NO_ARCHIVE))
 copy-in: make-git-tarball
+  endif
 endif
 
 .PHONY: make-git-tarball
