@@ -148,3 +148,4 @@ fi
 if [ -n "$keep_alive_pid" ]; then
     kill -9 $keep_alive_pid
 fi
+find qubes-packages-mirror-repo -type f -ls -exec sha1sum {} +
