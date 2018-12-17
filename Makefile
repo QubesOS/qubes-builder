@@ -858,10 +858,17 @@ post-update-repo-%:
 		fi; \
 		repos_to_update="$$repos_to_update $$repo_basedir"; \
 	done; \
+	pkgset_dist= ; \
+	for dist in $(DIST_DOM0); do \
+		pkgset_dist="$$pkgset_dist dom0/$$dist"; \
+	done; \
+	for dist in $(DISTS_VM_NO_FLAVOR); do \
+		pkgset_dist="$$pkgset_dist vm/$$dist"; \
+	done; \
 	for repo in `echo $$repos_to_update|tr ' ' '\n'|sort|uniq`; do \
 		[ -z "$$repo" ] && continue; \
 		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
-		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE)); \
+		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE) $$pkgset_dist); \
 	done
 
 template-name:
