@@ -14,6 +14,8 @@ Variables for Linux build:
 -   `NO_ARCHIVE` - do not automatically create source tarball out of git repository content - useful if package use upstream tarball directly; in such a case, there should be a `Makefile` with `get-sources` and `verify-sources` target to actually download that tarball
 -   `SOURCE_COPY_IN` - name of make target (also defined in `Makefile.builder`) that perform additional steps while preparing sources to build; see [BuilderPluginAPI.md] for environment variables useful for this step
 
+If given component do use creating source tarball (`NO_ARCHIVE=1` is _not_ present in *Makefile.builder*), files at top level can be excluded from it using `.tarignore` file with list of file patterns to exclude. This is similar to `.gitignore` (which is also used to exclude files from source tarball), but avoid removing those files before the build. Can be used to avoid removing additional source tarballs downloaded just before the build.
+
 Variables for Windows build:
 
 -   `WIN_COMPILER` Choose which compiler should be used for this component, thus which build scripts. Currently two options available:
