@@ -40,13 +40,14 @@ if [ "$(printf '%s\n' "$TAR_VERSION" "1.28" | sort -V | head -n1)" == "1.28" ]; 
         --exclude pkgs --exclude '.git*' --exclude "${GIT_TARBALL_NAME}" \
         -cf "${GIT_TARBALL_NAME}" .
 else
-    find . -not -path './.git*' -not -path './pkgs*' -print0 | LC_ALL=C sort -z |
+    find . -not -path './.git*' -not -path './pkgs*' \
+        -not -name "${GIT_TARBALL_NAME}" -print0 |
+    LC_ALL=C sort -z |
     tar --no-recursion --null -T - \
         --mtime="@${SOURCE_DATE_EPOCH}" \
         --mode=go=rX \
         --owner=0 --group=0 --numeric-owner \
         --xform="s%^\./%${GIT_ARCHIVE_PREFIX}%" \
-        --exclude "${GIT_TARBALL_NAME}" \
         -cf "${GIT_TARBALL_NAME}"
 fi
 
