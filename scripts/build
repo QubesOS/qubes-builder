@@ -37,8 +37,7 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 
 export USER_UID=$UID
 if ! [ -d "chroot-dom0-$DIST" ]; then
-    echo "ERROR: You need to have build environment prepared first,"
-    echo "compile any other component (for the same target distribution) first"
+    make --no-print-directory DIST=$DIST PACKAGE_SET=dom0 COMPONENT=builder-rpm -f Makefile.generic prepare-chroot || exit 1;
 fi
 
 if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
