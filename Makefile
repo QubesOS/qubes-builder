@@ -104,7 +104,7 @@ DEPENDENCIES := $(sort $(DEPENDENCIES))
 DISTS_VM_NO_FLAVOR := $(sort $(foreach _dist, $(DISTS_VM), \
 	$(firstword $(subst +, ,$(_dist)))))
 
-DISTS_ALL := $(sort $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR))
+DISTS_ALL := $(sort $(DIST_DOM0:%=dom0-%) $(DISTS_VM_NO_FLAVOR:%=vm-%))
 
 GIT_REPOS := $(COMPONENTS_NO_BUILDER:%=$(SRC_DIR)/%)
 

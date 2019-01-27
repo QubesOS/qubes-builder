@@ -25,7 +25,7 @@ else
 fi
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
-DIST_SRC_ROOT=$PWD/chroot-$DIST/home/user/qubes-src/
+DIST_SRC_ROOT=$PWD/chroot-dom0-$DIST/home/user/qubes-src/
 DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
 BUILDER_REPO_DIR=$PWD/qubes-rpms-mirror-repo/$DIST
 
@@ -36,12 +36,12 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -d "chroot-$DIST" ]; then
+if ! [ -d "chroot-dom0-$DIST" ]; then
     echo "ERROR: You need to have build environment prepared first,"
     echo "compile any other component (for the same target distribution) first"
 fi
 
-if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
+if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
     TMP_PACKAGES_ARR=( $(cat build-pkgs-temp.list) )
@@ -51,17 +51,17 @@ if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-$DIST/home/user/.inst
         YUM_OPTS="$YUM_OPTS --setopt=updates.baseurl=${FEDORA_MIRROR%/}/updates/${DIST#fc}/Everything/x86_64/"
     fi
 
-    sudo chroot "$PWD/chroot-$DIST" $YUM $YUM_OPTS install -y "${TMP_PACKAGES_ARR[@]}"
+    sudo chroot "$PWD/chroot-dom0-$DIST" $YUM $YUM_OPTS install -y "${TMP_PACKAGES_ARR[@]}"
     rm -f build-pkgs-temp.list
-    touch "chroot-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
+    touch "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
 
-if ! [ -r "$PWD/chroot-$DIST/proc/cpuinfo" ]; then
-    sudo mount -t proc proc "$PWD/chroot-$DIST/proc"
+if ! [ -r "$PWD/chroot-dom0-$DIST/proc/cpuinfo" ]; then
+    sudo mount -t proc proc "$PWD/chroot-dom0-$DIST/proc"
 fi
 
-if ! [ -d "$PWD/chroot-$DIST/sys/devices" ]; then
-    sudo mount -t sysfs sysfs "$PWD/chroot-$DIST/sys"
+if ! [ -d "$PWD/chroot-dom0-$DIST/sys/devices" ]; then
+    sudo mount -t sysfs sysfs "$PWD/chroot-dom0-$DIST/sys"
 fi
 
 mkdir -p "$DIST_SRC_ROOT"
@@ -93,10 +93,10 @@ set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
 if [ "$VERBOSE" -eq 0 ]; then
     # shellcheck disable=SC2024
-    sudo -E chroot "chroot-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
+    sudo -E chroot "chroot-dom0-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
     BUILD_RETCODE=$?
 else
-    sudo -E chroot "chroot-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER"
+    sudo -E chroot "chroot-dom0-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER"
     BUILD_RETCODE=$?
 fi
 if [ $BUILD_RETCODE -gt 0 ]; then

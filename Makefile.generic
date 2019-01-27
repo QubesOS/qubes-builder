@@ -45,12 +45,12 @@ THIS_MAKEFILE = Makefile.generic
 ORIG_SRC = $(SRC_DIR)/$(COMPONENT)
 
 # repository for ready packages; directory content is distro-specific
-BUILDER_REPO_DIR = $(PWD)/qubes-packages-mirror-repo/$(DIST)
+BUILDER_REPO_DIR = $(PWD)/qubes-packages-mirror-repo/$(PACKAGE_SET)-$(DIST)
 
 OUTPUT_DIR = pkgs/$(DIST)
 
 # build environment
-CHROOT_DIR = $(PWD)/chroot-$(DIST)
+CHROOT_DIR = $(PWD)/chroot-$(PACKAGE_SET)-$(DIST)
 CACHEDIR = $(PWD)/cache/$(DIST)
 
 # Logfile
