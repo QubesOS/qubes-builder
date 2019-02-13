@@ -1203,11 +1203,11 @@ class Wizard(Config):
         ## Choose to build a complete system or templates only
         self.set_template_only()
 
-        ## Enable builders
-        self.set_builders()
-
         ## Select which templates to build (DISTS_VM)
         self.set_dists()
+
+        ## Enable builders
+        self.set_builders()
 
         ## Write builder.conf
         self.write_configuration()
