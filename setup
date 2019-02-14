@@ -665,6 +665,8 @@ class Config(object):
         'git_baseurl': '',
         'git_prefix': '',
         'git_prefix_default': '',
+        'use_qubes_repo_version': '',
+        'use_qubes_repo_testing': '',
         'dist_dom0_selected': '',
         'dists_vm_all': [],
         'dists_vm_selected': [],
@@ -956,6 +958,12 @@ class Config(object):
             self.git_prefix = make().strip()
             self.git_prefix_default = self.git_prefix
 
+            env['GET_VAR'] = 'USE_QUBES_REPO_VERSION'
+            self.use_qubes_repo_version = make().strip()
+
+            env['GET_VAR'] = 'USE_QUBES_REPO_TESTING'
+            self.use_qubes_repo_testing = make().strip()
+
             env['GET_VAR'] = 'DISTS_VM'
             self.dists_vm_selected = make().strip().split()
 
@@ -1128,6 +1136,28 @@ class Config(object):
             }
         )
 
+        # QUBES_REPOSITORIES
+        replace.add(
+            **{
+                'replace': r'^.*USE_QUBES_REPO_TESTING[ ]*[?:]?=[ ]*[\d]',
+                'text': r'USE_QUBES_REPO_TESTING = {0}'.format(self.use_qubes_repo_testing),
+            }
+        )
+        if self.use_qubes_repo_testing == "1":
+              self.use_qubes_repo_version = self.release
+
+        if self.use_qubes_repo_version == self.release:
+            use_qubes_repo_version = r'USE_QUBES_REPO_VERSION = $(RELEASE)'
+        else:
+            use_qubes_repo_version = r'# USE_QUBES_REPO_VERSION = $(RELEASE)'
+
+        replace.add(
+            **{
+                'replace': r'^.*USE_QUBES_REPO_VERSION[ ]+[?]?[=].*$',
+                'text': use_qubes_repo_version,
+            }
+        )
+
         # INCLUDE_OVERRIDE_CONF
         if os.path.exists(self.conf_override):
             override = r'INCLUDE_OVERRIDE_CONF ?= true'
@@ -1195,6 +1225,9 @@ class Wizard(Config):
 
         ## Prompt for selection of base repo to use for build
         self.set_repo()
+
+        ## Select which Qubes packages repositories to use for partial builds
+        self.set_qubes_repos()
 
         ## Choose if user has git ssh (commit) or http access to private repos
         if os.path.exists(self.conf_override):
@@ -1362,7 +1395,7 @@ class Wizard(Config):
         self.release = str(self.ui.release(**info))  # pylint: disable=W0201
 
     def set_repo(self):
-        '''Set repo prefix.
+        '''Set source repo prefix.
         '''
         choices = []
         default_set = False
@@ -1382,7 +1415,7 @@ class Wizard(Config):
         )
 
         info = {
-            'title': 'Choose Repos To Use To Build Packages',
+            'title': 'Choose Source Repos To Use To Build Packages',
             'choices': choices,
             'width': 76,
             'height': 16,
@@ -1504,6 +1537,40 @@ class Wizard(Config):
         }
 
         self.dists_vm_selected = self.ui.dists(**info)  # pylint: disable=W0201
+
+    def set_qubes_repos(self):
+        ''''''
+        choices = []
+        default_stable = False
+        default_testing = False
+
+        if self.use_qubes_repo_testing == "1":
+            default_testing = True
+            self.use_qubes_repo_version = self.release
+
+        if self.use_qubes_repo_version == self.release:
+            default_stable = True
+
+        choices.insert(0, ('current', 'Stable repository', default_stable))
+        choices.insert(1, ('current-testing', 'Testing repository', default_testing))
+
+        info = {
+            'title': 'Choose Pre-Built Packages Repositories',
+            'choices': choices,
+            'width': 76,
+            'height': 10,
+        }
+
+        qubes_repos_selected = self.ui.dists(**info)  # pylint: disable=W0201
+        if 'current' in qubes_repos_selected:
+            self.use_qubes_repo_version = self.release
+        else:
+            self.use_qubes_repo_version = ''
+
+        if 'current-testing' in qubes_repos_selected:
+            self.use_qubes_repo_testing = "1"
+        else:
+            self.use_qubes_repo_testing = "0"
 
     def get_sources(self):
         '''Prompt user to get sources.
