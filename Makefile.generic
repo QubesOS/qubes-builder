@@ -127,6 +127,7 @@ generic-copy-in:
 	@cp $(BUILDER_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
 	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
 	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
+	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs
 
 .PHONY: windows-image-extract
 windows-image-extract:
