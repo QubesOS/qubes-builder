@@ -177,10 +177,12 @@ Example versions with devel build number:
  - `qubes-core-dom0-3.2.13-1.13.fc23.x86_64` (`.13` is the additional version here)
  - `qubes-gpg-split_2.0.24-1+deb8u1+devel1` (`+devel1` is the additional version here)
 
-### RPM_USE_MOCKBUILD
+### USE_DIST_BUILD_TOOLS
 > Default: empty
 
-When set to `1`, builder-rpm plugin will use `mock` to build packages, instead of custom code handling chroot preparation. This is recommended way of building, but older packages are incompatible with this mode.
+When set to `1`, builder plugins (builder-rpm, builder-debian, etc) will use upstream tools to prepare build environment (`mock` for Fedora, `pbuilder` for Debian), instead of custom code handling chroot preparation. This is recommented way of building, but older packages (Qubes 3.2) are incompatible with this mode.
+
+This option used to be named `RPM_USE_MOCKBUILD`.
 
 ### TEMPLATE_ROOT_WITH_PARTITIONS
 > Default: no value
