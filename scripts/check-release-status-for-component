@@ -169,7 +169,7 @@ done
 
 if [ "$found" = 0 ]; then
     if make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
-            UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${DIST} \
+            UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${PACKAGE_SET}-${DIST} \
             check-repo >/dev/null 2>&1; then
         echo "$(color built,unreleased)built, not released$(reset_color)"
     else
