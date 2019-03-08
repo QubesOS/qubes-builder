@@ -106,14 +106,15 @@ include $(BUILDER_MAKEFILE)
 DIST_SRC_ROOT=$(DIST_BUILD_DIR)/qubes-src
 DIST_SRC=$(DIST_SRC_ROOT)/$(COMPONENT)
 
-.PHONY: copy-in
-copy-in: generic-copy-in $(SOURCE_COPY_IN)
-
 ifneq (,$(GIT_TARBALL_NAME))
   ifneq (1,$(NO_ARCHIVE))
-copy-in: make-git-tarball
+TARBALL_COPY_IN = make-git-tarball
   endif
 endif
+
+.PHONY: copy-in
+copy-in: generic-copy-in $(TARBALL_COPY_IN) $(SOURCE_COPY_IN)
+
 
 .PHONY: make-git-tarball
 make-git-tarball:
