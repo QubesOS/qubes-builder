@@ -18,7 +18,7 @@ fi
 
 : "${MAKE_TARGET=rpms}"
 
-if [ -x /usr/bin/dnf ]; then
+if [ ${DIST#fc} -ge 25 ]; then
     YUM=dnf
 else
     YUM=yum
