@@ -36,8 +36,13 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -d "chroot-dom0-$DIST" ]; then
-    make --no-print-directory DIST=$DIST PACKAGE_SET=dom0 COMPONENT=builder-rpm -f Makefile.generic prepare-chroot || exit 1;
+if ! [ -e "chroot-dom0-$DIST/home/user/.prepared_base" ]; then
+    make --no-print-directory \
+        DIST=$DIST \
+        PACKAGE_SET=dom0 \
+        COMPONENT=builder-rpm \
+        USE_DIST_BUILD_TOOLS=0 \
+        -f Makefile.generic prepare-chroot || exit 1;
 fi
 
 if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
