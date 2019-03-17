@@ -251,6 +251,12 @@ set key used to sign packages
 Set to "1" to enforce only version-tagged packages copied to updates repo
 (update-repo-* targets).
 
+### HTML_FORMAT
+> Default: no value
+
+Set to "1" to output status information formated/colored with HTML instead of
+ANSI control characters. Currently affects only `make check-release-status`.
+
 ### DEBUG
 > Default: no value
 

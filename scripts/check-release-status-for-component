@@ -7,6 +7,7 @@ usage() {
     echo "  --abort-no-version  - abort if no version tag is present"
     echo "  --abort-on-empty    - abort when no packages defined"
     echo "  --no-print-version  - skip printing version number, only release status"
+    echo "Set HTML_FORMAT=1 to format data (especially colors) in HTML"
 }
 
 color=0
@@ -88,29 +89,36 @@ color() {
     if [ "$color" = 0 ]; then
         return
     fi
-    case "$1" in
-        current)          tput setaf 2 || tput AF 2 ;; # green
-        *-testing)        tput setaf 3 || tput AF 3 ;; # yellow
-        unstable)         tput setaf 4 || tput AF 4 ;; # blue
-        unreleased)       tput setaf 1 || tput AF 1 ;; # red
-        built,unreleased) tput setaf 7 || tput AF 7 ;; # white
-        templates-itl)    tput setaf 2 || tput AF 2 ;; # green
-        templates-community)    tput setaf 2 || tput AF 2 ;; # green
-        days-testing)     tput setaf 3 || tput AF 3 ;; # yellow
-        days-stable)      tput setaf 2 || tput AF 2 ;; # green
-        no-version)
-            tput bold 2>/dev/null || tput md 2>/dev/null # bold
-            tput setaf 1 || tput AF 1 # red
-            ;;
-        *) echo "unknown repo $1" >&2; exit 1 ;;
-    esac
+    if [ "0$HTML_FORMAT" -eq 1 ]; then
+        printf '<td class="%s">' "$1"
+    else
+        case "$1" in
+            current)          tput setaf 2 || tput AF 2 ;; # green
+            *-testing)        tput setaf 3 || tput AF 3 ;; # yellow
+            unstable)         tput setaf 4 || tput AF 4 ;; # blue
+            unreleased)       tput setaf 1 || tput AF 1 ;; # red
+            built-unreleased) tput setaf 7 || tput AF 7 ;; # white
+            templates-itl)    tput setaf 2 || tput AF 2 ;; # green
+            templates-community)    tput setaf 2 || tput AF 2 ;; # green
+            days-testing)     tput setaf 3 || tput AF 3 ;; # yellow
+            days-stable)      tput setaf 2 || tput AF 2 ;; # green
+            no-version)
+                tput bold 2>/dev/null || tput md 2>/dev/null # bold
+                tput setaf 1 || tput AF 1 # red
+                ;;
+        esac
+    fi
 }
 
 reset_color() {
     if [ "$color" = 0 ]; then
         return
     fi
-    tput sgr0    || tput me
+    if [ "0$HTML_FORMAT" -eq 1 ]; then
+        printf '</td>'
+    else
+        tput sgr0    || tput me
+    fi
 }
 
 check_single_repo() {
@@ -143,7 +151,11 @@ if [ -z "$vtag" ]; then
     fi
 else
     if [ "$print_version" = 1 ]; then
-        echo -n $vtag ""
+        if [ "0$HTML_FORMAT" -eq 1 ]; then
+            printf '<td>%s</td>' "$vtag"
+        else
+            echo -n $vtag ""
+        fi
     fi
 fi
 
@@ -156,12 +168,18 @@ for repo in $ALL_REPOSITORIES; do
             date_snap=$(date -r "$snap_file" +%s)
             days=$(( ( `date +%s` - ${date_snap} ) / (24 * 60 * 60) ))
             if [ $days -lt ${TESTING_DAYS} ]; then
-                echo -n " $(color days-testing)(${days} days ago)$(reset_color)"
+                echo -n " $(color days-testing)(${days} days ago)$(reset_color days)"
             else
-                echo -n " $(color days-stable)(${days} days ago)$(reset_color)"
+                echo -n " $(color days-stable)(${days} days ago)$(reset_color days)"
+            fi
+        else
+            if [ "0$HTML_FORMAT" -ne 1 ]; then
+                printf '<td class="no-pending"></td>'
             fi
         fi
-        echo ""
+        if [ "0$HTML_FORMAT" -ne 1 ]; then
+            echo ""
+        fi
         found=1
         break
     fi
@@ -171,8 +189,11 @@ if [ "$found" = 0 ]; then
     if make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
             UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${PACKAGE_SET}-${DIST} \
             check-repo >/dev/null 2>&1; then
-        echo "$(color built,unreleased)built, not released$(reset_color)"
+        echo -n "$(color built-unreleased)built, not released$(reset_color)"
     else
-        echo "$(color unreleased)not released$(reset_color)"
+        echo -n "$(color unreleased)not released$(reset_color)"
+    fi
+    if [ "0$HTML_FORMAT" -ne 1 ]; then
+        echo ""
     fi
 fi

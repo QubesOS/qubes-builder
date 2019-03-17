@@ -885,23 +885,41 @@ check-release-status: check-release-status-dom0-$(DIST_DOM0) check-release-statu
 endif
 
 check-release-status-templates:
-	@echo "-> Checking $(c.bold)templates$(c.normal)"
+	@if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+		printf '<h2>Templates</h2>\n'; \
+		printf '<table><tr><th>Template name</th><th>Version</th><th>Status</th></tr>\n'; \
+	else \
+		echo "-> Checking $(c.bold)templates$(c.normal)"
+	fi
 	for DIST in $(DISTS_VM); do \
 		if ! [ -e $(SRC_DIR)/linux-template-builder/Makefile.builder ]; then \
 			# Old style components not supported
 			continue; \
 		fi; \
 		TEMPLATE_NAME=$$(DISTS_VM=$$DIST make -s template-name); \
-		echo -n "$$TEMPLATE_NAME: "; \
+		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+			printf '<tr><td>%s</td>' "$$TEMPLATE_NAME"; \
+		else \
+			echo -n "$$TEMPLATE_NAME: "; \
+		fi; \
 		$(BUILDER_DIR)/scripts/check-release-status-for-component --color \
-			"linux-template-builder" "vm" "$$DIST"
+			"linux-template-builder" "vm" "$$DIST"; \
+		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+			printf '</tr>\n'; \
+		fi; \
 	done
+	printf '</table>\n'
 
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
-	@echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"
+	@if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+		printf '<h2>Packages for <span class="dist">%s %s</span></h2>\n' "$(DIST)" "$(PACKAGE_SET)"; \
+		printf '<table><tr><th>Component</th><th>Version</th><th>Status</th></tr>\n'; \
+	else \
+		echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"; \
+	fi
 	for C in $(COMPONENTS_NO_TPL_BUILDER); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
@@ -914,9 +932,17 @@ check-release-status-%:
 				get-var GET_VAR=PACKAGE_LIST 2>/dev/null`" ]; then \
 			continue; \
 		fi
-		echo -n "$$C: "; \
-		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"
+		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+			printf '<tr><td>%s</td>' "$$C"; \
+		else \
+			echo -n "$$C: "; \
+		fi; \
+		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"; \
+		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+			printf '</tr>\n'; \
+		fi; \
 	done
+	printf '</table>\n'
 
 windows-image:
 	./win-mksrcimg.sh
