@@ -908,7 +908,9 @@ check-release-status-templates:
 			printf '</tr>\n'; \
 		fi; \
 	done
-	printf '</table>\n'
+	if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+		printf '</table>\n'; \
+	fi
 
 check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
@@ -942,7 +944,9 @@ check-release-status-%:
 			printf '</tr>\n'; \
 		fi; \
 	done
-	printf '</table>\n'
+	if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+		printf '</table>\n'; \
+	fi
 
 windows-image:
 	./win-mksrcimg.sh
