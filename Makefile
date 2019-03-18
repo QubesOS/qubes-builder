@@ -880,7 +880,7 @@ template-name:
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
 ifneq (,$(DIST_DOM0))
-check-release-status: check-release-status-dom0-$(DIST_DOM0) check-release-status-templates
+check-release-status: check-release-status-dom0-$(DIST_DOM0) $(if $(wildcard $(SRC_DIR)/linux-template-builder/rpm/noarch/*.rpm),check-release-status-templates)
 	@true
 endif
 
@@ -916,12 +916,10 @@ check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
-	@if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
-		printf '<h2>Packages for <span class="dist">%s %s</span></h2>\n' "$(DIST)" "$(PACKAGE_SET)"; \
-		printf '<table><tr><th>Component</th><th>Version</th><th>Status</th></tr>\n'; \
-	else \
+	@if [ "0$(HTML_FORMAT)" -eq 0 ]; then \
 		echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"; \
-	fi
+	fi; \
+	HEADER_PRINTED=; \
 	for C in $(COMPONENTS_NO_TPL_BUILDER); do \
 		if ! [ -e $(SRC_DIR)/$$C/Makefile.builder ]; then \
 			# Old style components not supported
@@ -934,6 +932,11 @@ check-release-status-%:
 				get-var GET_VAR=PACKAGE_LIST 2>/dev/null`" ]; then \
 			continue; \
 		fi
+		if [ "0$(HTML_FORMAT)" -eq 1 -a -z "$$HEADER_PRINTED" ]; then \
+			printf '<h2>Packages for <span class="dist">%s %s</span></h2>\n' "$(DIST)" "$(PACKAGE_SET)"; \
+			printf '<table><tr><th>Component</th><th>Version</th><th>Status</th></tr>\n'; \
+			HEADER_PRINTED=1; \
+		fi; \
 		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
 			printf '<tr><td>%s</td>' "$$C"; \
 		else \
@@ -943,8 +946,8 @@ check-release-status-%:
 		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
 			printf '</tr>\n'; \
 		fi; \
-	done
-	if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+	done; \
+	if [ "0$(HTML_FORMAT)" -eq 1 -a -n "$$HEADER_PRINTED" ]; then \
 		printf '</table>\n'; \
 	fi
 
