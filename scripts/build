@@ -27,7 +27,7 @@ fi
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/chroot-dom0-$DIST/home/user/qubes-src/
 DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
-BUILDER_REPO_DIR=$PWD/qubes-rpms-mirror-repo/$DIST
+BUILDER_REPO_DIR=$PWD/qubes-packages-mirror-repo/dom0-$DIST
 
 MAKE_TARGET_ONLY="${MAKE_TARGET/ */}"
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
@@ -45,6 +45,9 @@ if ! [ -e "chroot-dom0-$DIST/home/user/.prepared_base" ]; then
         -f Makefile.generic prepare-chroot || exit 1;
 fi
 
+sudo mount --bind "$BUILDER_REPO_DIR" "$PWD/chroot-dom0-$DIST/tmp/qubes-packages-mirror-repo"
+BUILDER_REPO_DIR="$BUILDER_REPO_DIR" $PWD/qubes-src/builder-rpm/update-local-repo.sh "$DIST"
+sudo chroot "$PWD/chroot-dom0-$DIST" $YUM $YUM_OPTS update -y
 if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
@@ -59,6 +62,7 @@ if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/
     rm -f build-pkgs-temp.list
     touch "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
+sudo umount "$PWD/chroot-dom0-$DIST/tmp/qubes-packages-mirror-repo"
 
 if ! [ -r "$PWD/chroot-dom0-$DIST/proc/cpuinfo" ]; then
     sudo mount -t proc proc "$PWD/chroot-dom0-$DIST/proc"
