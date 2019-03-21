@@ -504,6 +504,7 @@ iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
 		PACKAGE_SET=vm \
 		DIST=$(DIST) \
 		COMPONENT=linux-template-builder \
+		USE_DIST_BUILD_TOOLS=0 \
 		UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 		update-repo
 
