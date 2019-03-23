@@ -146,6 +146,7 @@ help:
 	@echo "make qubes-vm         -- download and build all VM components"
 	@echo "make template-in-dispvm -- start new DispVM and build the whole template there"
 	@echo "make get-sources      -- download/update all sources (including source tarballs)"
+	@echo "make get-sources-git  -- download/update all sources"
 	@echo "make get-sources-extra -- download source tarballs required for some components"
 	@echo "make iso              -- update installer repos, make iso"
 	@echo "make qubes-os-iso     -- same as \"make get-sources qubes sign-all iso\""
@@ -197,7 +198,8 @@ $(get-sources-extra-tgt):
 	@REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
 builder.get-sources: build-info
 	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
-get-sources: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt) get-sources-extra
+get-sources: get-sources-git get-sources-extra
+get-sources-git: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
 get-sources-extra: $(get-sources-extra-tgt)
 
 .PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
