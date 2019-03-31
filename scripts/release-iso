@@ -6,27 +6,30 @@
 # - creating torrent file
 
 set -e
+[ "$DEBUG" = "1" ] && set -x
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 BASE_NAME"
-    echo " BASE_NAME is iso filename without ".iso" suffix, for example Qubes-3.1-x86_64"
+    echo "Usage: $0 ISO_NAME"
+    echo " ISO_NAME is iso filename"
     echo " Script will take care of renaming the file from old naming convention (with DVD)"
     exit 1
 fi
 
-ISO_BASE="$1"
+LOCALDIR="$(readlink -f "$(dirname "$0")")"
+ISO_NAME="$(basename "$1")"
+ISO_BASE="${ISO_NAME%%.iso}"
 
 # make sure we're in qubes-builder iso root directory
-cd `dirname $0`/../iso
+cd "$LOCALDIR/../iso"
 
-echo -n "Checking for iso presence... "
-if [ ! -r ${ISO_BASE}.iso ]; then
+echo "Checking for iso presence... "
+if [ ! -r "${ISO_BASE}.iso" ]; then
     # maybe name not yet normalized?
     OLD_BASE="Qubes-DVD-x86_64-${ISO_BASE#Qubes-}"
     OLD_BASE="${OLD_BASE%-x86_64}"
-    if [ -r ${OLD_BASE}.iso ]; then
-        echo -n "renaming from ${OLD_BASE}.iso "
-        mv ${OLD_BASE}.iso ${ISO_BASE}.iso
+    if [ -r "${OLD_BASE}.iso" ]; then
+        echo "renaming from ${OLD_BASE}.iso "
+        mv "${OLD_BASE}.iso" "${ISO_BASE}.iso"
     else
         echo "ERROR: no ISO file found: ${ISO_BASE}.iso, ${OLD_BASE}.iso"
         exit 1
@@ -34,39 +37,40 @@ if [ ! -r ${ISO_BASE}.iso ]; then
 fi
 echo "ok"
 
-echo -n "Signing ISO... "
+echo "Signing ISO... "
 if [ -n "$QUBES_GPG_DOMAIN" ]; then
     GPG=qubes-gpg-client
 else
     GPG=gpg
 fi
-$GPG -asb ${ISO_BASE}.iso > ${ISO_BASE}.iso.asc
+$GPG -asb "${ISO_BASE}.iso" > "${ISO_BASE}.iso.asc"
 echo "ok"
 
-echo -n "Generating digests... "
+echo "Generating digests... "
 ALGOS="md5 sha1 sha256 sha512"
 
-echo -n > ${ISO_BASE}.iso.DIGESTS
-for algo in $ALGOS; do
-    echo -n "$algo "
-    openssl dgst -$algo -r ${ISO_BASE}.iso >> ${ISO_BASE}.iso.DIGESTS
+echo > "${ISO_BASE}.iso.DIGESTS"
+for algo in $ALGOS;
+do
+    dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
+    echo "$algo $dgst" >> "${ISO_BASE}.iso.DIGESTS"
 done
 echo "ok"
 
-echo -n "Signing digests... "
+echo "Signing digests... "
 
-$GPG -a --clearsign ${ISO_BASE}.iso.DIGESTS > ${ISO_BASE}.iso.DIGESTS.signed
-mv ${ISO_BASE}.iso.DIGESTS.signed ${ISO_BASE}.iso.DIGESTS
+$GPG -a --clearsign --output "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
+mv "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 
 echo "ok"
 
 echo "Creating torrent file... "
-(cd ..; scripts/create-torrent ${ISO_BASE})
+(cd ..; scripts/create-torrent "${ISO_BASE}")
 
 echo "ok"
 
 echo "Done:"
-ls -l ${ISO_BASE}.iso \
-    ${ISO_BASE}.iso.asc \
-    ${ISO_BASE}.iso.DIGESTS \
-    ${ISO_BASE}.torrent
+ls -l "${ISO_BASE}.iso" \
+    "${ISO_BASE}.iso.asc" \
+    "${ISO_BASE}.iso.DIGESTS" \
+    "${ISO_BASE}.torrent"
