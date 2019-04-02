@@ -15,38 +15,38 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-LOCALDIR="$(readlink -f "$(dirname "$0")")"
+ISO_DIR="$(readlink -f "$(dirname "$1")")"
 ISO_NAME="$(basename "$1")"
 ISO_BASE="${ISO_NAME%%.iso}"
 
 # make sure we're in qubes-builder iso root directory
-cd "$LOCALDIR/../iso"
+cd "$ISO_DIR"
 
-echo "Checking for iso presence... "
+printf "Checking for iso presence... "
 if [ ! -r "${ISO_BASE}.iso" ]; then
     # maybe name not yet normalized?
     OLD_BASE="Qubes-DVD-x86_64-${ISO_BASE#Qubes-}"
     OLD_BASE="${OLD_BASE%-x86_64}"
     if [ -r "${OLD_BASE}.iso" ]; then
-        echo "renaming from ${OLD_BASE}.iso "
+        printf "renaming from ${OLD_BASE}.iso "
         mv "${OLD_BASE}.iso" "${ISO_BASE}.iso"
     else
-        echo "ERROR: no ISO file found: ${ISO_BASE}.iso, ${OLD_BASE}.iso"
+        printf "ERROR: no ISO file found: ${ISO_BASE}.iso, ${OLD_BASE}.iso\n"
         exit 1
     fi
 fi
-echo "ok"
+printf "ok\n"
 
-echo "Signing ISO... "
+printf "Signing ISO... "
 if [ -n "$QUBES_GPG_DOMAIN" ]; then
     GPG=qubes-gpg-client
 else
     GPG=gpg
 fi
-$GPG -asb "${ISO_BASE}.iso" > "${ISO_BASE}.iso.asc"
-echo "ok"
+$GPG -asb --output "${ISO_BASE}.iso.asc" "${ISO_BASE}.iso"
+printf "ok\n"
 
-echo "Generating digests... "
+printf "Generating digests... "
 ALGOS="md5 sha1 sha256 sha512"
 
 echo > "${ISO_BASE}.iso.DIGESTS"
@@ -55,21 +55,21 @@ do
     dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
     echo "$algo $dgst" >> "${ISO_BASE}.iso.DIGESTS"
 done
-echo "ok"
+printf "ok\n"
 
-echo "Signing digests... "
+printf "Signing digests... "
 
 $GPG -a --clearsign --output "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 mv "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 
-echo "ok"
+printf "ok\n"
 
-echo "Creating torrent file... "
+printf "Creating torrent file... "
 (cd ..; scripts/create-torrent "${ISO_BASE}")
 
-echo "ok"
+printf "ok\n"
 
-echo "Done:"
+printf "Done:\n"
 ls -l "${ISO_BASE}.iso" \
     "${ISO_BASE}.iso.asc" \
     "${ISO_BASE}.iso.DIGESTS" \
