@@ -15,8 +15,10 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-ISO_DIR="$(readlink -f "$(dirname "$1")")"
-ISO_NAME="$(basename "$1")"
+LOCALDIR="$(readlink -f "$(dirname "$0")")"
+ISO="$(readlink -f "$1")"
+ISO_DIR="$(dirname "$ISO")"
+ISO_NAME="$(basename "$ISO")"
 ISO_BASE="${ISO_NAME%%.iso}"
 
 # make sure we're in qubes-builder iso root directory
@@ -28,10 +30,10 @@ if [ ! -r "${ISO_BASE}.iso" ]; then
     OLD_BASE="Qubes-DVD-x86_64-${ISO_BASE#Qubes-}"
     OLD_BASE="${OLD_BASE%-x86_64}"
     if [ -r "${OLD_BASE}.iso" ]; then
-        printf "renaming from ${OLD_BASE}.iso "
+        printf "renaming from %s.iso " "${OLD_BASE}"
         mv "${OLD_BASE}.iso" "${ISO_BASE}.iso"
     else
-        printf "ERROR: no ISO file found: ${ISO_BASE}.iso, ${OLD_BASE}.iso\n"
+        printf "ERROR: no ISO file found: %s.iso, %s.iso\n" "$ISO_BASE" "$OLD_BASE"
         exit 1
     fi
 fi
@@ -65,7 +67,7 @@ mv "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 printf "ok\n"
 
 printf "Creating torrent file... "
-(cd ..; scripts/create-torrent "${ISO_BASE}")
+"$LOCALDIR/create-torrent" "$ISO"
 
 printf "ok\n"
 
