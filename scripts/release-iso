@@ -55,7 +55,8 @@ echo > "${ISO_BASE}.iso.DIGESTS"
 for algo in $ALGOS;
 do
     dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
-    echo "$algo $dgst" >> "${ISO_BASE}.iso.DIGESTS"
+    printf "$algo "
+    echo "$dgst" >> "${ISO_BASE}.iso.DIGESTS"
 done
 printf "ok\n"
 
@@ -66,7 +67,7 @@ mv "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 
 printf "ok\n"
 
-printf "Creating torrent file... "
+printf "Creating torrent file...\n"
 "$LOCALDIR/create-torrent" "$ISO"
 
 printf "ok\n"
