@@ -394,9 +394,9 @@ COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
 sign-all:: $(COMPONENTS_TO_SIGN:%=sign.%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign.dom0.%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign.vm.%);
-sign-iso: ISO_VERSION=$(shell cat $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest)
+sign-iso: ISO_VERSION=$(shell cat $(BUILDER_DIR)/iso/build_latest)
 sign-iso:
-	$(BUILDER_DIR)/scripts/release-iso iso/Qubes-DVD-x86_64-$(ISO_VERSION).iso
+	$(BUILDER_DIR)/scripts/release-iso iso/Qubes-$(ISO_VERSION)-x86_64.iso
 
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
@@ -527,6 +527,7 @@ iso: iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 	fi
 	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
 	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
 
@@ -883,9 +884,9 @@ template-name:
 		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder template-name; \
 	done
 
-update-repo-iso-testing: ISO_VERSION=$(shell cat $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest)
-update-repo-iso-testing:
-	$(BUILDER_DIR)/scripts/upload-iso iso/Qubes-DVD-x86_64-$(ISO_VERSION).iso
+upload-iso: ISO_VERSION=$(shell cat $(BUILDER_DIR)/iso/build_latest)
+upload-iso:
+	$(BUILDER_DIR)/scripts/upload-iso iso/Qubes-$(ISO_VERSION)-x86_64.iso
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 

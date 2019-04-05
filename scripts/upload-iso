@@ -19,4 +19,6 @@ ISO_BASE="${ISO_NAME%%.iso}"
 [ "x$HOST_ISO_BASEDIR" == "x" ] && HOST_ISO_BASEDIR=/pub/qubes/iso
 
 echo "Uploading $ISO..."
-rsync -av --progress "$ISO" "$ISO.asc" "$ISO.DIGESTS" "$HOST:$HOST_ISO_BASEDIR/$ISO_BASE$ISO_SUFFIX.iso"
+rsync -av --progress "$ISO" "$HOST:$HOST_ISO_BASEDIR/$ISO_BASE$ISO_SUFFIX.iso"
+rsync -av --progress "$ISO.asc" "$HOST:$HOST_ISO_BASEDIR/$ISO_BASE$ISO_SUFFIX.iso.asc"
+rsync -av --progress "$ISO.DIGESTS" "$HOST:$HOST_ISO_BASEDIR/$ISO_BASE$ISO_SUFFIX.iso.DIGESTS"

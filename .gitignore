@@ -20,3 +20,4 @@ untrusted-builder-env-*
 .netrc*
 
 build-pkgs-temp.list
+iso/build_latest

@@ -58,13 +58,19 @@ printf "ok\n"
 printf "Generating digests... "
 ALGOS="md5 sha1 sha256 sha512"
 
-echo > "${ISO_BASE}.iso.DIGESTS"
-for algo in $ALGOS;
-do
-    dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
-    printf "%s " "$algo"
-    echo "$dgst" >> "${ISO_BASE}.iso.DIGESTS"
-done
+if [ "${ISO_BASE}.iso" -nt "${ISO_BASE}.iso.DIGESTS" ]; then
+    rm -f "${ISO_BASE}.iso.DIGESTS"
+fi
+
+if [ ! -e "${ISO_BASE}.iso.DIGESTS" ]; then
+    echo > "${ISO_BASE}.iso.DIGESTS"
+    for algo in $ALGOS;
+    do
+        dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
+        printf "%s " "$algo"
+        echo "$dgst" >> "${ISO_BASE}.iso.DIGESTS"
+    done
+fi
 printf "ok\n"
 
 printf "Signing digests... "
