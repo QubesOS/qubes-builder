@@ -390,10 +390,13 @@ template-in-dispvm-%:
 
 # Sign only unsigned files (naturally we don't expect files with WRONG sigs to be here)
 COMPONENTS_TO_SIGN := $(if $(NO_SIGN),,$(COMPONENTS))
-.PHONY: sign-all sign-dom0 sign-vm
+.PHONY: sign-all sign-dom0 sign-vm sign-iso
 sign-all:: $(COMPONENTS_TO_SIGN:%=sign.%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign.dom0.%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign.vm.%);
+sign-iso: ISO_VERSION=$(shell cat $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest)
+sign-iso:
+	$(BUILDER_DIR)/scripts/release-iso iso/Qubes-DVD-x86_64-$(ISO_VERSION).iso
 
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
@@ -879,6 +882,10 @@ template-name:
 		export DIST; \
 		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder template-name; \
 	done
+
+update-repo-iso-testing: ISO_VERSION=$(shell cat $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest)
+update-repo-iso-testing:
+	$(BUILDER_DIR)/scripts/upload-iso iso/Qubes-DVD-x86_64-$(ISO_VERSION).iso
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 

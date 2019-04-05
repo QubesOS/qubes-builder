@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script is used to postprocess Qubes OS release ISO. This include:
 # - renaming file
@@ -45,7 +45,14 @@ if [ -n "$QUBES_GPG_DOMAIN" ]; then
 else
     GPG=gpg
 fi
-$GPG -asb --output "${ISO_BASE}.iso.asc" "${ISO_BASE}.iso"
+
+if [ "${ISO_BASE}.iso" -nt "${ISO_BASE}.iso.asc" ]; then
+    rm -f "${ISO_BASE}.iso.asc"
+fi
+
+if [ ! -e "${ISO_BASE}.iso.asc" ]; then
+    $GPG -asb --output "${ISO_BASE}.iso.asc" "${ISO_BASE}.iso"
+fi
 printf "ok\n"
 
 printf "Generating digests... "
@@ -55,7 +62,7 @@ echo > "${ISO_BASE}.iso.DIGESTS"
 for algo in $ALGOS;
 do
     dgst="$(openssl dgst -"$algo" -r "${ISO_BASE}.iso")"
-    printf "$algo "
+    printf "%s " "$algo"
     echo "$dgst" >> "${ISO_BASE}.iso.DIGESTS"
 done
 printf "ok\n"
@@ -68,7 +75,13 @@ mv "${ISO_BASE}.iso.DIGESTS.signed" "${ISO_BASE}.iso.DIGESTS"
 printf "ok\n"
 
 printf "Creating torrent file...\n"
-"$LOCALDIR/create-torrent" "$ISO"
+if [ "${ISO_BASE}.iso" -nt "${ISO_BASE}.torrent" ]; then
+    rm -f "${ISO_BASE}.torrent"
+fi
+
+if [ ! -e "${ISO_BASE}.torrent" ]; then
+    "$LOCALDIR/create-torrent" "$ISO"
+fi
 
 printf "ok\n"
 

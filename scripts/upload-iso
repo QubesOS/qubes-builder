@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This script is used to upload Qubes OS release ISO.
+
+set -e
+[ "$DEBUG" = "1" ] && set -x
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 ISO_NAME"
+    echo " ISO_NAME is iso filename"
+    exit 1
+fi
+
+ISO="$(readlink -f "$1")"
+ISO_NAME="$(basename "$ISO")"
+ISO_BASE="${ISO_NAME%%.iso}"
+
+[ "x$HOST" == "x" ] && HOST=yum.qubes-os.org
+[ "x$HOST_ISO_BASEDIR" == "x" ] && HOST_ISO_BASEDIR=/pub/qubes/iso
+
+echo "Uploading $ISO..."
+rsync -av --progress "$ISO" "$ISO.asc" "$ISO.DIGESTS" "$HOST:$HOST_ISO_BASEDIR/$ISO_BASE$ISO_SUFFIX.iso"
