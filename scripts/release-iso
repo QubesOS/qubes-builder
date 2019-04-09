@@ -41,7 +41,7 @@ printf "ok\n"
 
 printf "Signing ISO... "
 if [ -n "$QUBES_GPG_DOMAIN" ]; then
-    GPG=qubes-gpg-client
+    GPG=qubes-gpg-client-wrapper
 else
     GPG=gpg
 fi
