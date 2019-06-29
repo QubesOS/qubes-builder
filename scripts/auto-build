@@ -77,6 +77,14 @@ if [ -z "$git_url" ]; then
     git_url="${git_baseurl}/${git_prefix}${component}"
 fi
 
+build_timeout=$(make -s get-var GET_VAR=BUILD_TIMEOUT_${component//-/_})
+if [ -z "$build_timeout" ]; then
+    build_timeout=$(make -s get-var GET_VAR=BUILD_TIMEOUT)
+fi
+if [ -n "$build_timeout" ]; then
+    build_command_prefix="timeout $build_timeout"
+fi
+
 dists_vm=$(make -s get-var GET_VAR=DISTS_VM_NO_FLAVOR)
 dist_dom0=$(make -s get-var GET_VAR=DIST_DOM0)
 built_for_dom0=
@@ -90,7 +98,7 @@ if [ -n "$dist_dom0" ]; then
             $component dom0 $dist_dom0 || :)
     if [ "$release_status" == "not released" ]; then
         rm -f "$log_service_output_file"
-        if scripts/make-with-log \
+        if $build_command_prefix scripts/make-with-log \
                 DISTS_VM= DIST_DOM0=$dist_dom0 qubes; then
             built_for_dom0=$dist_dom0
             build_logs="$build_logs ${component}-dom0-${dist_dom0}=$(get_build_log_url)"
@@ -111,7 +119,7 @@ if [ -n "$dists_vm" ]; then
                 $component vm $dist_vm || :)
         if [ "$release_status" == "not released" ]; then
             rm -f "$log_service_output_file"
-            if scripts/make-with-log \
+            if $build_command_prefix scripts/make-with-log \
                     DISTS_VM=$dist_vm DIST_DOM0= qubes; then
                 built_for_vm="$built_for_vm $dist_vm"
                 build_logs="$build_logs ${component}-vm-${dist_vm}=$(get_build_log_url)"

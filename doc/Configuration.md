@@ -303,6 +303,17 @@ For a list of current Fedora mirrors see:
 Include the full path up to `/releases/...`, for example:
  - `FEDORA_MIRROR=https://mirrors.kernel.org/fedora/`
 
+### BUILD_TIMEOUT
+> Default: no value
+
+Abort build after given timeout, in seconds.
+
+### BUILD_TIMEOUT_`component`
+> Default: no value
+
+Override `BUILD_TIMEOUT` for given component.
+Replace '-' with '_' in component name.
+
 Windows specific settings
 -------------------------
 
