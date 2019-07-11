@@ -45,7 +45,7 @@ id          : builder-debian
 type        : builder
 description : Debian Builder - Contains all Makefiles to build Debian based templates
 require     : None
-require_in  : jessie stretch whonix xenial bionic
+require_in  : jessie stretch buster whonix xenial bionic
 
 [builder-archlinux]
 id          : builder-archlinux
