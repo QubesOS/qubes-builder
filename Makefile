@@ -36,11 +36,18 @@ ifdef GIT_SUBDIR
 endif
 
 # checking for make from Makefile is pointless
-DEPENDENCIES ?= git rpmdevtools rpm-build createrepo python2-sh wget perl-Digest-MD5 perl-Digest-SHA
+DEPENDENCIES ?= git rpmdevtools rpm-build python2-sh wget perl-Digest-MD5 perl-Digest-SHA
+
+# we add specific distro dependencies due to not common
+# set of packages available like 'createrepo' and 'createrepo_c'
+DEPENDENCIES.rpm ?= createrepo_c
+DEPENDENCIES.dpkg ?= createrepo
 
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
 endif
+
+DEPENDENCIES += $(DEPENDENCIES.$(PKG_MANAGER))
 
 BUILDER_PLUGINS_DISTS :=
 _dist = $(word 1,$(subst +, ,$(_dist_vm)))
