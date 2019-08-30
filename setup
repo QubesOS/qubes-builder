@@ -1770,6 +1770,12 @@ class Wizard(Config):
 
             missing = _missing()
             requires = _requires()
+
+            if  self.use_qubes_repo_version or self.use_qubes_repo_testing == "1":
+                text= ("You have chosen to use Pre-built Packages\n"
+                        "Comment out the Pre-Built Packages you want to use in builder.conf\n"
+                         "You cannot use this option when building Ubuntu templates.")
+                self.ui.msgbox(text)
             if requires:
                 text = ''
                 for builder_name, missing_builder in requires.items():
