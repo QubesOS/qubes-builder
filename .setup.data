@@ -45,7 +45,7 @@ id          : builder-debian
 type        : builder
 description : Debian Builder - Contains all Makefiles to build Debian based templates
 require     : None
-require_in  : jessie stretch buster whonix xenial bionic
+require_in  : jessie stretch buster whonix kali xenial bionic
 
 [builder-archlinux]
 id          : builder-archlinux
@@ -65,6 +65,18 @@ owner       : Patrick Schleizer <adrelanos@riseup.net>
 fingerprint : 916B 8D99 C38E AF5E 8ADC  7A2A 8D66 066A 2EEA CCDA
 verify      : fpr:::::::::916B8D99C38EAF5E8ADC7A2A8D66066A2EEACCDA:
 url         : https://www.whonix.org/wiki/Whonix_Signing_Key
+
+[template-kali]
+id          : template-kali
+type        : builder
+description : Kali Builder - Template flavor to build Kali
+require     : builder-debian
+require_in  : kali
+key         : 9FA64B92F95E706BF28E2CA6484010B5CDC576E2
+owner       : Frédéric Pierret (fepitre) <frederic.pierret@qubes-os.org>
+fingerprint : 9FA6 4B92 F95E 706B F28E  2CA6 4840 10B5 CDC5 76E2
+verify      : fpr:::::::::9FA64B92F95E706BF28E2CA6484010B5CDC576E2:
+url         :
 
 # require is a dependency to use
 # require_in forces the named component to be required (not optional)
