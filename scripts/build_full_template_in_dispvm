@@ -59,6 +59,7 @@ umountImage() {
     if grep -q ${PWD}/mnt /proc/mounts; then
         sudo umount -R ${PWD}/mnt
     fi
+    udevadm settle
 }
 
 copyBuilder() {
