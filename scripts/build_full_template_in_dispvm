@@ -107,7 +107,8 @@ runBuild() {
         exec 2>&1;
         echo Waiting for /dev/xvdi;
         set -x -e;
-        while ! [ -b /dev/xvdi ]; do sleep 0.1; done;
+        timeout=600;
+        while ! [ -b /dev/xvdi ] && [ \$timeout -gt 0 ]; do sleep 0.1; timeout=\$[ timeout - 1 ]; done;
         pkexec sh -c 'echo Defaults !requiretty >> /etc/sudoers';
         sudo mount /dev/xvdi /mnt/removable -o discard;
         cd /mnt/removable;
