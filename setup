@@ -36,7 +36,6 @@ from textwrap import dedent, wrap
 
 # Globals
 DIALOG = 'dialog'
-GPG_KEY_SERVER = 'pgp.mit.edu'
 DEVELOPMENT_MODE = False
 
 # Global file locations
@@ -1326,14 +1325,12 @@ class Wizard(Config):
                         'User aborted setup: Exiting setup since keys can not be installed'
                     )
 
-                # Receive key from keyserver
+                # Import key from the local dir
                 else:
                     try:
                         text = sh.gpg(
-                            '--keyserver',
-                            GPG_KEY_SERVER,
-                            '--recv-keys',
-                            key,
+                            '--import',
+                            os.path.join(os.path.abspath(BASE_DIR), 'keys', key + '.asc'),
                             _env=env
                         )
                         sh.gpg(
