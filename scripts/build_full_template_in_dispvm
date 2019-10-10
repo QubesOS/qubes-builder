@@ -32,6 +32,7 @@ parseConfigLocation() {
     CONF="$1"
 
     GET_CONF_SCRIPT=
+    rm -f mnt/builder.conf
     if echo "$CONF" | grep -q :; then
         TEMPLATE_CONF_URL=`echo $CONF | cut -f 1 -d,`
         TEMPLATE_CONF_BRANCH=`echo $CONF | cut -f 2 -d,`
