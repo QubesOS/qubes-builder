@@ -27,7 +27,7 @@ test -n "$path"
 
 if qvm-block list "$vm" >/dev/null 2>&1; then
     # Qubes 4.0+
-    devname=$(qvm-block list "$vm" | grep "$path  $" | cut -f 1 -d ' ')
+    devname=$(qvm-block list "$vm" | grep "$path *$" | cut -f 1 -d ' ')
     if [ -z "$devname" ]; then
         echo "$vm:$path is inaccessible, make sure loop device is set" >&2
         exit 1
