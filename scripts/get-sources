@@ -29,7 +29,7 @@ echo "--> Fetching from $GIT_INFOS..."
 set -e
 [ "$DEBUG" = "1" ] && set -x
 
-[ -n "$REPO" ] && COMPONENT="`basename $REPO`"
+[ -n "$REPO" ] && COMPONENT="$(basename "$REPO")"
 
 # Special case for qubes-builder itself
 [ "$REPO" == "." ] && COMPONENT="builder"
@@ -63,16 +63,17 @@ if [ "$GIT_CLONE_FAST" = "1" ]; then
 fi
 
 fresh_clone=0
-if [ "$REPO" == "." -o -d $REPO -a "$CLEAN" != '1' ]; then
+if [ "$REPO" == "." ] || [ -d "$REPO" ] && [ "$CLEAN" != '1' ]; then
     cd $REPO
     if [ "$(git rev-parse --is-shallow-repository)" == "true" ] && [ "$GIT_CLONE_FAST" != "1" ]; then
         GIT_OPTIONS+="--unshallow"
     fi
     print_headers
-    if ! git fetch $GIT_OPTIONS -q $GIT_URL --tags $BRANCH; then
+    if ! git fetch $GIT_OPTIONS -q "$GIT_URL" --tags $BRANCH; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
     fi
     VERIFY_REF=FETCH_HEAD
+    # shellcheck disable=SC2103
     cd - >/dev/null
 else
     rm -rf $REPO
@@ -80,7 +81,7 @@ else
         GIT_OPTIONS+="--unshallow"
     fi
     print_headers
-    if ! git clone $GIT_OPTIONS -n -q -b $BRANCH $GIT_URL $REPO; then
+    if ! git clone $GIT_OPTIONS -n -q -b $BRANCH "$GIT_URL" $REPO; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
     fi
     VERIFY_REF=HEAD
@@ -96,7 +97,7 @@ elementIn () {
 }
 
 verify=true
-if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" ${NO_CHECK[@]}; then
+if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" "${NO_CHECK[@]}"; then
     echo "--> $COMPONENT has NO_CHECK enabled"
     echo "--> NOT Verifying tags..."
     verify=false
@@ -104,7 +105,7 @@ fi
 
 if [ "$verify" == "true" ]; then
     echo "--> Verifying tags..."
-    if ! $(dirname $0)/verify-git-tag $REPO $VERIFY_REF; then
+    if ! "$(dirname "$0")/verify-git-tag" $REPO $VERIFY_REF; then
         # if verfication failed, remove fetched content to make sure we'll not
         # use it
         if [ "$fresh_clone" -eq 1 ]; then
@@ -120,13 +121,13 @@ if [ "$FETCH_ONLY" == "1" ]; then
     exit 0
 fi
 
-CURRENT_BRANCH=`cd $REPO; git branch | sed -n -e 's/^\* \(.*\)/\1/p'`
-if [ "$CURRENT_BRANCH" != "$BRANCH" -o "$VERIFY_REF" == "HEAD" ]; then
+CURRENT_BRANCH="$(cd $REPO; git branch | sed -n -e 's/^\* \(.*\)/\1/p')"
+if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" == "HEAD" ]; then
     pushd $REPO &> /dev/null
-    red="`echo -e '\033[1;31m'`"
-    green="`echo -e '\033[1;32m'`"
-    normal="`echo -e '\033[0;0m'`"
-    if [ -n "`git name-rev --name-only $BRANCH 2> /dev/null`" ]; then
+    red="$(echo -e '\033[1;31m')"
+    green="$(echo -e '\033[1;32m')"
+    normal="$(echo -e '\033[0;0m')"
+    if [ -n "$(git name-rev --name-only $BRANCH 2> /dev/null)" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
         git checkout $BRANCH || exit 1
     else
