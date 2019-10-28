@@ -577,6 +577,12 @@ class DialogUI(DefaultUI):
         return cls.yesno(**info)
 
     @classmethod
+    def git_clone_fast(cls, **info):
+        '''Display dialog choice of git clone method.
+        '''
+        return cls.yesno(**info)
+
+    @classmethod
     def dists(cls, **info):
         '''Display DISTS_VM's for selection.
         '''
@@ -957,6 +963,9 @@ class Config(object):
             self.git_prefix = make().strip()
             self.git_prefix_default = self.git_prefix
 
+            env['GET_VAR'] = 'GIT_CLONE_FAST'
+            self.git_clone_fast = make().strip()
+
             env['GET_VAR'] = 'USE_QUBES_REPO_VERSION'
             self.use_qubes_repo_version = make().strip()
 
@@ -1127,6 +1136,13 @@ class Config(object):
             }
         )
 
+        # GIT_CLONE_FAST
+        replace.add(
+            **{
+                'replace': r'GIT_CLONE_FAST[ ]*[?:]?=[ ]*.*',
+                'text': r'GIT_CLONE_FAST ?= {0}'.format(self.git_clone_fast),
+            }
+        )
         # TEMPLATE_ONLY
         replace.add(
             **{
@@ -1224,6 +1240,9 @@ class Wizard(Config):
 
         ## Prompt for selection of base repo to use for build
         self.set_repo()
+
+        ## Prompt for git clone method
+        self.set_git_clone_method()
 
         ## Select which Qubes packages repositories to use for partial builds
         self.set_qubes_repos()
@@ -1483,6 +1502,25 @@ class Wizard(Config):
         self.template_only = self.ui.template_only(
             **info
         )  # pylint: disable=W0201
+
+    def set_git_clone_method(self):
+        '''Choose to clone git repositories faster or not.
+        '''
+        default_button = 'yes' if self.git_clone_fast else 'no'
+        info = {
+            'title': 'Git Clone Faster?',
+            'default_button': default_button,
+            'text': dedent(
+                '''\
+                Would you like to clone git repositories faster?
+
+                Select 'Yes' to clone with depth equal one or 'No' for normal cloning
+            '''
+            ),
+        }
+        self.git_clone_fast = int(self.ui.git_clone_fast(
+            **info
+        ))  # pylint: disable=W0201
 
     def set_dists(self):
         ''''''
