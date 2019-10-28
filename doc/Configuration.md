@@ -41,6 +41,11 @@ Replace '-' with '_' in component name
 track remote repository configured via "git remote". Mainly useful via cmdline:
 make prepare-merge GIT_REMOTE="joanna"
 
+### GIT_CLONE_FAST
+> Default: no value
+
+Set to `1` for getting repositories faster with the use of git option `--depth=1` when cloning/fetching. Removing the option and redoing a `make get-sources` allows to get a full clone of the repositories.
+
 ### CHECK_BRANCH
 > Default: no value (disabled)
 
