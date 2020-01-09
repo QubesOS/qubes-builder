@@ -97,7 +97,7 @@ elementIn () {
 }
 
 verify=true
-if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" "${NO_CHECK[@]}"; then
+if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" ${NO_CHECK[@]}; then
     echo "--> $COMPONENT has NO_CHECK enabled"
     echo "--> NOT Verifying tags..."
     verify=false
