@@ -29,9 +29,9 @@ get_build_log_url() {
     log_name=$(cat "$log_service_output_file" 2>/dev/null || :)
     GITHUB_LOGS_REPO=$(make -s get-var GET_VAR=GITHUB_LOGS_REPO)
     if [ -z "$log_name" ]; then
-        echo "https://github.com/${GITHUB_LOGS_REPO:-QubesOS/logs}/tree/master/$(hostname)"
+        echo "https://github.com/${GITHUB_LOGS_REPO:-QubesOS/build-logs}/tree/master/$(hostname)"
     else
-        echo "https://github.com/${GITHUB_LOGS_REPO:-QubesOS/logs}/tree/master/$log_name"
+        echo "https://github.com/${GITHUB_LOGS_REPO:-QubesOS/build-logs}/tree/master/$log_name"
     fi
 }
 
