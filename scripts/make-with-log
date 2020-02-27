@@ -27,7 +27,7 @@ done
 $(dirname $0)/log-git-status
 make -f Makefile build-info NO_COLOR=1
 
-if [ -z "$VERBOSE"]; then
+if [ -z "$VERBOSE" ]; then
     export VERBOSE=2
 fi
 

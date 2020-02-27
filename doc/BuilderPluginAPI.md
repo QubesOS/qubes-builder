@@ -45,7 +45,7 @@ In addition to above variables, environment will contain:
  * `OUTPUT_DIR` - directory name (relative to `ORIG_SRC`) where build products should be saved
  * `BUILD_LOG_URL` (optional) - URL to uploaded build log; this variable is available only for `update-repo` target and only when package(s) were just built
 
-The `BUILDER_MAKEFILE` file should at lest set:
+The `BUILDER_MAKEFILE` file should at least set:
  * `PACKAGE_LIST` - (space separated) list of packages to build; it doesn't
  need to match output filenames in any way, it is just to support components
  with multiple output packages; this should be set based on settings provided
