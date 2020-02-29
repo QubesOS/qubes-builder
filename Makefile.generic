@@ -65,6 +65,9 @@ ifndef MIN_AGE
 MIN_AGE = 7
 endif
 
+OUTPUT ?= $(ORIG_SRC)/$(OUTPUT_DIR)/build_timestamp
+SOURCE ?= $(ORIG_SRC)/version
+
 ### Load component-specific settings
 
 # Component specific settins. Generic variables:
@@ -176,7 +179,18 @@ all:
 endif
 
 .PHONY: packages
-packages:
+packages: $(OUTPUT)
+
+# Make is going to call the target defined by $(OUTPUT)
+# if $(SOURCE) is newer than $(OUTPUT). By default, $(OUTPUT)
+# is a build timestamp whereas $(SOURCE) is COMPONENT version file.
+# The build will occur once then will be skipped. In consequence,
+# any builder plugins can rule when is done the build/rebuild of
+# a component.
+ifeq (,$(SOURCE))
+.PHONY: $(OUTPUT)
+endif
+$(OUTPUT): $(SOURCE)
 	@for package in $(PACKAGE_LIST); do\
 		set -o pipefail;\
 		echo "-> Building $(COMPONENT) ($$package) for $(DIST) $(PACKAGE_SET) (logfile: $(BUILD_LOG))";\
@@ -195,7 +209,8 @@ packages:
 			[ $(VERBOSE) -eq 0 ] && tail -n 50 "$(BUILD_LOG)";\
 			exit 1;\
 		fi;\
-	done
+	done;\
+	touch $(OUTPUT)
 
 .PHONY: package
 package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
