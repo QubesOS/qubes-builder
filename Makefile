@@ -442,7 +442,7 @@ clean:: $(clean-tgt) $(clean-builder-tgt);
 clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
 .PHONY: clean-chroot $(clean-chroot-tgt)
 $(clean-chroot-tgt): %.clean : %.umount
-	@sudo rm -rf $(BUILDER_DIR)/$(@:%.clean=%)
+	@sudo rm -rf --one-file-system $(BUILDER_DIR)/$(@:%.clean=%)
 clean-chroot: $(clean-chroot-tgt)
 
 .PHONY: clean-all
