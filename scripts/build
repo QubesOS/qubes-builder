@@ -68,6 +68,10 @@ if ! [ -r "$PWD/chroot-dom0-$DIST/proc/cpuinfo" ]; then
     sudo mount -t proc proc "$PWD/chroot-dom0-$DIST/proc"
 fi
 
+if ! [ -r "$PWD/chroot-dom0-$DIST/dev/null" ]; then
+    sudo mount -t devtmpfs devtmpfs "$PWD/chroot-dom0-$DIST/dev"
+fi
+
 if ! [ -d "$PWD/chroot-dom0-$DIST/sys/devices" ]; then
     sudo mount -t sysfs sysfs "$PWD/chroot-dom0-$DIST/sys"
 fi
