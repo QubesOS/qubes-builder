@@ -157,6 +157,17 @@ generic-prepare-chroot:
 		exit 1; \
 	fi
 	@mkdir -p "$(CACHEDIR)"
+	@if ! scripts/test-sane-mount .; then \
+		mountpoint=$$(scripts/find-mount-point .); \
+		echo "*******************************************************************************"; \
+		echo "***                               ERROR                                      ***"; \
+		echo "*** Cannot create chroot because the current filesystem is mounted as nodev. ***"; \
+		echo "*** Build Qubes on a different filesystem, or run 'make remount' to remount  ***"; \
+		echo "*** $$mountpoint with dev option."; \
+		echo "***                                                                          ***"; \
+		echo "*******************************************************************************"; \
+		exit 1; \
+	fi
 
 .PHONY: prepare-chroot
 prepare-chroot: generic-prepare-chroot dist-prepare-chroot

@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 dir"
+    exit 1
+fi
+
+mountpoint=$($(dirname $0)/find-mount-point "$1")
+set -x
+sudo mount "$mountpoint" -o dev,remount

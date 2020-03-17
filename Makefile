@@ -166,6 +166,7 @@ help:
 	@echo "make clean-all        -- remove any downloaded sources and built packages"
 	@echo "make clean-rpms       -- remove any built packages"
 	@echo "make clean-chroot     -- remove all chroot directories"
+	@echo "make remount          -- remount current filesystem with dev option"
 	@echo "make mostlyclean      -- remove built packages and built templates"
 	@echo "make distclean        -- remove all files and directories built or added"
 	@echo "make check            -- check for any uncommited changes and unsigned tags"
@@ -444,6 +445,10 @@ clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
 $(clean-chroot-tgt): %.clean : %.umount
 	@sudo rm -rf $(BUILDER_DIR)/$(@:%.clean=%)
 clean-chroot: $(clean-chroot-tgt)
+
+.PHONY: remount
+remount:
+	@./scripts/remount .
 
 .PHONY: clean-all
 clean-all: clean-chroot clean-rpms clean

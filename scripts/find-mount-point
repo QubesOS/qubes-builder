@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 dir"
+    exit 1
+fi
+
+findmnt --target "$1" --raw --output TARGET --first-only | tail -n1 | cut -d' ' -f1
