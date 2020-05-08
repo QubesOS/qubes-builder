@@ -322,6 +322,7 @@ template-local-%::
 	DIST=$${dist_array[0]}; \
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
+	DIST_DOM0=$(shell make get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
 	plugins_var="BUILDER_PLUGINS_$$DIST"; \
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
 	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
@@ -335,7 +336,7 @@ template-local-%::
 	fi; \
 	export GNUPGHOME="$(BUILDER_DIR)/keyrings/template-$$DIST"; \
 	mkdir -m 700 -p "$$GNUPGHOME"; \
-	export DIST NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS; \
+	export DIST DIST_DOM0 NO_SIGN TEMPLATE_FLAVOR TEMPLATE_OPTIONS; \
 	$(MAKE) -s -C $(SRC_DIR)/linux-template-builder prepare-repo-template || exit 1; \
 	for repo in $(GIT_REPOS); do \
 		if [ "$$repo" = "$(SRC_DIR)/linux-template-builder" ]; then \
