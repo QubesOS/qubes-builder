@@ -21,3 +21,4 @@ untrusted-builder-env-*
 
 build-pkgs-temp.list
 iso/build_latest
+rpmdb
