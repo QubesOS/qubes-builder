@@ -322,7 +322,7 @@ template-local-%::
 	DIST=$${dist_array[0]}; \
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
-	DIST_DOM0=$(shell make get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
+	DIST_DOM0=$$($(MAKE) -s get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
 	plugins_var="BUILDER_PLUGINS_$$DIST"; \
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
 	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
