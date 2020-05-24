@@ -322,7 +322,7 @@ template-local-%::
 	DIST=$${dist_array[0]}; \
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
-	DIST_DOM0=$$($(MAKE) -s get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
+	DIST_DOM0=$$(MAKEFLAGS= $(MAKE) -s get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
 	plugins_var="BUILDER_PLUGINS_$$DIST"; \
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
 	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
@@ -949,7 +949,7 @@ check-release-status-%:
 			# Old style components not supported
 			continue; \
 		fi; \
-		if [ -z "`$(MAKE) -s -f Makefile.generic \
+		if [ -z "`MAKEFLAGS= $(MAKE) -s -f Makefile.generic \
 				DIST=$(DIST) \
 				PACKAGE_SET=$(PACKAGE_SET) \
 				COMPONENT=$$C \
@@ -1025,7 +1025,7 @@ build-info::
 	@$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
 	@$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
 	@for component in $(COMPONENTS); do \
-		component_env_var=`$(MAKE) -s get-var GET_VAR=ENV_$${component//-/_}`; \
+		component_env_var=`MAKEFLAGS= $(MAKE) -s get-var GET_VAR=ENV_$${component//-/_}`; \
 		if [ ! -z "$$component_env_var" ]; then $(call _info, $(text), ENV_$${component//-/_}, $${component_env_var}, ""); fi; \
 	done
 else
