@@ -102,3 +102,23 @@ if [ -n "$keep_alive_pid" ]; then
     kill -9 $keep_alive_pid
 fi
 find qubes-packages-mirror-repo -type f -ls -exec sha1sum {} +
+
+# clean env only one chroot
+chroot_dir="$(ls -d chroot-*)"
+YUM="$(sudo chroot "$chroot_dir" /usr/bin/which dnf || true)"
+if [ -z "$YUM" ]; then
+    YUM="$(sudo chroot "$chroot_dir" /usr/bin/which yum || true)"
+fi
+
+if [ -n "$YUM" ]; then
+    # install all built RPMs
+    sudo chroot "$chroot_dir" bash -c -l "$YUM install -y /tmp/qubes-packages-mirror-repo/rpm/*.rpm"
+fi
+
+DPKG="$(sudo chroot "$chroot_dir" /usr/bin/which dpkg || true)"
+APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt || true)"
+if [ -n "$DPKG" ] && [ "$APT" ]; then
+    # install all built DEBs
+    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"' | tr '\n' ' ')"
+    sudo chroot "$chroot_dir" bash -c -l "$DPKG -i $PKGS || { $APT -fi $PKGS && $DPKG -i $PKGS; }"
+fi
