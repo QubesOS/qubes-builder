@@ -6,7 +6,11 @@ set -ex
 cd "$(dirname $0)/.."
 
 # clean env only one chroot
-chroot_dir="$(ls -d chroot-*)"
+chroot_dir="$(ls -d chroot-* || :)"
+if [ -z "$chroot_dir" ]; then
+    echo "Nothing was built, skipping install"
+    exit
+fi
 YUM="$(sudo chroot "$chroot_dir" /usr/bin/which dnf || true)"
 if [ -z "$YUM" ]; then
     YUM="$(sudo chroot "$chroot_dir" /usr/bin/which yum || true)"
