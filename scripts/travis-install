@@ -26,5 +26,5 @@ APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
 if [ -n "$DPKG" ] && [ "$APT" ]; then
     # install all built DEBs
     PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"' | tr '\n' ' ')"
-    sudo chroot "$chroot_dir" bash -c -l "$DPKG -i $PKGS || { $APT -f -y install && $DPKG -i $PKGS; }"
+    sudo chroot "$chroot_dir" bash -c -l "apt-get install -y $DPKG"
 fi
