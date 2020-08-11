@@ -25,5 +25,5 @@ APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
 if [ "$APT" ]; then
     # install all built DEBs
     PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"' | tr '\n' ' ')"
-    sudo chroot "$chroot_dir" bash -c -l "apt-get install -y $PKGS"
+    sudo chroot "$chroot_dir" bash -c -l "DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes DEBIAN_PRIORITY=critical apt-get install -y $PKGS"
 fi
