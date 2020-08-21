@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -e
+set -x
+
+REPO_NAME="$1"
+TEMPLATE_FLAVOR="$2"
+
+# Get Qubes Gentoo overlay
+make COMPONENTS=gentoo get-sources
+# Get base ebuild associated with 'REPO_NAME' (thanks to fetched URL in ebuild)
+ebuild0="$(grep -R "QubesOS/qubes-$REPO_NAME" qubes-src/gentoo/app-emulation/*/.*.ebuild.0 | cut -d ':' -f1 | tail -1)"
+if [ -n "$ebuild0" ]; then
+    # Get commit SHA from cloned sources (it handles unavailable TRAVIS_COMMIT value)
+    COMMIT_SHA="$(git -C "qubes-src/$REPO_NAME" rev-parse HEAD)"
+    # Create temporary ebuild
+    name="$(basename "$ebuild0" | sed 's|.\(.*\).ebuild.0|\1|g')"
+    ebuild="$(dirname "$ebuild0")/${name}-9999.ebuild"
+    cp "$ebuild0" "$ebuild"
+    # 9999 version fetches master branch. Replace with COMMIT_SHA
+    sed -i "s/EGIT_COMMIT=HEAD/EGIT_COMMIT=$COMMIT_SHA/" "$ebuild"
+    # Don't verify git tags
+    sed -i '/qubes_verify_sources_git.*/d' "$ebuild"
+    # Create an ebuild on the fly
+    sed -i "/^Hash: SHA256/a EBUILD ${name}-9999.ebuild $(stat -Lc %s "$ebuild") SHA512 $(sha512sum "$ebuild" | awk '{print $1}')" "$(dirname "$ebuild")/Manifest"
+    cat "$(dirname "$ebuild")/Manifest"
+    # Get and pass TEMPLATE_FLAVOR to make command as it will set proper Gentoo profile into the chroot
+    make COMPONENTS=gentoo GENTOO_PACKAGES="$REPO_NAME" TEMPLATE_FLAVOR="$TEMPLATE_FLAVOR" qubes
+fi

@@ -12,6 +12,8 @@ keep_alive() {
 repo_name="$(basename "$PWD")"
 repo_dir="$PWD"
 
+scripts_dir="$(dirname "$0")"
+
 # drop qubes- prefix
 repo_name=${repo_name#qubes-}
 
@@ -21,7 +23,7 @@ if [ -n "$1" ]; then
 fi
 
 # go to builder main directory
-cd "$(dirname "$0")/.."
+cd "$scripts_dir/.."
 
 # place cachedir outside qubes-builder (to not restore qubes-builder itself
 # from Travis-CI cache)
@@ -90,32 +92,13 @@ else
     COMPONENTS="$repo_name"
 fi
 
-# Only linux-template-builder is common for all distros including Gentoo
+# Only linux-template-builder is common for all distros
 # Gentoo needs a special treatment if we want to build a specific package
 # because it's the overlay who has all the ebuilds.
-if [ "$(echo "$DISTS_VM"+ | cut -d '+' -f1)" = gentoo ] && [ "$COMPONENTS" != linux-template-builder ]; then
-    # Get Qubes Gentoo overlay
-    make COMPONENTS=gentoo get-sources
-    # Get base ebuild associated with 'repo_name' (thanks to fetched URL in ebuild)
-    ebuild0="$(grep -R "QubesOS/qubes-$repo_name" qubes-src/gentoo/app-emulation/*/.*.ebuild.0 | cut -d ':' -f1 | tail -1)"
-    if [ -n "$ebuild0" ]; then
-        # Get commit SHA from cloned sources (it handles unavailable TRAVIS_COMMIT value)
-        COMMIT_SHA="$(git -C "qubes-src/$repo_name" rev-parse HEAD)"
-        # Create temporary ebuild
-        name="$(basename "$ebuild0" | sed 's|.\(.*\).ebuild.0|\1|g')"
-        ebuild="$(dirname "$ebuild0")/${name}-9999.ebuild"
-        cp "$ebuild0" "$ebuild"
-        # 9999 version fetches master branch. Replace with COMMIT_SHA
-        sed -i "s/EGIT_COMMIT=HEAD/EGIT_COMMIT=$COMMIT_SHA/" "$ebuild"
-        # Don't verify git tags
-        sed -i '/qubes_verify_sources_git.*/d' "$ebuild"
-        # Create an ebuild on the fly
-        sed -i "/^Hash: SHA256/a EBUILD ${name}-9999.ebuild $(stat -Lc %s "$ebuild") SHA512 $(sha512sum "$ebuild" | awk '{print $1}')" "$(dirname "$ebuild")/Manifest"
-        cat "$(dirname "$ebuild")/Manifest"
-        # Get and pass TEMPLATE_FLAVOR to make command as it will set proper Gentoo profile into the chroot
-        TEMPLATE_FLAVOR="$(echo "$DISTS_VM"+ | cut -d '+' -f2)"
-        make COMPONENTS=gentoo GENTOO_PACKAGES="$repo_name" TEMPLATE_FLAVOR="$TEMPLATE_FLAVOR" qubes
-    fi
+DIST="$(echo "$DISTS_VM"+ | cut -d '+' -f1)"
+TEMPLATE_FLAVOR="$(echo "$DISTS_VM"+ | cut -d '+' -f2)"
+if [ "$DIST" = gentoo ] && [ "$COMPONENTS" != linux-template-builder ]; then
+    "$scripts_dir"/travis-build-gentoo "${repo_name}" "${TEMPLATE_FLAVOR}"
 else
     make COMPONENTS="$COMPONENTS" get-sources-extra qubes
 fi
