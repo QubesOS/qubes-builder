@@ -16,6 +16,10 @@ if [ -z "$YUM" ]; then
     YUM="$(sudo chroot "$chroot_dir" /usr/bin/which yum || true)"
 fi
 
+# remove fstab created by chroot builder
+# it causes failures in installing (core|gui)-agent-linux
+sudo rm -f "$chroot_dir/etc/fstab"
+
 if [ -n "$YUM" ]; then
     # install all built RPMs
     sudo chroot "$chroot_dir" bash -c -l "$YUM install --verbose --debuglevel=10 -y /tmp/qubes-packages-mirror-repo/rpm/*.rpm"
