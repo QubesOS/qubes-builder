@@ -18,7 +18,7 @@ fi
 
 if [ -n "$YUM" ]; then
     # install all built RPMs
-    sudo chroot "$chroot_dir" bash -c -l "$YUM install -y /tmp/qubes-packages-mirror-repo/rpm/*.rpm"
+    sudo chroot "$chroot_dir" bash -c -l "$YUM install --verbose --debuglevel=10 -y /tmp/qubes-packages-mirror-repo/rpm/*.rpm"
 fi
 
 APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
