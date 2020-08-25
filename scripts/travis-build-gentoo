@@ -18,7 +18,9 @@ if [ -n "$ebuild0" ]; then
     ebuild="$(dirname "$ebuild0")/${name}-9999.ebuild"
     cp "$ebuild0" "$ebuild"
     # 9999 version fetches master branch. Replace with COMMIT_SHA
+    sed -i "/EGIT_COMMIT=HEAD/ a EGIT_CLONE_TYPE=mirror" "$ebuild"
     sed -i "s/EGIT_COMMIT=HEAD/EGIT_COMMIT=$COMMIT_SHA/" "$ebuild"
+    sed -i "s|github.com/QubesOS|gitlab.notset.fr/fepitre-bot|" "$ebuild"
     # Don't verify git tags
     sed -i '/qubes_verify_sources_git.*/d' "$ebuild"
     # Create an ebuild on the fly
