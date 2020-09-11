@@ -124,7 +124,7 @@ runBuild() {
         cd \"$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME\";
         rm -rf untrusted_appmenus;
         ln -s ../../appmenus untrusted_appmenus;
-        ln -s ../../template.conf template.conf;
+        cp ../../template.conf template.conf;
         ls -l . ../../ untrusted_appmenus/;
         echo \"Build done, sending image back to the $HOSTNAME VM\";
         /usr/lib/qubes/qrexec-client-vm $HOSTNAME qubesbuilder.CopyTemplateBack /bin/sh -c 'echo $key; exec tar chSz untrusted_appmenus root.img template.conf';
