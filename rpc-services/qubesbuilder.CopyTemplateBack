@@ -11,4 +11,4 @@ while read key path; do
         dir="$path"
     fi
 done < /tmp/qubesbuilder.allowedtransfers
-[ -n "$dir" ] && exec tar xkzS -C "$dir" root.img untrusted_appmenus
+[ -n "$dir" ] && exec tar xkzS -C "$dir" root.img untrusted_appmenus template.conf
