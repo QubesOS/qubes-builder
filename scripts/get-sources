@@ -100,7 +100,7 @@ fi
 
 if [ "$verify" == "true" ]; then
     echo "--> Verifying tags..."
-    KEYRING_DIR_GIT="$KEYRING_DIR_GIT/$REPO"
+    KEYRING_DIR_GIT="$BUILDER_DIR/keyrings/git/$(basename "$REPO")"
     export KEYRING_DIR_GIT
     if ! "$(dirname "$0")/verify-git-tag" $REPO $VERIFY_REF; then
         # if verfication failed, remove fetched content to make sure we'll not

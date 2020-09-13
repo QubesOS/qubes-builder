@@ -38,7 +38,7 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
         COMPONENT="$(basename "$1")"
         COMPONENT="${COMPONENT//./builder}"
         if elementIn "$COMPONENT" ${allowed_components[@]}; then
-            keyid=${maintainer//ALLOWED_COMPONENTS_/}
+            keyid=${maintainer#ALLOWED_COMPONENTS_}
             gpg --import "$BUILDER_DIR/keys/$keyid.asc" || exit 1
             echo "$keyid:6:" | gpg --import-ownertrust
         fi
