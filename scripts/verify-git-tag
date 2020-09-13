@@ -54,7 +54,11 @@ else
 fi
 
 verify_tag() {
-    git verify-tag --raw "$1" 2>&1 | grep -q '^\[GNUPG:\] TRUST_\(FULLY\|ULTIMATE\)'
+    if [ "$(git show -s --pretty='%G?' -1 "$1")" != G ]; then
+        return 1
+    else
+        return 0
+    fi
 }
 
 VALID_TAG_FOUND=0
