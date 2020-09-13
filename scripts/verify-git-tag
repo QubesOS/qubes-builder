@@ -9,6 +9,9 @@
 
 [ "$DEBUG" = "1" ] && set -x
 
+# shellcheck source=scripts/common
+source "$BUILDER_DIR/scripts/common"
+
 set -o pipefail
 
 if [ "$NO_CHECK" == "1" ]; then
@@ -28,8 +31,19 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
         gpg --import qubes-developers-keys.asc
         touch "$GNUPGHOME/pubring.gpg"
     fi
+	maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}')
+    for maintainer in $maintainers
+    do
+        allowed_components=("${!maintainer}")
+		COMPONENT="$(basename "$1")"
+		COMPONENT="${COMPONENT//./builder}"
+        if elementIn "$COMPONENT" ${allowed_components[@]}; then
+            keyid=${maintainer//ALLOWED_COMPONENTS_/}
+			gpg --import "$BUILDER_DIR/keys/$keyid.asc" || exit 1
+			echo "$keyid:6:" | gpg --import-ownertrust
+        fi
+    done
 fi
-
 
 pushd "$1" > /dev/null || exit 2
 
