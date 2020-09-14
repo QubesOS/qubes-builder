@@ -54,7 +54,13 @@ else
 fi
 
 verify_tag() {
-    git verify-tag --raw "$1" 2>&1 | grep -q '^\[GNUPG:\] TRUST_\(FULLY\|ULTIMATE\)'
+    content="$(git verify-tag --raw "$1" 2>&1)"
+    newsig_number="$(echo "$content" | grep -o NEWSIG | wc -l)"
+    if [ "$newsig_number" = 1 ] && { echo "$content" | grep -q '^\[GNUPG:\] TRUST_\(FULLY\|ULTIMATE\)'; }; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 VALID_TAG_FOUND=0
