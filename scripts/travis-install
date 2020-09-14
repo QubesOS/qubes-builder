@@ -22,12 +22,23 @@ sudo rm -f "$chroot_dir/etc/fstab"
 
 if [ -n "$YUM" ]; then
     # install all built RPMs
-    sudo chroot "$chroot_dir" bash -c -l "$YUM install --verbose --debuglevel=10 -y /tmp/qubes-packages-mirror-repo/rpm/*.rpm"
+    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-packages-mirror-repo/rpm/ -type f -name "*.rpm"')"
+    for excluded in $TRAVIS_INSTALL_EXCLUDE
+    do
+        PKGS="$(echo "$PKGS" | sed "/$excluded-[0-9]/d")"
+    done
+    PKGS="$(echo "$PKGS" | tr '\n' ' ')"
+    sudo chroot "$chroot_dir" bash -c -l "$YUM install -y $PKGS"
 fi
 
 APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
 if [ "$APT" ]; then
     # install all built DEBs
-    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"' | tr '\n' ' ')"
+    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"')"
+    for excluded in $TRAVIS_INSTALL_EXCLUDE
+    do
+        PKGS="$(echo "$PKGS" | sed "/${excluded}_[0-9]/d")"
+    done
+    PKGS="$(echo "$PKGS" | tr '\n' ' ')"
     sudo chroot "$chroot_dir" bash -c -l "DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes DEBIAN_PRIORITY=critical apt-get -o Dpkg::Options::=--force-confnew --yes install $PKGS"
 fi
