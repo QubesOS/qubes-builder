@@ -6,6 +6,7 @@ import sys
 import os
 import errno
 import shutil
+import string
 import subprocess
 from datetime import datetime
 
@@ -34,6 +35,11 @@ if not qrexec_remote:
     print('ERROR: QREXEC_REMOTE_DOMAIN not set', file=sys.stderr)
     sys.exit(1)
 
+subdir_name = ''
+if len(sys.argv) > 1:
+    untrusted_subdir_name = sys.argv[1]
+    allowed_chars = string.ascii_letters + string.digits + '-_'
+    subdir_name = ''.join(c if c in allowed_chars else '_' for c in untrusted_subdir_name)
 
 def log(msg, remote=True, now=None):
     if now is None:
@@ -64,6 +70,7 @@ file_name_base = os.path.join(
     os.getenv('HOME', '/'),
     'QubesIncomingBuildLog',
     '{remote}',
+    subdir_name,
     'log_{time:%Y-%m-%d_%H-%M-%S}').format(
     remote=qrexec_remote,
     time=start)
