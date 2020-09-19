@@ -10,6 +10,7 @@ import string
 import subprocess
 from datetime import datetime
 
+XZ_THRESHOLD = 10 * 2 ** 20
 
 def sanitize_line(untrusted_line):
     line = bytearray(untrusted_line)
@@ -88,7 +89,10 @@ while True:
         file_name = '{}.{}'.format(file_name_base, try_no)
 
     try:
+        # check both compressed and uncompressed files availability, continue
+        # only if both are unused at the same time
         fd = os.open(file_name, os.O_CREAT | os.O_EXCL, 0o664)
+        fd2 = os.open(file_name + '.xz', os.O_CREAT | os.O_EXCL, 0o664)
     except OSError as err:
         if err.errno == errno.EEXIST:
             try_no += 1
@@ -96,9 +100,17 @@ while True:
         raise
 
     os.close(fd)
+    os.close(fd2)
     break
 
 shutil.move(tmp_log.name, file_name)
+if os.path.getsize(file_name) > XZ_THRESHOLD:
+    subprocess.check_call(['xz', '--force', file_name],
+                          stdout=subprocess.DEVNULL,
+                          stdin=subprocess.DEVNULL)
+    file_name += '.xz'
+else:
+    os.unlink(file_name + '.xz')
 
 # report actually used file name to the build domain
 print(os.path.relpath(
