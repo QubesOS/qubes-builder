@@ -43,6 +43,7 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
             echo "$keyid:6:" | gpg --import-ownertrust
         fi
     done
+    gpgconf --kill gpg-agent
 fi
 
 pushd "$1" > /dev/null || exit 2
