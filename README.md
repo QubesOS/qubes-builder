@@ -16,16 +16,14 @@ and should ensure the following packages are installed:
 * python3-sh
 * dialog
 * perl-open
-* PyYAML
+* python3-pyyaml
+* perl-Digest-MD5
+* perl-Digest-SHA
 
 Usually one can install those packages by just issuing:
 
-    $ sudo dnf install git createrepo rpm-build rpm-sign make python3-sh rpmdevtools rpm-sign dialog perl-open PyYAML perl-Digest-MD5 perl-Digest-SHA
+    $ sudo dnf install git createrepo rpm-build rpm-sign make python3-sh rpmdevtools rpm-sign dialog perl-open python3-pyyaml perl-Digest-MD5 perl-Digest-SHA
     
-for older Fedora or CentOS versions use:
-
-    $ sudo yum install git createrepo rpm-build rpm-sign make python3-sh rpmdevtools rpm-sign dialog perl-open PyYAML
-
 Or just install them automatically by issuing:
 
     $ make install-deps
