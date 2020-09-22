@@ -1273,11 +1273,8 @@ class Wizard(Config):
         if not os.path.exists(gnupghome):
             os.makedirs(gnupghome, mode=0o700)
 
-    def gpg_verify_key(self, key_data):
+    def gpg_verify_key(self, key_data, env):
         verified = False
-        env = os.environ.copy()
-        env['GNUPGHOME'] = GNUPGHOME
-        self.check_gnupghome(GNUPGHOME)
 
         try:
             text = sh.gpg(
@@ -1303,13 +1300,20 @@ class Wizard(Config):
         return verified
 
     def verify_keys(self, keys, message=None, force=False):
-        env = os.environ.copy()
-        env['GNUPGHOME'] = GNUPGHOME
+        default_env = os.environ.copy()
+        default_env['GNUPGHOME'] = GNUPGHOME
         self.check_gnupghome(GNUPGHOME)
 
         for key_id, key_data in keys.items():
             key = key_data['key']
             is_key_missing = True
+
+            env = default_env
+            if key_data['type'] == 'builder':
+                gnupghome = os.path.join(GNUPGHOME, key_data['id'])
+                env['GNUPGHOME'] = gnupghome
+                self.check_gnupghome(gnupghome)
+
             try:
                 text = sh.gpg('--list-key', key, _env=env)
                 is_key_missing = text.exit_code
@@ -1366,7 +1370,7 @@ class Wizard(Config):
                         exit(err)
 
             # Verify key on every run
-            result = self.gpg_verify_key(key_data)
+            result = self.gpg_verify_key(key_data, env)
             if not result:
                 exit(
                     {
@@ -1383,7 +1387,7 @@ class Wizard(Config):
 
         # Add developers keys
         try:
-            sh.gpg('--import', QUBES_DEVELOPERS_KEYS, _env=env)
+            sh.gpg('--import', QUBES_DEVELOPERS_KEYS, _env=default_env)
         except sh.ErrorReturnCode as err:
             exit(
                 'Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(
