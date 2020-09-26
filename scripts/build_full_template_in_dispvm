@@ -4,7 +4,7 @@ set -e
 
 export DIST=$1
 TEMPLATE_CONF="$2"
-IMAGE_SIZE=20G
+IMAGE_SIZE=30G
 IMAGE_NAME="untrusted-builder-env-$$.img"
 IMAGE_DEV=""
 TEMPLATE_BUILDER_COMPONENT=linux-template-builder
