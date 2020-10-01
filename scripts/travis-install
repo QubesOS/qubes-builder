@@ -28,7 +28,9 @@ if [ -n "$YUM" ]; then
         PKGS="$(echo "$PKGS" | sed "/$excluded-[0-9]/d")"
     done
     PKGS="$(echo "$PKGS" | tr '\n' ' ')"
-    sudo chroot "$chroot_dir" bash -c -l "$YUM install -y $PKGS"
+    if [ -n "${PKGS% }" ]; then
+        sudo chroot "$chroot_dir" bash -c -l "$YUM install -y $PKGS"
+    fi 
 fi
 
 APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
@@ -40,5 +42,7 @@ if [ "$APT" ]; then
         PKGS="$(echo "$PKGS" | sed "/${excluded}_[0-9]/d")"
     done
     PKGS="$(echo "$PKGS" | tr '\n' ' ')"
-    sudo chroot "$chroot_dir" bash -c -l "DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes DEBIAN_PRIORITY=critical apt-get -o Dpkg::Options::=--force-confnew --yes install $PKGS"
+    if [ -n "${PKGS% }" ]; then
+        sudo chroot "$chroot_dir" bash -c -l "DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes DEBIAN_PRIORITY=critical apt-get -o Dpkg::Options::=--force-confnew --yes install $PKGS"
+    fi
 fi
