@@ -152,7 +152,7 @@ if [ -z "$vtag" ]; then
 else
     if [ "$print_version" = 1 ]; then
         if [ "0$YAML_FORMAT" -eq 1 ]; then
-            printf '      %s\n' "$vtag"
+            printf '      %s:\n' "$vtag"
         else
             if [ "0$HTML_FORMAT" -eq 1 ]; then
                 printf '<td>%s</td>' "$vtag"
@@ -176,7 +176,7 @@ for repo in $ALL_REPOSITORIES; do
             if [ "0$YAML_FORMAT" -eq 1 ]; then
                 printf "        status: released\n"
                 printf "        repo: %s\n" "${repo}"
-                printf "        days: %s days ago\n" "${days}"
+                printf "        days: %s\n" "${days}"
             else
                 if [ $days -lt ${TESTING_DAYS} ]; then
                     echo -n " $(color days-testing)(${days} days ago)$(reset_color days)"
