@@ -142,8 +142,10 @@ fi
 vtag=$(git -C ${SRC_DIR}/${COMPONENT} tag --points-at HEAD --list 'v*')
 
 if [ -z "$vtag" ]; then
-    if [ "$print_version" = 1 ]; then
-        echo -n "$(color no-version)no version tag$(reset_color) "
+    if [ "0$YAML_FORMAT" -eq 0 ]; then
+        if [ "$print_version" = 1 ]; then
+            echo -n "$(color no-version)no version tag$(reset_color) "
+        fi
     fi
     if [ "${abort_no_version}" = 1 ]; then
         echo "ERROR: No version tag!" >&2
