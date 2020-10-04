@@ -940,7 +940,7 @@ check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
-	@if [ "0$(HTML_FORMAT)" -eq 0 ]; then \
+	@if [ "0$(HTML_FORMAT)" -eq 0 -a "0$(YAML_FORMAT)" -eq 0 ]; then \
 		echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"; \
 	fi; \
 	HEADER_PRINTED=; \
@@ -956,15 +956,21 @@ check-release-status-%:
 				get-var GET_VAR=PACKAGE_LIST 2>/dev/null`" ]; then \
 			continue; \
 		fi
-		if [ "0$(HTML_FORMAT)" -eq 1 -a -z "$$HEADER_PRINTED" ]; then \
+		if [ "0$(YAML_FORMAT)" -eq 1 ]; then \
+			printf '%s:\n' "$$PACKAGE_SET"
+			printf '  %s:\n' "$$DIST"
+			printf '    %s:\n' "$$C"
+		elif [ "0$(HTML_FORMAT)" -eq 1 -a -z "$$HEADER_PRINTED" ]; then \
 			printf '<h2>Packages for <span class="dist">%s %s</span></h2>\n' "$(DIST)" "$(PACKAGE_SET)"; \
 			printf '<table><tr><th>Component</th><th>Version</th><th>Status</th></tr>\n'; \
 			HEADER_PRINTED=1; \
 		fi; \
-		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
-			printf '<tr><td>%s</td>' "$$C"; \
-		else \
-			echo -n "$$C: "; \
+		if [ "0$(YAML_FORMAT)" -eq 0 ]; then \
+			if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+				printf '<tr><td>%s</td>' "$$C"; \
+			else \
+				echo -n "$$C: "; \
+			fi; \
 		fi; \
 		$(BUILDER_DIR)/scripts/check-release-status-for-component --color "$$C" "$(PACKAGE_SET)" "$(DIST)"; \
 		if [ "0$(HTML_FORMAT)" -eq 1 ]; then \

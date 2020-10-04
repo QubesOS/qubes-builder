@@ -151,10 +151,14 @@ if [ -z "$vtag" ]; then
     fi
 else
     if [ "$print_version" = 1 ]; then
-        if [ "0$HTML_FORMAT" -eq 1 ]; then
-            printf '<td>%s</td>' "$vtag"
+        if [ "0$YAML_FORMAT" -eq 1 ]; then
+            printf '      %s\n' "$vtag"
         else
-            echo -n $vtag ""
+            if [ "0$HTML_FORMAT" -eq 1 ]; then
+                printf '<td>%s</td>' "$vtag"
+            else
+                echo -n $vtag ""
+            fi
         fi
     fi
 fi
@@ -162,15 +166,23 @@ fi
 found=0
 for repo in $ALL_REPOSITORIES; do
     if check_single_repo $repo; then
-        echo -n "$(color ${repo})${repo}$(reset_color)"
+        if [ "0$YAML_FORMAT" -eq 0 ]; then
+            echo -n "$(color ${repo})${repo}$(reset_color)"
+        fi
         snap_file="${PWD}/repo-latest-snapshot/${repo}-${PACKAGE_SET}-${DIST}-${COMPONENT}"
         if [ -f "$snap_file" ]; then
             date_snap=$(date -r "$snap_file" +%s)
             days=$(( ( `date +%s` - ${date_snap} ) / (24 * 60 * 60) ))
-            if [ $days -lt ${TESTING_DAYS} ]; then
-                echo -n " $(color days-testing)(${days} days ago)$(reset_color days)"
+            if [ "0$YAML_FORMAT" -eq 1 ]; then
+                printf "        status: released\n"
+                printf "        repo: %s\n" "${repo}"
+                printf "        days: %s days ago\n" "${days}"
             else
-                echo -n " $(color days-stable)(${days} days ago)$(reset_color days)"
+                if [ $days -lt ${TESTING_DAYS} ]; then
+                    echo -n " $(color days-testing)(${days} days ago)$(reset_color days)"
+                else
+                    echo -n " $(color days-stable)(${days} days ago)$(reset_color days)"
+                fi
             fi
         else
             if [ "0$HTML_FORMAT" -eq 1 ]; then
@@ -189,9 +201,17 @@ if [ "$found" = 0 ]; then
     if make -s -f Makefile.generic "${MAKE_ARGS[@]}" \
             UPDATE_REPO=${PWD}/qubes-packages-mirror-repo/${PACKAGE_SET}-${DIST} \
             check-repo >/dev/null 2>&1; then
-        echo -n "$(color built-unreleased)built, not released$(reset_color)"
+        if [ "0$YAML_FORMAT" -eq 1 ]; then
+            printf "        status: built, not released\n"
+        else
+            echo -n "$(color built-unreleased)built, not released$(reset_color)"
+        fi
     else
-        echo -n "$(color unreleased)not released$(reset_color)"
+        if [ "0$YAML_FORMAT" -eq 1 ]; then
+            printf "        status: not released\n"
+        else
+            echo -n "$(color unreleased)not released$(reset_color)"
+        fi
     fi
     if [ "0$HTML_FORMAT" -ne 1 ]; then
         echo ""
