@@ -29,7 +29,7 @@ if [ -n "$YUM" ]; then
     done
     PKGS="$(echo "$PKGS" | tr '\n' ' ')"
     if [ -n "${PKGS% }" ]; then
-        sudo chroot "$chroot_dir" bash -c -l "$YUM install -y $PKGS"
+        sudo chroot "$chroot_dir" bash -c -l "$YUM install --disablerepo=qubes-builder-pkgs -y $PKGS"
     fi 
 fi
 
