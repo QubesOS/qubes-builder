@@ -229,10 +229,6 @@ $(COMPONENTS_NO_TPL_BUILDER:%=%-vm) : %-vm : check-depend
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
 			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) -f Makefile.generic all || exit 1; \
 		done; \
-	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-vm 2> /dev/null`" ]; then \
-	    for DIST in $(DISTS_VM_NO_FLAVOR); do \
-	        MAKE_TARGET="rpms-vm" ./scripts/build $$DIST $* || exit 1; \
-	    done; \
 	fi
 
 $(COMPONENTS_NO_TPL_BUILDER:%=%-dom0) : %-dom0 : check-depend
@@ -240,8 +236,6 @@ $(COMPONENTS_NO_TPL_BUILDER:%=%-dom0) : %-dom0 : check-depend
 ifneq ($(DIST_DOM0),)
 	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) all || exit 1; \
-	elif [ -n "`$(MAKE) -n -s -C $(SRC_DIR)/$* rpms-dom0 2> /dev/null`" ]; then \
-	    MAKE_TARGET="rpms-dom0" ./scripts/build $(DIST_DOM0) $* || exit 1; \
 	fi
 endif
 
