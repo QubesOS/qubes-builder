@@ -221,6 +221,16 @@ check-depend.dpkg:
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
+prepare-chroot-dom0:
+ifneq ($(DIST_DOM0),)
+	$(MAKE) --no-print-directory $(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
+endif
+
+prepare-chroot-vm:
+	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
+		$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm -f Makefile.generic prepare-chroot || exit 1; \
+	done
+
 $(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
 
 $(COMPONENTS_NO_TPL_BUILDER:%=%-vm) : %-vm : check-depend
