@@ -169,6 +169,8 @@ help:
 	@echo "  install-deps         -- install missing build dependencies"
 	@echo "                          ($(DEPENDENCIES))"
 	@echo "  mostlyclean          -- remove built packages and built templates"
+	@echo "  prepare-chroot-dom0  -- prepare chroot directory for dom0 dist"
+	@echo "  prepare-chroot-vm    -- prepare chroot directory for vm dists"
 	@echo "  remount              -- remount current filesystem with dev option"
 	@echo "  sign-all             -- sign all packages"
 	@echo "  sign-dom0            -- sign all Dom0 packages"
