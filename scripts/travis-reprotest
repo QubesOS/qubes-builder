@@ -28,7 +28,7 @@ if [ "$APT" ]; then
     for control in $CONTROLS
     do
         # install all dependencies first
-        sudo chroot "$chroot_dir" bash -c -l "mk-build-deps -i $control"
+        sudo chroot "$chroot_dir" bash -c -l "mk-build-deps -i --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' $control"
 
         # reprotest
         sudo chroot "$chroot_dir" bash -c -l "reprotest $control"
