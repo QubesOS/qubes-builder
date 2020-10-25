@@ -1,9 +1,49 @@
 #!/bin/bash
 
 elementIn () {
-  # $1: element to check for
-  # $2: array to check for element in
-  local element
-  for element in "${@:2}"; do [[ "$element" == "$1" ]] && return 0; done
-  return 1
+    # $1: element to check for
+    # $2: array to check for element in
+    local element
+    for element in "${@:2}"; do [[ "$element" == "$1" ]] && return 0; done
+    return 1
+}
+
+get_yum() {
+    local chroot_dir
+    chroot_dir="$1"
+    if [ -d "$chroot_dir" ]; then
+        YUM="$(sudo chroot "$chroot_dir" /usr/bin/which dnf || true)"
+        if [ -z "$YUM" ]; then
+            YUM="$(sudo chroot "$chroot_dir" /usr/bin/which yum || true)"
+        fi
+    fi
+    echo -n "$YUM"
+}
+
+get_apt() {
+    local chroot_dir
+    chroot_dir="$1"
+    if [ -d "$chroot_dir" ]; then
+        APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
+    fi
+    echo -n "$APT"
+}
+
+prepare_chroot() {
+    export BUILDERCONF=scripts/travis-builder.conf
+    export USE_DIST_BUILD_TOOLS=0
+
+    if [ -n "$DIST_DOM0" ]; then
+        PACKAGE_SET=dom0
+    else
+        PACKAGE_SET=vm
+    fi
+
+    # clean existing chroot
+    make clean-chroot
+
+    # download builder plugins
+    # shellcheck disable=2016
+    make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
+    make prepare-chroot-$PACKAGE_SET
 }
