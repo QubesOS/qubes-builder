@@ -8,6 +8,8 @@ cd "$(dirname $0)/.."
 # shellcheck source=scripts/common
 . scripts/common
 
+trap 'show_failed_log travis-reprotest.log' 1
+
 packages="$(find qubes-packages-mirror-repo/ -type f -regex '.*\(deb\|rpm\|zst\)$' 2>/dev/null)"
 if [ -z "$packages" ]; then
     echo "Nothing was built, skipping reproducible stage"
@@ -32,7 +34,8 @@ if [ "$APT" ]; then
     APT_OPTS="-o Dpkg::Options::=--force-confnew --yes"
 
     # install reprotest and devscripts
-    sudo chroot "$chroot_dir" bash -c -l "$APT_ENV apt-get $APT_OPTS install reprotest devscripts"
+    # shellcheck disable=SC2024
+    sudo chroot "$chroot_dir" bash -c -l "$APT_ENV apt-get $APT_OPTS install reprotest devscripts" > travis-reprotest.log 2>&1 || exit 1
     CONTROLS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.dsc"')"
 
     for control in $CONTROLS
@@ -45,6 +48,7 @@ if [ "$APT" ]; then
                     "
         # we remove 'domain_host' variation as we execute into a chroot
         # see reprotest manual
-        sudo chroot "$chroot_dir" bash -c -l "reprotest --vary=-domain_host $repro_opts $control"
+        # shellcheck disable=SC2024
+        sudo chroot "$chroot_dir" bash -c -l "reprotest --vary=-domain_host $repro_opts $control" >> travis-reprotest.log 2>&1 || exit 1
     done
 fi

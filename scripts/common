@@ -47,3 +47,13 @@ prepare_chroot() {
     make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
     make prepare-chroot-$PACKAGE_SET
 }
+
+show_failed_log() {
+    local exit_code=$?
+    local log
+    log="$1"
+    if [ -e "$log" ]; then
+        tail -n 10000 "$log"
+    fi
+    exit $exit_code
+}
