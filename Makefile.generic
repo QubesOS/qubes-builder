@@ -76,7 +76,7 @@ endif
 #
 #
 # Check Makefile.DISTRIBUTION for distribution-specific supported variables
-include $(ORIG_SRC)/Makefile.builder
+-include $(ORIG_SRC)/Makefile.builder
 
 ### Load distro-specific settings
 

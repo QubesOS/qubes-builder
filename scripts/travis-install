@@ -5,16 +5,24 @@ set -ex
 # go to builder main directory
 cd "$(dirname $0)/.."
 
-# clean env only one chroot
-chroot_dir="$(ls -d chroot-* || :)"
-if [ -z "$chroot_dir" ]; then
-    echo "Nothing was built, skipping install"
+# shellcheck source=scripts/common
+. scripts/common
+
+packages="$(find qubes-packages-mirror-repo/ -type f -regex '.*\(deb\|rpm\|zst\)$' 2>/dev/null)"
+if [ -z "$packages" ]; then
+    echo "Nothing was built, skipping install stage"
     exit
 fi
-YUM="$(sudo chroot "$chroot_dir" /usr/bin/which dnf || true)"
-if [ -z "$YUM" ]; then
-    YUM="$(sudo chroot "$chroot_dir" /usr/bin/which yum || true)"
+
+prepare_chroot
+
+chroot_dir="$(ls -d chroot-* || :)"
+if [ -z "$chroot_dir" ]; then
+    exit
 fi
+
+YUM="$(get_yum "$chroot_dir")"
+APT="$(get_apt "$chroot_dir")"
 
 # remove fstab created by chroot builder
 # it causes failures in installing (core|gui)-agent-linux
@@ -33,7 +41,6 @@ if [ -n "$YUM" ]; then
     fi 
 fi
 
-APT="$(sudo chroot "$chroot_dir" /usr/bin/which apt-get || true)"
 if [ "$APT" ]; then
     # install all built DEBs
     PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.deb"')"

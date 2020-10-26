@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -ex
+
+# go to builder main directory
+cd "$(dirname $0)/.."
+
+# shellcheck source=scripts/common
+. scripts/common
+
+packages="$(find qubes-packages-mirror-repo/ -type f -regex '.*\(deb\|rpm\|zst\)$' 2>/dev/null)"
+if [ -z "$packages" ]; then
+    echo "Nothing was built, skipping reproducible stage"
+    exit
+fi
+
+# we handle case where we run reprotest stage separately with build artifacts (e.g. GitlabCI).
+if [ "$1" == "prepare" ]; then
+    prepare_chroot
+fi
+
+chroot_dir="$(ls -d chroot-* || :)"
+if [ -z "$chroot_dir" ]; then
+    exit
+fi
+
+YUM="$(get_yum "$chroot_dir")"
+APT="$(get_apt "$chroot_dir")"
+
+if [ "$APT" ]; then
+    APT_ENV="DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes DEBIAN_PRIORITY=critical"
+    APT_OPTS="-o Dpkg::Options::=--force-confnew --yes"
+
+    # install reprotest and devscripts
+    sudo chroot "$chroot_dir" bash -c -l "$APT_ENV apt-get $APT_OPTS install reprotest devscripts"
+    CONTROLS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-deb -type f -name "*.dsc"')"
+
+    for control in $CONTROLS
+    do
+        # reprotest
+        repro_opts="--testbed-init 'apt-get -y --no-install-recommends install \
+                    disorderfs faketime locales-all sudo util-linux; \
+                    test -c /dev/fuse || mknod -m 666 /dev/fuse c 10 229' \
+                    --testbed-build-pre 'apt-get -y --no-install-recommends build-dep $control' \
+                    "
+        # we remove 'domain_host' variation as we execute into a chroot
+        # see reprotest manual
+        sudo chroot "$chroot_dir" bash -c -l "reprotest --vary=-domain_host $repro_opts $control"
+    done
+fi
