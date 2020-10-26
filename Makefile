@@ -232,7 +232,7 @@ check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
 prepare-chroot-dom0:
 ifneq ($(DIST_DOM0),)
-	$(MAKE) --no-print-directory $(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
+	$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
 endif
 
 prepare-chroot-vm:
