@@ -8,7 +8,11 @@ cd "$(dirname $0)/.."
 # shellcheck source=scripts/common
 . scripts/common
 
-trap 'show_failed_log travis-install.log' 1
+# we don't show most of install log, echo some text to prevent Travis-CI timeout
+keep_alive &
+keep_alive_pid=$!
+
+trap 'exit_travis travis-install.log ${keep_alive_pid}' 0 1
 
 packages="$(find qubes-packages-mirror-repo/ -type f -regex '.*\(deb\|rpm\|zst\)$' 2>/dev/null)"
 if [ -z "$packages" ]; then

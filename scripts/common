@@ -1,5 +1,11 @@
 #!/bin/bash
 
+keep_alive() {
+    while sleep 300; do
+       echo "*** STILL ALIVE ***"
+    done
+}
+
 elementIn () {
     # $1: element to check for
     # $2: array to check for element in
@@ -48,12 +54,17 @@ prepare_chroot() {
     make prepare-chroot-$PACKAGE_SET
 }
 
-show_failed_log() {
+exit_travis() {
     local exit_code=$?
     local log
+    local keep_alive_pid
     log="$1"
+    keep_alive_pid="$2"
     if [ -e "$log" ]; then
         tail -n 10000 "$log"
+    fi
+    if [ -n "$keep_alive_pid" ]; then
+        kill -9 "$keep_alive_pid"
     fi
     exit $exit_code
 }
