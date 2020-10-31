@@ -36,7 +36,7 @@ sudo rm -f "$chroot_dir/etc/fstab"
 
 if [ -n "$YUM" ]; then
     # install all built RPMs
-    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-packages-mirror-repo/rpm/ -type f -name "*.rpm"')"
+    PKGS="$(sudo chroot "$chroot_dir" bash -c -l 'find /tmp/qubes-packages-mirror-repo/rpm/ -type f -name "*.rpm" ! -name "*.src.rpm"')"
     for excluded in $TRAVIS_INSTALL_EXCLUDE
     do
         PKGS="$(echo "$PKGS" | sed "/$excluded-[0-9]/d")"
