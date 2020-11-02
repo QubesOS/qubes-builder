@@ -1,20 +1,12 @@
 #!/bin/sh
 
-set -e
-set -x
+set -ex
 
 repo_name="$(basename "$PWD")"
-repo_dir="$PWD"
-
 scripts_dir="$(dirname "$0")"
 
 # drop qubes- prefix
 repo_name=${repo_name#qubes-}
-
-if [ -n "$1" ]; then
-    # Build this component(s) instead, but still use what Travis-CI downloaded
-    override_components="$1"
-fi
 
 # go to builder main directory
 cd "$scripts_dir/.."
@@ -22,29 +14,18 @@ cd "$scripts_dir/.."
 # shellcheck source=scripts/common
 . scripts/common
 
-# place cachedir outside qubes-builder (to not restore qubes-builder itself
-# from Travis-CI cache)
-mv cache "$HOME"/qubes-builder-cache
-ln -s "$HOME"/qubes-builder-cache cache
+if [ "0$VERBOSE" -eq 0 ]; then
+    # if not showing build log, echo some text to prevent Travis-CI timeout
+    keep_alive &
+    keep_alive_pid=$!
+fi
 
-# use specific builder conf for Travis-CI builds
-export BUILDERCONF=scripts/travis-builder.conf
+trap 'exit_travis "" ${keep_alive_pid}' 0 1
 
 if [ -z "$DISTS_VM" ] && [ -z "$DIST_DOM0" ]; then
     echo "Specify either DISTS_VM or DIST_DOM0 in .travis.yml" >&2
     exit 1
 fi
-
-if command -v apt-get > /dev/null; then
-    # We don't need MongoDB, so don't care it their key is expired or not
-    sudo rm -f /etc/apt/sources.list.d/mongodb*
-
-    sudo apt-get -qq update
-    sudo apt-get -y install dpkg-dev debootstrap
-fi
-
-# install required packages
-make install-deps
 
 if ! getent group mock >/dev/null; then
     # mock require group with this specific name
@@ -59,37 +40,24 @@ if [ -L /dev/shm ]; then
     sudo mount -t tmpfs shm /dev/shm
 fi
 
-# download builder plugins
-# shellcheck disable=2016
-make get-sources COMPONENTS='$(BUILDER_PLUGINS)'
+# use specific builder conf for Travis-CI builds
+export BUILDERCONF=scripts/travis-builder.conf
 
-if [ -n "$override_components" ]; then
-    make COMPONENTS="$override_components" get-sources
-fi
-
-# place Travis-CI downloaded sources in qubes-src
-if [ -d "qubes-src/${repo_name}" ]; then
-    rm -rf "qubes-src/${repo_name}"
-fi
-cp -al "$repo_dir" "qubes-src/$repo_name"
-
-# install extra packages - after downloading builder plugins and other sources
-make install-deps
-
-if [ "0$VERBOSE" -eq 0 ]; then
-    # if not showing build log, echo some text to prevent Travis-CI timeout
-    keep_alive &
-    keep_alive_pid=$!
-fi
-
-trap 'exit_travis "" ${keep_alive_pid}' 0 1
-
-# download additional sources if needed and compile
-if [ -n "$override_components" ]; then
-    COMPONENTS="$override_components"
+if [ -n "$1" ]; then
+    # override_components
+    COMPONENTS="$1"
 else
     COMPONENTS="$repo_name"
 fi
+
+# place cachedir outside qubes-builder (to not restore qubes-builder itself
+# from Travis-CI cache)
+mv cache "$HOME"/qubes-builder-cache
+ln -s "$HOME"/qubes-builder-cache cache
+
+# make sure dependencies are installed in case of copied previous
+# prepare stage artifacts
+make install-deps
 
 # Only linux-template-builder is common for all distros
 # Gentoo needs a special treatment if we want to build a specific package
@@ -99,7 +67,7 @@ TEMPLATE_FLAVOR="$(echo "$DISTS_VM"+ | cut -d '+' -f2)"
 if [ "$DIST" = gentoo ] && [ "$COMPONENTS" != linux-template-builder ]; then
     "$scripts_dir"/travis-build-gentoo "${repo_name}" "${TEMPLATE_FLAVOR}"
 else
-    make COMPONENTS="$COMPONENTS" get-sources-extra qubes
+    make COMPONENTS="$COMPONENTS" qubes
 fi
 
 find qubes-packages-mirror-repo -type f -ls -exec sha1sum {} +
