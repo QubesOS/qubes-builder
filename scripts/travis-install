@@ -20,6 +20,7 @@ if [ -z "$packages" ]; then
     exit
 fi
 
+# we handle case where we run reprotest stage separately with build artifacts (e.g. GitlabCI).
 prepare_chroot
 
 chroot_dir="$(ls -d chroot-* || :)"

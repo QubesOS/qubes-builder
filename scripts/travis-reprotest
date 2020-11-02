@@ -21,9 +21,7 @@ keep_alive_pid=$!
 trap 'exit_travis travis-reprotest.log ${keep_alive_pid}' 0 1
 
 # we handle case where we run reprotest stage separately with build artifacts (e.g. GitlabCI).
-if [ "$1" == "prepare" ]; then
-    prepare_chroot
-fi
+prepare_chroot
 
 chroot_dir="$(ls -d chroot-* || :)"
 if [ -z "$chroot_dir" ]; then
