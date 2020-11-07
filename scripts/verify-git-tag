@@ -55,9 +55,20 @@ else
 fi
 
 verify_tag() {
-    content="$(git verify-tag --raw "$1" 2>&1)"
-    newsig_number="$(echo "$content" | grep -o NEWSIG | wc -l)"
-    if [ "$newsig_number" = 1 ] && { echo "$content" | grep -q '^\[GNUPG:\] TRUST_\(FULLY\|ULTIMATE\)'; }; then
+    local "tag=$1" "expected_hash=$2" hash
+    if ! hash="$(git rev-parse -q --verify "$tag^{commit}")"; then
+        echo "---> Failed to get tag hash">&2
+        return 1
+    elif ! [ "$hash" = "$expected_hash" ]; then
+        printf %s\\n "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
+        return 1
+    fi
+    content=$(git verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
+    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
+    if [ "$newsig_number" = 1 ] && {
+        printf %s\\n "$content" |
+        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\)' >/dev/null
+    }; then
         return 0
     else
         return 1
@@ -65,20 +76,30 @@ verify_tag() {
 }
 
 VALID_TAG_FOUND=0
-for tag in $(git tag --points-at="$REF"); do
-    if verify_tag "$tag"; then
+set -eu
+case $REF in
+(-*) echo 'Refs cannot begin with -'>&2; exit 1;;
+esac
+expected_hash=$(git rev-parse -q --verify "$REF") || exit 1
+if [ "${#expected_hash}" -ne 40 ] && [ "${#expected_hash}" -ne 64 ]; then
+    echo "---> Bad Git hash value; failing" >&2
+    exit 1
+fi
+
+tags="$(git tag "--points-at=$REF")" || exit 1
+for tag in $tags; do
+    tag="refs/tags/$tag"
+    if verify_tag "$tag" "$expected_hash"; then
         VALID_TAG_FOUND=1
-    else
-        if [ "0$VERBOSE" -ge 1 ]; then
-            echo "---> One of signed tag cannot be verified:"
-            git tag -v "$tag"
-        fi
+    elif [ "0${VERBOSE-}" -ge 1 ]; then
+        echo "---> One of signed tag cannot be verified:"
+	git tag -v "$tag"
     fi
 done
 
 if [ "$VALID_TAG_FOUND" -eq 0 ]; then
     echo "No valid signed tag found!"
-    if [ "0$VERBOSE" -eq 0 ]; then
+    if [ "0${VERBOSE-}" -eq 0 ]; then
         if [ -n "$(git describe "$REF")" ]; then
             echo "---> One of invalid tag:"
             git tag -v $(git describe "$REF")
