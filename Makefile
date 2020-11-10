@@ -828,6 +828,7 @@ internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # and the actual code
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
+ifeq ($(MAKEREPO),YES)
 	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then \
 		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
@@ -879,9 +880,15 @@ internal-update-repo-%:
 		echo -n "Updating $(REPO)... skipping."; \
 	fi; \
 	echo
+else ifeq ($(MAKEREPO),NO)
+	@true
+else
+	$(error bad value for $$(MAKEREPO))
+endif
 
 # this is executed only once for all update-repo-* target
 post-update-repo-%:
+ifeq ($(UPLOAD),YES)
 	@for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
 		repo_base_var="LINUX_REPO_$${dist}_BASEDIR"; \
 		if [ -n "$${!repo_base_var}" ]; then \
@@ -903,6 +910,11 @@ post-update-repo-%:
 		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
 		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE) $$pkgset_dist); \
 	done
+else ifeq ($(UPLOAD),NO)
+	@true
+else
+	$(error bad value for $$(UPLOAD))
+endif
 
 template-name:
 	@for DIST in $(DISTS_VM); do \
