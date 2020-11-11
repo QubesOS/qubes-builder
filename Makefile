@@ -823,12 +823,15 @@ internal-update-repo-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)/$(PACKAGE_SET)/$(DIS
 internal-update-repo-%: BUILD_LOG_URL = $(word 2,$(subst =, ,$(filter $(COMPONENT)-$(PACKAGE_SET)-$(DIST)=%,$(BUILD_LOGS_URL))))
 internal-update-repo-%: $(REPO)
 
+MAKEREPO ?= 1
+UPLOAD ?= 1
+
 # for templates skip $(PACKAGE_SET)/$(DIST)
 internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # and the actual code
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
-ifeq ($(MAKEREPO),YES)
+ifeq ($(MAKEREPO),1)
 	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then \
 		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
@@ -880,7 +883,7 @@ ifeq ($(MAKEREPO),YES)
 		echo -n "Updating $(REPO)... skipping."; \
 	fi; \
 	echo
-else ifeq ($(MAKEREPO),NO)
+else ifeq ($(MAKEREPO),0)
 	@true
 else
 	$(error bad value for $$(MAKEREPO))
@@ -888,7 +891,7 @@ endif
 
 # this is executed only once for all update-repo-* target
 post-update-repo-%:
-ifeq ($(UPLOAD),YES)
+ifeq ($(UPLOAD),1)
 	@for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
 		repo_base_var="LINUX_REPO_$${dist}_BASEDIR"; \
 		if [ -n "$${!repo_base_var}" ]; then \
@@ -910,7 +913,7 @@ ifeq ($(UPLOAD),YES)
 		[ -x "$$repo/../update_repo-$*.sh" ] || continue; \
 		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE) $$pkgset_dist); \
 	done
-else ifeq ($(UPLOAD),NO)
+else ifeq ($(UPLOAD),0)
 	@true
 else
 	$(error bad value for $$(UPLOAD))
