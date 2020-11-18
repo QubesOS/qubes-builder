@@ -21,7 +21,9 @@ if [ -z "$packages" ]; then
 fi
 
 # we handle case where we run reprotest stage separately with build artifacts (e.g. GitlabCI).
-prepare_chroot
+if [ "$1" = prepare-chroot ]; then
+    prepare_chroot
+fi
 
 chroot_dir="$(ls -d chroot-* || :)"
 if [ -z "$chroot_dir" ]; then
