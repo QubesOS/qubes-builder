@@ -34,7 +34,8 @@ if [ "$APT" ]; then
     sudo mkdir -p /tmp/qubes-deb
     sudo mount --bind "$builder_repo_dir" /tmp/qubes-deb
 
-    apt-get update
+    # update qubes-builder and Qubes repositories as we brought packages with artifacts
+    sudo apt-get update
 
     # install reprotest and devscripts
     CONTROLS="$(find /tmp/qubes-deb -type f -name "*.dsc")"
