@@ -30,6 +30,10 @@ if [ -z "$chroot_dir" ]; then
     exit
 fi
 
+if [ -n "$DIST_DOM0" ] && [ -n "${TRAVIS_INSTALL_EXCLUDE_DOM0+test}" ]; then
+    TRAVIS_INSTALL_EXCLUDE=${TRAVIS_INSTALL_EXCLUDE_DOM0}
+fi
+
 YUM="$(get_yum "$chroot_dir")"
 APT="$(get_apt "$chroot_dir")"
 
