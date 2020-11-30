@@ -703,10 +703,11 @@ prepare-merge-fetch:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
-		$$SCRIPT_DIR/get-sources || exit 1; \
+		"$$SCRIPT_DIR/get-sources" || exit 1; \
 	done
 
 prepare-merge: prepare-merge-fetch show-unmerged
+merge: prepare-merge-fetch do-merge
 
 show-unmerged:
 	@REPOS="$(GIT_REPOS)"; \

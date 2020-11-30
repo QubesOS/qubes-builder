@@ -6,6 +6,7 @@
 #  HEAD
 #  mainstream/master
 # Default ref: HEAD
+: "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
 
 [ "$DEBUG" = "1" ] && set -x
 
@@ -46,13 +47,9 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
-pushd "$1" > /dev/null || exit 2
-
-if [ -n "$2" ]; then
-    REF="$2"
-else
-    REF="HEAD"
-fi
+git_check_trust () {
+    git -c gpg.minTrustLevel=fully "$@"
+}
 
 verify_gpg_output () {
     local "content=$1" newsig_number
@@ -64,15 +61,15 @@ verify_gpg_output () {
 }
 
 verify_tag() {
-    local "tag=$1" "expected_hash=$2" hash
+    local "tag=refs/tags/$1" "expected_hash=$2" hash
     if ! hash="$(git rev-parse -q --verify "$tag^{commit}")"; then
-        echo "---> Failed to get tag hash">&2
+        echo "---> Failed to get tag hash for tag $tag">&2
         return 1
     elif ! [ "$hash" = "$expected_hash" ]; then
-        printf %s\\n "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
+        echo "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
         return 1
     fi
-    content=$(git -c gpg.minTrustLevel=fully verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
+    content=$(git_check_trust verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
     if verify_gpg_output "$content"; then
         printf %s\\n "---> Good tag ${tag:10}"
         return 0
@@ -83,10 +80,15 @@ verify_tag() {
 
 VALID_TAG_FOUND=0
 set -eu
-case $REF in
-(-*) echo 'Refs cannot begin with -'>&2; exit 1;;
+
+case $# in
+    (1) expected_hash=$(git rev-parse --verify -q HEAD);;
+    (2) expected_hash=$2;;
+    (*) echo 'USAGE: verify-git-tag directory [revision]'>&2; exit 1;;
 esac
-expected_hash=$REF
+
+pushd "$1" > /dev/null || exit 2
+
 if [ "${#expected_hash}" -ne 40 ] && [ "${#expected_hash}" -ne 64 ]; then
     echo "---> Bad Git hash value (wrong length); failing" >&2
     exit 1
@@ -95,27 +97,27 @@ elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
     exit 1
 fi
 
-tags="$(git tag "--points-at=$REF"|head -c 500)" || exit 1
+unset tags tag
+tags="$(git tag "--points-at=$expected_hash"|head -c 500)" || exit 1
 for tag in $tags; do
-    tag="refs/tags/$tag"
     if verify_tag "$tag" "$expected_hash"; then
         VALID_TAG_FOUND=1
-    elif [ "0${VERBOSE-}" -ge 1 ]; then
+    elif [ "0$VERBOSE" -ge 1 ]; then
         echo "---> One of signed tag cannot be verified: $tag"
     fi
 done
 
-if [ "${tag+x}" != 'x' ]; then
-    echo "---> No tag pointing at $REF"
-    if content=$(git -c gpg.minTrustLevel=fully verify-commit --raw -- "$REF" 2>&1 >/dev/null) &&
+if [ -z "${tag+x}" ]; then
+    echo "---> No tag pointing at $expected_hash"
+    if content=$(git_check_trust verify-commit --raw -- "$expected_hash" 2>&1 >/dev/null) &&
         verify_gpg_output "$content"; then
-        echo "---> $REF is a commit signed by a trusted key ― did the signer forget to add a tag?"
+        echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
     fi
     exit 1
 elif [ "$VALID_TAG_FOUND" -ne 1 ]; then
-    echo "No valid signed tag found!"
-    if [ "0${VERBOSE-}" -eq 0 ]; then
-        echo "---> One of invalid tag: $tag"
+    echo "---> No valid signed tag found!"
+    if [ "0$VERBOSE" -eq 0 ]; then
+        echo "---> One invalid tag: $tag"
     fi
     exit 1
 fi
