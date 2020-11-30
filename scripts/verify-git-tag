@@ -63,16 +63,7 @@ verify_tag() {
         printf %s\\n "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
         return 1
     fi
-    content=$(git verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
-    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
-    if [ "$newsig_number" = 1 ] && {
-        printf %s\\n "$content" |
-        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\)' >/dev/null
-    }; then
-        return 0
-    else
-        return 1
-    fi
+    git -c gpg.minTrustLevel=fully verify-tag -- "$tag" >/dev/null 2>&1
 }
 
 VALID_TAG_FOUND=0
