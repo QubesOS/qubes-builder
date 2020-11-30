@@ -109,7 +109,7 @@ if [ "${tag+x}" != 'x' ]; then
     echo "---> No tag pointing at $REF"
     if content=$(git -c gpg.minTrustLevel=fully verify-commit --raw -- "$REF" 2>&1 >/dev/null) &&
         verify_gpg_output "$content"; then
-        echo "---> $REF is a commit signed by a trusted key ― did the signer forget to add a tag?" 
+        echo "---> $REF is a commit signed by a trusted key ― did the signer forget to add a tag?"
     fi
     exit 1
 elif [ "$VALID_TAG_FOUND" -ne 1 ]; then
