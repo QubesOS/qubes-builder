@@ -26,8 +26,8 @@ echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_INFOS..."
 }
 
-set -e
-[ "$DEBUG" = "1" ] && set -x
+set -euo pipefail
+[ "${DEBUG-}" = "1" ] && set -x
 
 # shellcheck source=scripts/common
 source "$BUILDER_DIR/scripts/common"
@@ -43,20 +43,20 @@ source "$BUILDER_DIR/scripts/common"
 
 url_var="GIT_URL_${COMPONENT//-/_}"
 
-if [ -n "$GIT_URL" ]; then
+if [ -n "${GIT_URL-}" ]; then
     GIT_URL="$GIT_URL"
-elif [ -n "${!url_var}" ]; then
+elif [ -n "${!url_var-}" ]; then
     GIT_URL="${!url_var}"
 else
     GIT_URL=$GIT_BASEURL/$GIT_PREFIX$COMPONENT$GIT_SUFFIX
 fi
 
 # Override GIT_URL with GIT_REMOTE if given
-[ -n "$GIT_REMOTE" ] && GIT_URL=$GIT_REMOTE
+[ -n "${GIT_REMOTE-}" ] && GIT_URL=$GIT_REMOTE
 
 branch_var="BRANCH_${COMPONENT//-/_}"
 
-if [ -n "${!branch_var}" ]; then
+if [ -n "${!branch_var-}" ]; then
     BRANCH="${!branch_var}"
 fi
 
@@ -65,80 +65,77 @@ if [ "$GIT_CLONE_FAST" = "1" ]; then
     GIT_OPTIONS+="--depth=1"
 fi
 
-fresh_clone=0
-if [ "$REPO" == "." ] || [ -d "$REPO" ] && [ "$CLEAN" != '1' ]; then
-    cd $REPO
-    if [ "$(git rev-parse --is-shallow-repository)" == "true" ] && [ "$GIT_CLONE_FAST" != "1" ]; then
+if ! [[ "$BRANCH" =~ ^[A-Za-z][A-Za-z0-9._-]+$ ]]; then
+    printf 'Invalid branch %q\n' "$BRANCH"
+    exit 1
+elif ! { [[ "$REPO" = '.' ]] || [[ "$REPO" =~ ^qubes-src/[A-Za-z][A-Za-z0-9-]*$ ]]; }; then
+    printf 'Invalid repository %q\n' "$REPO"
+    exit 1
+fi
+fresh_clone=false
+if [ "$REPO" == "." ] || [ -d "$REPO" ] && [ "${CLEAN-}" != '1' ]; then
+    cd "$REPO"
+    if [ "$GIT_CLONE_FAST" != "1" ] && [ "$(git rev-parse --is-shallow-repository)" == "true" ]; then
         GIT_OPTIONS+="--unshallow"
     fi
     print_headers
-    if ! git fetch $GIT_OPTIONS -q "$GIT_URL" --tags $BRANCH; then
+    if ! git fetch $GIT_OPTIONS -q "$GIT_URL" --tags "$BRANCH"; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
     fi
-    VERIFY_REF=FETCH_HEAD
+    VERIFY_REF=FETCH_HEAD fresh_clone=false
     # shellcheck disable=SC2103
     cd - >/dev/null
 else
-    rm -rf $REPO
+    rm -rf "$REPO"
     if [ "$(git rev-parse --is-shallow-repository)" == "true" ] && [ "$GIT_CLONE_FAST" != "1" ]; then
         GIT_OPTIONS+="--unshallow"
     fi
     print_headers
-    if ! git clone $GIT_OPTIONS -n -q -b $BRANCH "$GIT_URL" $REPO; then
+    if ! git clone $GIT_OPTIONS -n -q -b $BRANCH "$GIT_URL" "$REPO"; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
     fi
-    VERIFY_REF=HEAD
-    fresh_clone=1
+    VERIFY_REF=HEAD fresh_clone=:
 fi
 
-verify=true
-if [ "$NO_CHECK" == "1" ] || elementIn "$COMPONENT" ${NO_CHECK[@]}; then
-    echo "--> $COMPONENT has NO_CHECK enabled"
-    echo "--> NOT Verifying tags..."
-    verify=false
-fi
-
-if [ "$verify" == "true" ]; then
-    echo "--> Verifying tags..."
-    KEYRING_DIR_GIT="$BUILDER_DIR/keyrings/git/$(basename "$REPO")"
-    export KEYRING_DIR_GIT
-    if ! "$(dirname "$0")/verify-git-tag" $REPO $VERIFY_REF; then
-        # if verfication failed, remove fetched content to make sure we'll not
-        # use it
-        if [ "$fresh_clone" -eq 1 ]; then
-            rm -rf "$REPO"
-        else
-            rm -f "$REPO"/.git/FETCH_HEAD
-        fi
-        exit 1
+echo "--> Verifying tags..."
+KEYRING_DIR_GIT="$BUILDER_DIR/keyrings/git/${REPO##*/}"
+export KEYRING_DIR_GIT
+if ! { VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") &&
+    "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; } then
+    # if verfication failed, remove fetched content to make sure we'll not
+    # use it
+    if "$fresh_clone"; then
+        rm -rf "$REPO"
+    else
+        rm -f "$REPO/.git/FETCH_HEAD"
     fi
+    exit 1
 fi
 
-if [ "$FETCH_ONLY" == "1" ]; then
+if [ "${FETCH_ONLY-}" == "1" ]; then
     exit 0
 fi
 
-CURRENT_BRANCH="$(cd $REPO; git branch | sed -n -e 's/^\* \(.*\)/\1/p')"
-if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" == "HEAD" ]; then
-    pushd $REPO &> /dev/null
+CURRENT_BRANCH="$( git -C "$REPO" branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
+if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
+    pushd "$REPO" &> /dev/null || exit 1
     red="$(echo -e '\033[1;31m')"
     green="$(echo -e '\033[1;32m')"
     normal="$(echo -e '\033[0;0m')"
-    if [ -n "$(git name-rev --name-only $BRANCH 2> /dev/null)" ]; then
+    if [ -n "$(git name-rev --name-only "$BRANCH" 2> /dev/null)" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
-        git checkout $BRANCH || exit 1
+        git branch -f "$BRANCH" "$VERIFY_REF" &&
+        git checkout "$BRANCH" || exit 1
     else
         echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
-        git checkout FETCH_HEAD -b $BRANCH || exit 1
+        git checkout "$VERIFY_REF" -b $BRANCH || exit 1
     fi
-    popd &> /dev/null
+    popd &> /dev/null || exit 1
 fi
 
-if [ "$VERIFY_REF" == "FETCH_HEAD" ]; then
+if ! "$fresh_clone"; then
     echo "--> Merging..."
-    pushd $REPO &> /dev/null
-    git merge --commit -q FETCH_HEAD
-    popd &> /dev/null
+    git -C "$REPO" -c merge.verifySignatures=no merge --commit -q "$VERIFY_REF"
 fi
 
 echo

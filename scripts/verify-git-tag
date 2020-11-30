@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --
 
 # Usage: $0 <source-dir> [<ref>]
 # Example refs:
@@ -54,6 +54,15 @@ else
     REF="HEAD"
 fi
 
+verify_gpg_output () {
+    local "content=$1" newsig_number
+    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
+    [ "$newsig_number" = 1 ] && {
+        printf %s\\n "$content" |
+        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\) 0 pgp$' >/dev/null
+    }
+}
+
 verify_tag() {
     local "tag=$1" "expected_hash=$2" hash
     if ! hash="$(git rev-parse -q --verify "$tag^{commit}")"; then
@@ -63,12 +72,9 @@ verify_tag() {
         printf %s\\n "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
         return 1
     fi
-    content=$(git verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
-    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
-    if [ "$newsig_number" = 1 ] && {
-        printf %s\\n "$content" |
-        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\)' >/dev/null
-    }; then
+    content=$(git -c gpg.minTrustLevel=fully verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
+    if verify_gpg_output "$content"; then
+        printf %s\\n "---> Good tag ${tag:10}"
         return 0
     else
         return 1
@@ -80,30 +86,36 @@ set -eu
 case $REF in
 (-*) echo 'Refs cannot begin with -'>&2; exit 1;;
 esac
-expected_hash=$(git rev-parse -q --verify "$REF") || exit 1
+expected_hash=$REF
 if [ "${#expected_hash}" -ne 40 ] && [ "${#expected_hash}" -ne 64 ]; then
-    echo "---> Bad Git hash value; failing" >&2
+    echo "---> Bad Git hash value (wrong length); failing" >&2
+    exit 1
+elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
+    echo "---> Bad Git hash value (bad character); failing" >&2
     exit 1
 fi
 
-tags="$(git tag "--points-at=$REF")" || exit 1
+tags="$(git tag "--points-at=$REF"|head -c 500)" || exit 1
 for tag in $tags; do
     tag="refs/tags/$tag"
     if verify_tag "$tag" "$expected_hash"; then
         VALID_TAG_FOUND=1
     elif [ "0${VERBOSE-}" -ge 1 ]; then
-        echo "---> One of signed tag cannot be verified:"
-	git tag -v "$tag"
+        echo "---> One of signed tag cannot be verified: $tag"
     fi
 done
 
-if [ "$VALID_TAG_FOUND" -eq 0 ]; then
+if [ "${tag+x}" != 'x' ]; then
+    echo "---> No tag pointing at $REF"
+    if content=$(git -c gpg.minTrustLevel=fully verify-commit --raw -- "$REF" 2>&1 >/dev/null) &&
+        verify_gpg_output "$content"; then
+        echo "---> $REF is a comit signed by a trusted key ― did the signer forget to add a tag?" 
+    fi
+    exit 1
+elif [ "$VALID_TAG_FOUND" -ne 1 ]; then
     echo "No valid signed tag found!"
     if [ "0${VERBOSE-}" -eq 0 ]; then
-        if [ -n "$(git describe "$REF")" ]; then
-            echo "---> One of invalid tag:"
-            git tag -v $(git describe "$REF")
-        fi
+        echo "---> One of invalid tag: $tag"
     fi
     exit 1
 fi
