@@ -132,7 +132,8 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
         git checkout "$VERIFY_REF" -b $BRANCH || exit 1
     fi
     remote=$(git rev-parse --symbolic-full-name '@{u}') &&
-    git update-ref -- "$remote" "$VERIFY_REF"
+    [[ "$remote" =~ ^refs/remotes/ ]] &&
+    git update-ref -- "$remote" "$VERIFY_REF" &&
     popd &> /dev/null || exit 1
 fi
 
