@@ -6,7 +6,6 @@
 #  - GIT_SUFFIX - git component dir suffix (default .git)
 #  - COMPONENT - component to clone
 #  - BRANCH - git branch
-#  - NO_CHECK=1 - disable signed tag checking
 #  - CLEAN=1 - remove previous sources (use git up vs git clone)
 #  - FETCH_ONLY=1 - fetch sources but do not merge
 #  - IGNORE_MISSING=1 - exit with code 0 if remote branch doesn't exists
@@ -59,6 +58,8 @@ branch_var="BRANCH_${COMPONENT//-/_}"
 if [ -n "${!branch_var-}" ]; then
     BRANCH="${!branch_var}"
 fi
+
+: "${IGNORE_MISSING=0}"
 
 GIT_OPTIONS=
 if [ "$GIT_CLONE_FAST" = "1" ]; then
