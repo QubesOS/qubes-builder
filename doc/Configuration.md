@@ -216,17 +216,25 @@ When building 'iso' target, build installation iso.
 When building 'iso' target, build live image. Can be set together with
 `ISO_INSTALLER` to build both.
 
-### NO_CHECK
+### `INSECURE_SKIP_CHECKING`
 > Default: no value
 
-Disable signed tag checking - set "1" to disable verify for everything or
-can be a list of package names separated with spaces
+Disable signed tag checking - set to a list of package names separated with
+spaces.
+
 Example:
-    NO_CHECK=gui-agent-linux linux-template-builder
+    INSECURE_SKIP_CHECKING=gui-agent-linux linux-template-builder
 
 *Do not use this option unless you really understand what you are doing*. If
 you want to handle your private fork, its better to sign the code and import
 your key into keyring pointed by `KEYRING_DIR_GIT` option.
+
+### `LESS_SECURE_ALLOW_SIGNED_COMMITS`
+> Default: no value
+
+Allow signed commits instead of requiring signed tags. This is less secure
+because only commits that have been reviewed are tagged. Set to a list of
+package names separated with spaces.
 
 ### KEYRING_DIR_GIT
 > Default: keyrings/git

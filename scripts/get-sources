@@ -31,6 +31,14 @@ set -eufo pipefail
 # shellcheck source=scripts/common
 source "$BUILDER_DIR/scripts/common"
 
+if ! [[ "${INSECURE_SKIP_CHECKING=}" =~ ^[A-Za-z0-9\ -]*$ ]]; then
+    echo 'Invalid value for INSECURE_SKIP_CHECKING'>&2
+    exit 1
+elif ! [[ "${LESS_SECURE_SIGNED_COMMITS_SUFFICIENT=}" =~ ^[A-Za-z0-9\ -]*$ ]]; then
+    echo 'Invalid value for LESS_SECURE_SIGNED_COMMITS_SUFFICIENT'>&2
+    exit 1
+fi
+
 [ -n "$REPO" ] && COMPONENT="$(basename "$REPO")"
 
 # Special case for qubes-builder itself
@@ -98,19 +106,36 @@ else
     VERIFY_REF=HEAD fresh_clone=:
 fi
 
-echo "--> Verifying tags..."
 KEYRING_DIR_GIT="$BUILDER_DIR/keyrings/git/${REPO##*/}"
 export KEYRING_DIR_GIT CHECK=signed-tag
-if ! { VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") &&
-    "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; } then
-    # if verfication failed, remove fetched content to make sure we'll not
-    # use it
-    if "$fresh_clone"; then
-        rm -rf "$REPO"
-    else
-        rm -f "$REPO/.git/FETCH_HEAD"
-    fi
+
+verify=true
+if elementIn "$COMPONENT" $INSECURE_SKIP_CHECKING; then
+    verify=false
+elif elementIn "$COMPONENT" $LESS_SECURE_SIGNED_COMMITS_SUFFICIENT; then
+    CHECK=signed-tag-or-commit
+fi
+
+if [ "$verify" = 'false' ]; then
+    echo -e '\033[1;31m--> NOT verifying tags\033[0;0m'
     exit 1
+else
+    if [[ $CHECK = 'signed-tag-or-commit' ]]; then
+        echo "--> Verifying tags or commits..."
+    else
+        echo "--> Verifying tags..."
+    fi
+    if ! { VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") &&
+        "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; } then
+        # if verfication failed, remove fetched content to make sure we'll not
+        # use it
+        if "$fresh_clone"; then
+            rm -rf "$REPO"
+        else
+            rm -f "$REPO/.git/FETCH_HEAD"
+        fi
+        exit 1
+    fi
 fi
 
 if [ "${FETCH_ONLY-}" == "1" ]; then
@@ -136,7 +161,7 @@ fi
 if ! "$fresh_clone"; then
     echo "--> Merging..."
     git -c merge.verifySignatures=no merge --ff-only --commit -q "$VERIFY_REF"
-    if remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF") &&
+    if remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF" 2>/dev/null) &&
         [[ "$remote" =~ ^refs/remotes/ ]]; then
         git update-ref -- "$remote" "$VERIFY_REF"
     fi
