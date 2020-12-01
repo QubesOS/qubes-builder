@@ -6,21 +6,37 @@
 #  HEAD
 #  mainstream/master
 # Default ref: HEAD
+set -euo pipefail
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
+unset GNUPGHOME
+
+case $0 in (/*) dir=${0%/*}/;; (*/*) dir=./${0%/*};; (*) dir=.;; esac
+BUILDER_DIR=$dir/..
+export BUILDER_DIR
 
 [ "$DEBUG" = "1" ] && set -x
 
-# shellcheck source=scripts/common
-source "$BUILDER_DIR/scripts/common"
-
-set -o pipefail
-
-if [ "$NO_CHECK" == "1" ]; then
-    exit 0
+if [ "${NO_CHECK-}" != "" ]; then
+    echo 'Sorry, NO_CHECK is no longer supported'>&2
+    echo 'If you really want to turn of signature checking, use “CHECK=insecure-no-check”'>&2
+    exit 1
 fi
 
+case ${CHECK=signed-tag} in
+(signed-tag|signed-tag-or-commit) :;;
+(insecure-no-check)
+    echo 'Please avoid calling this script if you don’t want signatures checked'>&2
+    exit 1
+    ;;
+(*)
+    printf 'Invalid value for $CHECK: %q\n' "$CHECK">&2
+    exit 1
+    ;;
+esac
+
 if [ -n "$KEYRING_DIR_GIT" ]; then
-    export GNUPGHOME="$(readlink -m "$KEYRING_DIR_GIT")"
+    GNUPGHOME="$(readlink -m "$KEYRING_DIR_GIT")"
+    export GNUPGHOME
     if [ ! -d "$GNUPGHOME" ]; then
         mkdir -p "$GNUPGHOME"
         chmod 700 "$GNUPGHOME"
@@ -32,7 +48,7 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
         gpg --import qubes-developers-keys.asc
         touch "$GNUPGHOME/pubring.gpg"
     fi
-    maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}')
+    maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}') || :
     for maintainer in $maintainers
     do
         allowed_components=("${!maintainer}")
@@ -79,7 +95,6 @@ verify_tag() {
 }
 
 VALID_TAG_FOUND=0
-set -eu
 
 case $# in
     (1) expected_hash=$(git rev-parse --verify -q HEAD);;
@@ -111,7 +126,21 @@ if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
     if content=$(git_check_trust verify-commit --raw -- "$expected_hash" 2>&1 >/dev/null) &&
         verify_gpg_output "$content"; then
-        echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
+        case $check in
+        (signed-tag-or-commit)
+            echo "---> $expected_hash does not have a signed tag"
+            echo "---> However, it is signed by a trusted key, and \$CHECK is set to $CHECK"
+            echo "---> Accepting it anyway"
+            ;;
+        (signed-tag)
+            echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
+            exit 1
+            ;;
+        (*) # not reached
+            echo 'internal error (this is a bug)'>&2
+            exit 1
+            ;;
+        esac
     fi
     exit 1
 elif [ "$VALID_TAG_FOUND" -ne 1 ]; then
