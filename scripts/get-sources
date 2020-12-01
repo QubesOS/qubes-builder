@@ -25,7 +25,7 @@ echo "-> Updating sources for $COMPONENT..."
 echo "--> Fetching from $GIT_INFOS..."
 }
 
-set -euo pipefail
+set -eufo pipefail
 [ "${DEBUG-}" = "1" ] && set -x
 
 # shellcheck source=scripts/common
@@ -100,7 +100,7 @@ fi
 
 echo "--> Verifying tags..."
 KEYRING_DIR_GIT="$BUILDER_DIR/keyrings/git/${REPO##*/}"
-export KEYRING_DIR_GIT
+export KEYRING_DIR_GIT CHECK=signed-tag
 if ! { VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") &&
     "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; } then
     # if verfication failed, remove fetched content to make sure we'll not
@@ -117,9 +117,9 @@ if [ "${FETCH_ONLY-}" == "1" ]; then
     exit 0
 fi
 
-CURRENT_BRANCH="$( git -C "$REPO" branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
+pushd "$REPO" &> /dev/null || exit 1
+CURRENT_BRANCH="$(exec git branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
 if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
-    pushd "$REPO" &> /dev/null || exit 1
     red="$(echo -e '\033[1;31m')"
     green="$(echo -e '\033[1;32m')"
     normal="$(echo -e '\033[0;0m')"
@@ -131,16 +131,16 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
         echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
         git checkout "$VERIFY_REF" -b $BRANCH || exit 1
     fi
-    if remote=$(git rev-parse --symbolic-full-name '@{u}') 2>/dev/null; then
-        [[ "$remote" =~ ^refs/remotes/ ]] &&
-        git update-ref -- "$remote" "$VERIFY_REF"
-    fi
-    popd &> /dev/null || exit 1
 fi
 
 if ! "$fresh_clone"; then
     echo "--> Merging..."
-    git -C "$REPO" -c merge.verifySignatures=no merge --commit -q "$VERIFY_REF"
+    git -c merge.verifySignatures=no merge --ff-only --commit -q "$VERIFY_REF"
+    if remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF") &&
+        [[ "$remote" =~ ^refs/remotes/ ]]; then
+        git update-ref -- "$remote" "$VERIFY_REF"
+    fi
 fi
 
+popd >/dev/null|| exit 1
 echo
