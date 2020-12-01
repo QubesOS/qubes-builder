@@ -131,9 +131,10 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
         echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
         git checkout "$VERIFY_REF" -b $BRANCH || exit 1
     fi
-    remote=$(git rev-parse --symbolic-full-name '@{u}') &&
-    [[ "$remote" =~ ^refs/remotes/ ]] &&
-    git update-ref -- "$remote" "$VERIFY_REF" &&
+    if remote=$(git rev-parse --symbolic-full-name '@{u}') 2>/dev/null; then
+        [[ "$remote" =~ ^refs/remotes/ ]] &&
+        git update-ref -- "$remote" "$VERIFY_REF"
+    fi
     popd &> /dev/null || exit 1
 fi
 
