@@ -10,6 +10,9 @@ set -euo pipefail
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
 unset GNUPGHOME
 
+# shellcheck source=scripts/common
+source "$BUILDER_DIR/scripts/common"
+
 case $0 in (/*) dir=${0%/*}/;; (*/*) dir=./${0%/*};; (*) dir=.;; esac
 BUILDER_DIR=$dir/..
 export BUILDER_DIR
@@ -54,7 +57,7 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
         allowed_components=("${!maintainer}")
         COMPONENT="$(basename "$1")"
         COMPONENT="${COMPONENT//./builder}"
-        if elementIn "$COMPONENT" ${allowed_components[@]}; then
+        if elementIn "$COMPONENT" "${allowed_components[@]}"; then
             keyid=${maintainer#ALLOWED_COMPONENTS_}
             gpg --import "$BUILDER_DIR/keys/$keyid.asc" || exit 1
             echo "$keyid:6:" | gpg --import-ownertrust
