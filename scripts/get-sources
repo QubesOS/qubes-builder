@@ -164,7 +164,7 @@ fi
 if ! "$fresh_clone"; then
     echo "--> Merging..."
     git -c merge.verifySignatures=no merge --ff-only --commit -q "$VERIFY_REF"
-    if remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF" 2>/dev/null) &&
+    if false && remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF" 2>/dev/null) &&
         [[ "$remote" =~ ^refs/remotes/ ]]; then
         git update-ref -- "$remote" "$VERIFY_REF"
     fi
