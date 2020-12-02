@@ -620,22 +620,12 @@ class DialogUI(DefaultUI):
             except ImportError:
                 DEVNULL = open(os.devnull, 'wb')
 
-            env = os.environ.copy()
-            env['bold'] = ''
-            env['normal'] = ''
-            env['black'] = ''
-            env['red'] = ''
-            env['green'] = ''
-            env['blue'] = ''
-            env['white'] = ''
-
-            args = ['make', 'get-sources']
+            args = ['make', 'get-sources', 'NO_COLOR=1']
             p = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=DEVNULL,
                 close_fds=True,
-                env=env
             )
 
             default = {

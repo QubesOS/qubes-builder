@@ -210,11 +210,11 @@ get-sources-tgt = $(get-sources-sort:%=%.get-sources)
 get-sources-extra-tgt = $(get-sources-sort:%=%.get-sources-extra)
 .PHONY: get-sources builder.get-sources $(get-sources-tgt) $(get-sources-extra-tgt)
 $(get-sources-tgt): build-info
-	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 $(get-sources-extra-tgt):
 	@REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
 builder.get-sources: build-info
-	@REPO=. MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+	@REPO=. NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 get-sources: get-sources-git get-sources-extra
 get-sources-git: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
 get-sources-extra: $(get-sources-extra-tgt)

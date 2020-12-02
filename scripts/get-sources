@@ -145,10 +145,12 @@ fi
 pushd "$REPO" &> /dev/null || exit 1
 CURRENT_BRANCH="$(exec git branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
 if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
-    red="$(echo -e '\033[1;31m')"
-    green="$(echo -e '\033[1;32m')"
-    normal="$(echo -e '\033[0;0m')"
-    if [ -n "$(git name-rev --name-only "$BRANCH" 2> /dev/null)" ]; then
+    if [ -z "${NO_COLOR=}" ]; then
+        red=$'\033[1;31m' green=$'\033[1;32m' normal=$'\033[0;0m'
+    else
+        red= green= normal=
+    fi
+    if [ -n "$(git name-rev --name-only $BRANCH 2> /dev/null)" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
         git branch -f "$BRANCH" "$VERIFY_REF" &&
         git checkout "$BRANCH" || exit 1
