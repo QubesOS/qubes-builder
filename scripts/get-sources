@@ -68,6 +68,7 @@ if [ -n "${!branch_var-}" ]; then
 fi
 
 : "${IGNORE_MISSING=0}"
+: "${GIT_CLONE_FAST=0}"
 
 GIT_OPTIONS=
 if [ "$GIT_CLONE_FAST" = "1" ]; then
