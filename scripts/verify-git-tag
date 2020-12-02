@@ -54,7 +54,7 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}') || :
     for maintainer in $maintainers
     do
-        allowed_components=("${!maintainer}")
+        read -a allowed_components <<<"${!maintainer}"
         COMPONENT="$(basename "$1")"
         COMPONENT="${COMPONENT//./builder}"
         if elementIn "$COMPONENT" "${allowed_components[@]}"; then
