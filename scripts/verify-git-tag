@@ -126,7 +126,7 @@ if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
     if content=$(git_check_trust verify-commit --raw -- "$expected_hash" 2>&1 >/dev/null) &&
         verify_gpg_output "$content"; then
-        case $check in
+        case $CHECK in
         (signed-tag-or-commit)
             echo "---> $expected_hash does not have a signed tag"
             echo "---> However, it is signed by a trusted key, and \$CHECK is set to $CHECK"
