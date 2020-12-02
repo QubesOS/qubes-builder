@@ -734,9 +734,10 @@ do-merge:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
-		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
+		rev=$$(git -C $$REPO rev-parse -q --verify FETCH_HEAD) || continue; \
+		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
+		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 do-merge-versions-only:
@@ -744,10 +745,11 @@ do-merge-versions-only:
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
-		git -C $$REPO rev-parse -q --verify FETCH_HEAD >/dev/null || continue; \
-		git -C $$REPO tag --points-at FETCH_HEAD | grep -q '^v' || continue; \
+		rev=$$(git -C $$REPO rev-parse -q --verify FETCH_HEAD) || continue; \
+		git -C $$REPO tag --points-at "$$rev" | grep -q '^v' || continue; \
+		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit FETCH_HEAD || exit 1; \
+		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 add-remote:
