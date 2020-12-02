@@ -116,6 +116,8 @@ elif elementIn "$COMPONENT" $LESS_SECURE_SIGNED_COMMITS_SUFFICIENT; then
     CHECK=signed-tag-or-commit
 fi
 
+VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") || exit
+
 if [ "$verify" = 'false' ]; then
     echo -e '\033[1;31m--> NOT verifying tags\033[0;0m'
     exit 1
@@ -125,8 +127,7 @@ else
     else
         echo "--> Verifying tags..."
     fi
-    if ! { VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") &&
-        "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; } then
+    if ! "$BUILDER_DIR/scripts/verify-git-tag" "$REPO" "$VERIFY_REF"; then
         # if verfication failed, remove fetched content to make sure we'll not
         # use it
         if "$fresh_clone"; then
