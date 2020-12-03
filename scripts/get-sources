@@ -145,8 +145,8 @@ if [ "${FETCH_ONLY-}" == "1" ]; then
 fi
 
 pushd "$REPO" &> /dev/null || exit 1
-CURRENT_BRANCH="$(exec git branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
-if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
+CURRENT_BRANCH="$(exec git branch --show-current)"
+if [ "$CURRENT_BRANCH" != "$BRANCH" ] || "$fresh_clone"; then
     if [ -z "${NO_COLOR=}" ]; then
         red=$'\033[1;31m' green=$'\033[1;32m' normal=$'\033[0;0m'
     else
