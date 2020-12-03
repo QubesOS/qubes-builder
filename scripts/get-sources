@@ -97,9 +97,6 @@ if [ "$REPO" == "." ] || [ -d "$REPO" ] && [ "${CLEAN-}" != '1' ]; then
     cd - >/dev/null
 else
     rm -rf "$REPO"
-    if [ "$(git rev-parse --is-shallow-repository)" == "true" ] && [ "$GIT_CLONE_FAST" != "1" ]; then
-        GIT_OPTIONS+="--unshallow"
-    fi
     print_headers
     if ! git clone $GIT_OPTIONS -n -q -b $BRANCH "$GIT_URL" "$REPO"; then
         if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
