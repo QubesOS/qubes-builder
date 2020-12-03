@@ -142,8 +142,8 @@ if [ "${FETCH_ONLY-}" == "1" ]; then
 fi
 
 pushd "$REPO" &> /dev/null || exit 1
-CURRENT_BRANCH="$(exec git branch | sed -n -e 's/^\* \(.*\)/\1/p'; )"
-if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
+CURRENT_BRANCH="$(exec git branch --show-current)"
+if [ "$CURRENT_BRANCH" != "$BRANCH" ] || "$fresh_clone"; then
     if [ -z "${NO_COLOR=}" ]; then
         red=$'\033[1;31m' green=$'\033[1;32m' normal=$'\033[0;0m'
     else
@@ -151,8 +151,7 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ] || [ "$VERIFY_REF" = "HEAD" ]; then
     fi
     if [ -n "$(git name-rev --name-only $BRANCH 2> /dev/null)" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
-        git branch -f "$BRANCH" "$VERIFY_REF" &&
-        git checkout "$BRANCH" || exit 1
+        git checkout -B "$BRANCH" "$VERIFY_REF" || exit 1
     else
         echo -e "--> Switching branch from $CURRENT_BRANCH branch to new ${red}$BRANCH${normal}"
         git checkout "$VERIFY_REF" -b $BRANCH || exit 1
