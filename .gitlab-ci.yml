@@ -1,0 +1,54 @@
+include:
+  - project: 'QubesOS/qubes-continuous-integration'
+    file: '/r4.1/gitlab-base.yml'
+
+prep:sources:
+  extends: .components_prepare
+  variables:
+    COMPONENTS: "core-vchan-xen builder-rpm"
+
+# just any component build test
+tests:vm-fc32:no-upstream-tarball:
+  extends: .components_build
+  stage: tests
+  needs:
+    - prep:sources
+    - project: QubesOS/qubes-builder-rpm
+      ref: master
+      job: chroot:vm-fc32
+      artifacts: true
+  tags:
+    - docker
+  variables:
+    DISTS_VM: fc32
+    USE_QUBES_REPO_VERSION: "4.1"
+    USE_QUBES_REPO_TESTING: "1"
+    USE_DIST_BUILD_TOOL: 1
+    COMPONENTS: core-vchan-xen
+  script:
+    - ~/qubes-builder/scripts/travis-build "$COMPONENTS"
+    - ls -l ~/qubes-builder/qubes-packages-mirror-repo/vm-fc32/rpm/*vchan*rpm
+
+tests:sources-unsigned:
+  extends: .components_prepare
+  script:
+   - "! ~/qubes-builder/scripts/travis-prepare \"$COMPONENTS\""
+  variables:
+    # this does not have signed tags
+    COMPONENTS: updates-status
+    GIT_URL_updates_status: https://github.com/QubesOS/updates-status
+
+tests:sources-unknown-key:
+  extends: .components_prepare
+  script:
+   - "! ~/qubes-builder/scripts/travis-prepare \"$COMPONENTS\""
+  variables:
+    # this is signed with non-code key
+    COMPONENTS: doc
+
+
+prep:non-fast-clone:
+  extends: .components_prepare
+  variables:
+    GIT_CLONE_FAST: ""
+    COMPONENTS: "core-vchan-xen builder-rpm"
