@@ -48,7 +48,9 @@ fi
 if [ -d "qubes-src/${repo_name}" ]; then
     rm -rf "qubes-src/${repo_name}"
 fi
-cp -a "$repo_dir" "qubes-src/$repo_name"
+if [ "$repo_name" != "builder" ]; then
+    cp -a "$repo_dir" "qubes-src/$repo_name"
+fi
 
 # download additional sources if needed
 if [ -n "$override_components" ]; then

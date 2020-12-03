@@ -4,6 +4,8 @@ include:
 
 prep:sources:
   extends: .components_prepare
+  before_script:
+    - cp -a $CI_PROJECT_DIR ~/qubes-builder
   variables:
     COMPONENTS: "core-vchan-xen builder-rpm"
 
@@ -31,6 +33,8 @@ tests:vm-fc32:no-upstream-tarball:
 
 tests:sources-unsigned:
   extends: .components_prepare
+  before_script:
+    - cp -a $CI_PROJECT_DIR ~/qubes-builder
   script:
    - "! ~/qubes-builder/scripts/travis-prepare \"$COMPONENTS\""
   variables:
@@ -40,6 +44,8 @@ tests:sources-unsigned:
 
 tests:sources-unknown-key:
   extends: .components_prepare
+  before_script:
+    - cp -a $CI_PROJECT_DIR ~/qubes-builder
   script:
    - "! ~/qubes-builder/scripts/travis-prepare \"$COMPONENTS\""
   variables:
@@ -49,6 +55,8 @@ tests:sources-unknown-key:
 
 prep:non-fast-clone:
   extends: .components_prepare
+  before_script:
+    - cp -a $CI_PROJECT_DIR ~/qubes-builder
   variables:
     GIT_CLONE_FAST: ""
     COMPONENTS: "core-vchan-xen builder-rpm"
