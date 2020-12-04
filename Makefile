@@ -232,12 +232,20 @@ check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
 
 prepare-chroot-dom0:
 ifneq ($(DIST_DOM0),)
-	$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
+	@if [ "$(VERBOSE)" -eq 0 ]; then \
+		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot > build-logs/chroot-dom0-$$DIST.log 2>&1 || exit 1;
+	else \
+		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
+	fi
 endif
 
 prepare-chroot-vm:
 	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
-		$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm -f Makefile.generic prepare-chroot || exit 1; \
+		if [ "$(VERBOSE)" -eq 0 ]; then \
+			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm -f Makefile.generic prepare-chroot > build-logs/chroot-vm-$$DIST.log 2>&1 || exit 1;
+		else \
+			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm -f Makefile.generic prepare-chroot || exit 1; \
+		fi
 	done
 
 $(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
@@ -692,7 +700,7 @@ push:
 		popd > /dev/null; \
 	done; \
 	echo "All stuff pushed succesfully."
-	
+
 prepare-merge-fetch:
 	@set -a; \
 	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
