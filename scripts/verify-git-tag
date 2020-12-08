@@ -86,9 +86,14 @@ git_check_trust () {
 }
 
 verify_tag() {
-    local "tag=refs/tags/$1" "expected_hash=$2" hash
-    if ! hash="$(git rev-parse -q --verify "$tag^{commit}")"; then
+    local "tag=refs/tags/$1" "expected_hash=$2" hash tag_hash content
+    if ! tag_hash=$(git rev-parse -q --verify "$tag"); then
         echo "---> Failed to get tag hash for tag $tag">&2
+        return 1
+    fi
+    verify_git_hash "$tag_hash"
+    if ! hash="$(git rev-parse -q --verify "$tag_hash^{commit}")"; then
+        echo "---> Failed to get commit hash for tag $tag">&2
         return 1
     elif ! [ "$hash" = "$expected_hash" ]; then
         echo "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
