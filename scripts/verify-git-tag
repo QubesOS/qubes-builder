@@ -66,10 +66,6 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
-git_check_trust () {
-    git -c gpg.minTrustLevel=fully "$@"
-}
-
 verify_gpg_output () {
     local "content=$1" newsig_number
     newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
@@ -77,6 +73,16 @@ verify_gpg_output () {
         printf %s\\n "$content" |
         grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\) 0 pgp$' >/dev/null
     }
+}
+
+git_check_trust () {
+    if [[ $# -ne 2 ]] || ! { [[ $1 = 'commit' ]] || [[ $1 = 'tag' ]]; }; then
+        echo "Usage: git_check_trust [commit|tag] hash">&2
+        exit 1
+    fi
+    local content
+    content=$(git -c gpg.minTrustLevel=fully "verify-$1" --raw -- "$2" 2>&1 >/dev/null) &&
+    verify_gpg_output "$content"
 }
 
 verify_tag() {
@@ -88,8 +94,7 @@ verify_tag() {
         echo "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
         return 1
     fi
-    content=$(git_check_trust verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
-    if verify_gpg_output "$content"; then
+    if git_check_trust tag "$tag_hash"; then
         printf %s\\n "---> Good tag ${tag:10}"
         return 0
     else
