@@ -66,37 +66,6 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
-git_check_trust () {
-    git -c gpg.minTrustLevel=fully "$@"
-}
-
-verify_gpg_output () {
-    local "content=$1" newsig_number
-    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') || return 1
-    [ "$newsig_number" = 1 ] && {
-        printf %s\\n "$content" |
-        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\) 0 pgp$' >/dev/null
-    }
-}
-
-verify_tag() {
-    local "tag=refs/tags/$1" "expected_hash=$2" hash
-    if ! hash="$(git rev-parse -q --verify "$tag^{commit}")"; then
-        echo "---> Failed to get tag hash for tag $tag">&2
-        return 1
-    elif ! [ "$hash" = "$expected_hash" ]; then
-        echo "---> Tag has wrong hash (found $hash, expected $expected_hash)">&2
-        return 1
-    fi
-    content=$(git_check_trust verify-tag --raw "$tag" 2>&1 >/dev/null) || return 1
-    if verify_gpg_output "$content"; then
-        printf %s\\n "---> Good tag ${tag:10}"
-        return 0
-    else
-        return 1
-    fi
-}
-
 VALID_TAG_FOUND=0
 
 case $# in
@@ -107,7 +76,9 @@ esac
 
 pushd "$1" > /dev/null || exit 2
 
-if [ "${#expected_hash}" -ne 40 ] && [ "${#expected_hash}" -ne 64 ]; then
+unset tags tag hash_len
+hash_len=${#expected_hash}
+if [ "$hash_len" -ne 40 ] && [ "$hash_len" -ne 64 ]; then
     echo "---> Bad Git hash value (wrong length); failing" >&2
     exit 1
 elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
@@ -115,20 +86,35 @@ elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
     exit 1
 fi
 
-unset tags tag
-tags="$(git tag "--points-at=$expected_hash"|head -c 500)" || exit 1
+verify_git_obj () {
+    local content newsig_number
+    content=$(git -c gpg.minTrustLevel=fully "verify-$1" --raw -- "$2" 2>&1 >/dev/null) &&
+    newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') &&
+    [ "$newsig_number" = 1 ] && {
+        printf %s\\n "$content" |
+        grep '^\[GNUPG:] TRUST_\(FULLY\|ULTIMATE\) 0 pgp$' >/dev/null
+    }
+}
+
+tags="$(git tag "--points-at=$expected_hash" '--format=%(objectname):%(object):'|head -c 500)" || exit 1
 for tag in $tags; do
-    if verify_tag "$tag" "$expected_hash"; then
+    if [[ "${#tag}" -ne "$((hash_len * 2 + 2))" ]]; then
+        echo "---> Bad Git hash value (wrong length); failing" >&2
+        exit 1
+    elif ! [[ "${tag:hash_len}" = ":$expected_hash:" ]]; then
+        printf %s\\n "---> Tag has wrong hash (found ${tag:hash_len + 1:hash_len}, expected $expected_hash)">&2
+        exit 1
+    elif verify_git_obj tag "${tag:0:hash_len}"; then
+        echo "---> Good tag ${tag:0:hash_len}"
         VALID_TAG_FOUND=1
     elif [ "0$VERBOSE" -ge 1 ]; then
-        echo "---> One of signed tag cannot be verified: $tag"
+        echo "---> Signed tag $tag cannot be verified"
     fi
 done
 
 if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
-    if content=$(git_check_trust verify-commit --raw -- "$expected_hash" 2>&1 >/dev/null) &&
-        verify_gpg_output "$content"; then
+    if verify_git_obj commit "$expected_hash"; then
         case $CHECK in
         (signed-tag-or-commit)
             echo "---> $expected_hash does not have a signed tag"
@@ -138,21 +124,19 @@ if [ -z "${tag+x}" ]; then
             ;;
         (signed-tag)
             echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
-            exit 1
             ;;
-        (*) # not reached
-            echo 'internal error (this is a bug)'>&2
-            exit 1
+        (*)
+            echo "---> internal error (this is a bug)"
             ;;
         esac
     fi
-    exit 1
-elif [ "$VALID_TAG_FOUND" -ne 1 ]; then
+elif [ "$VALID_TAG_FOUND" = 1 ]; then
+    exit 0
+else
     echo "---> No valid signed tag found!"
     if [ "0$VERBOSE" -eq 0 ]; then
-        echo "---> One invalid tag: $tag"
+        echo "---> One invalid tag: ${tag:0:hash_len}"
     fi
-    exit 1
 fi
 
-exit 0
+exit 1
