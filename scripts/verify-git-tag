@@ -134,6 +134,7 @@ if [ -z "${tag+x}" ]; then
             echo "---> $expected_hash does not have a signed tag"
             echo "---> However, it is signed by a trusted key, and \$CHECK is set to $CHECK"
             echo "---> Accepting it anyway"
+            exit 0
             ;;
         (signed-tag)
             echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"

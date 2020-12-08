@@ -229,7 +229,7 @@ Example:
 you want to handle your private fork, its better to sign the code and import
 your key into keyring pointed by `KEYRING_DIR_GIT` option.
 
-### `LESS_SECURE_ALLOW_SIGNED_COMMITS`
+### `LESS_SECURE_SIGNED_COMMITS_SUFFICIENT`
 > Default: no value
 
 Allow signed commits instead of requiring signed tags. This is less secure
