@@ -102,6 +102,19 @@ verify_tag() {
     fi
 }
 
+verify_git_hash () {
+    local expected_hash
+    for expected_hash; do
+        if [[ "${#expected_hash}" -ne 40 ]] && [[ "${#expected_hash}" -ne 64 ]]; then
+            echo "---> Bad Git hash value (wrong length); failing" >&2
+            exit 1
+        elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
+            echo "---> Bad Git hash value (bad character); failing" >&2
+            exit 1
+        fi
+    done
+}
+
 VALID_TAG_FOUND=0
 
 pushd "$1" > /dev/null || exit 2
@@ -112,13 +125,7 @@ case $# in
     (*) echo 'USAGE: verify-git-tag directory [revision]'>&2; exit 1;;
 esac
 
-if [ "${#expected_hash}" -ne 40 ] && [ "${#expected_hash}" -ne 64 ]; then
-    echo "---> Bad Git hash value (wrong length); failing" >&2
-    exit 1
-elif ! [[ "$expected_hash" =~ ^[a-f0-9]+$ ]]; then
-    echo "---> Bad Git hash value (bad character); failing" >&2
-    exit 1
-fi
+verify_git_hash "$expected_hash"
 
 unset tags tag
 tags="$(git tag "--points-at=$expected_hash"|head -c 500)" || exit 1
