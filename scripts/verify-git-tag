@@ -96,7 +96,9 @@ verify_git_obj () {
     }
 }
 
-tags="$(git tag "--points-at=$expected_hash" '--format=%(if)%(object)%(then)%(objectname):%(object):%(end)'|head -c 500)" || exit 1
+tags="$(git tag "--points-at=$expected_hash" \
+    '--format=%(if)%(object)%(then)%(objectname):%(object):%(end)' |
+    head -c 500)" || exit 1
 for tag in $tags; do
     if (( ${#tag} != hash_len * 2 + 2)); then
         echo '---> Bad Git hash value (wrong length); failing' >&2
