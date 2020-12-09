@@ -161,8 +161,9 @@ fi
 if ! "$fresh_clone"; then
     echo "--> Merging..."
     git -c merge.verifySignatures=no merge --ff-only --commit -q "$VERIFY_REF"
-    if git check-ref-format "refs/remotes/${GIT_REMOTE-}"; then
-        git update-ref -- "refs/remotes/$GIT_REMOTE/$BRANCH" "$VERIFY_REF"
+    tracking_branch="refs/remotes/$GIT_REMOTE/$BRANCH"
+    if [ -f ".git/$tracking_branch" ]; then
+        git update-ref -- "$tracking_branch" "$VERIFY_REF"
     fi
 fi
 
