@@ -96,9 +96,11 @@ verify_git_obj () {
 }
 
 # Git format string, see man:git-for-each-ref(1) for details.
+#
 # The %(if)...%(then)...%(end) skips lightweight tags, which have no object to
-# point to.
-format='%(if)%(object)%(then)%(objectname):%(object):%(end)'
+# point to.  The colons allow a SHA-1 hash to be distinguished from a truncated
+# SHA-256 hash, and also allow a truncated line to be detected.
+format='%(if:equals=tag)%(objecttype)%(then)%(objectname):%(object):%(end)'
 tags="$(git tag "--points-at=$expected_hash" "--format=$format" | head -c 500)" || exit 1
 for tag in $tags; do
     if (( ${#tag} != hash_len * 2 + 2)); then
