@@ -114,22 +114,6 @@ done
 
 if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
-    if verify_git_obj commit "$expected_hash"; then
-        case $CHECK in
-        (signed-tag-or-commit)
-            echo "---> $expected_hash does not have a signed tag"
-            echo "---> However, it is signed by a trusted key, and \$CHECK is set to $CHECK"
-            echo "---> Accepting it anyway"
-            exit 0
-            ;;
-        (signed-tag)
-            echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
-            ;;
-        (*)
-            echo "---> internal error (this is a bug)"
-            ;;
-        esac
-    fi
 elif [ "$VALID_TAG_FOUND" = 1 ]; then
     exit 0
 else
@@ -137,6 +121,23 @@ else
     if [ "0$VERBOSE" -eq 0 ]; then
         echo "---> One invalid tag: ${tag:0:hash_len}"
     fi
+fi
+
+if verify_git_obj commit "$expected_hash"; then
+    case $CHECK in
+    (signed-tag-or-commit)
+        echo "---> $expected_hash does not have a signed tag"
+        echo "---> However, it is signed by a trusted key, and \$CHECK is set to $CHECK"
+        echo "---> Accepting it anyway"
+        exit 0
+        ;;
+    (signed-tag)
+        echo "---> $expected_hash is a commit signed by a trusted key ― did the signer forget to add a tag?"
+        ;;
+    (*)
+        echo "---> internal error (this is a bug)"
+        ;;
+    esac
 fi
 
 exit 1
