@@ -745,7 +745,7 @@ do-merge:
 		rev=$$(git -C $$REPO rev-parse -q --verify FETCH_HEAD) || continue; \
 		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
+		git -c merge.verifySignatures=false -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 do-merge-versions-only:
@@ -757,7 +757,7 @@ do-merge-versions-only:
 		git -C $$REPO tag --points-at "$$rev" | grep -q '^v' || continue; \
 		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
+		git -c merge.verifySignatures=false -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 add-remote:
