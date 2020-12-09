@@ -66,13 +66,13 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
+pushd "$1" > /dev/null || exit 2
+
 case $# in
     (1) expected_hash=$(git rev-parse --verify -q HEAD);;
     (2) expected_hash=$2;;
     (*) echo 'USAGE: verify-git-tag directory [revision]'>&2; exit 1;;
 esac
-
-pushd "$1" > /dev/null || exit 2
 
 hash_len=${#expected_hash}
 if [ "$hash_len" -ne 40 ] && [ "$hash_len" -ne 64 ]; then
