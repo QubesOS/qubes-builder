@@ -107,8 +107,10 @@ for tag in $tags; do
     elif ! [[ "${tag:hash_len}" = ":$expected_hash:" ]]; then
         printf %s\\n "---> Tag has wrong hash (found ${tag:hash_len + 1:hash_len}, expected $expected_hash)">&2
         exit 1
-    elif verify_git_obj tag "${tag:0:hash_len}"; then
-        echo "---> Good tag ${tag:0:hash_len}"
+    fi
+    tag="${tag:0:hash_len}"
+    if verify_git_obj tag "$tag"; then
+        echo "---> Good tag $tag"
         exit 0
     elif [ "0$VERBOSE" -ge 1 ]; then
         echo "---> Signed tag $tag cannot be verified"
@@ -120,7 +122,7 @@ if [ -z "${tag+x}" ]; then
 else
     echo "---> No valid signed tag found!"
     if [ "0$VERBOSE" -eq 0 ]; then
-        echo "---> One invalid tag: ${tag:0:hash_len}"
+        echo "---> One invalid tag: $tag"
     fi
 fi
 
