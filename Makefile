@@ -763,11 +763,11 @@ do-merge-versions-only:
 add-remote:
 	@if [ "x$${GIT_REMOTE//-/_}" != "x" ]; then \
 		for REPO in $(GIT_REPOS); do \
-			pushd $$REPO > /dev/null; \
+			pushd $$REPO > /dev/null || exit 1; \
 				COMPONENT=$$(basename $$REPO | sed 's/\./builder/g'); \
 				git remote add $${GIT_REMOTE//-/_} $(GIT_BASEURL)/$(GIT_PREFIX)$$COMPONENT$(GIT_SUFIX); \
 				git fetch $${GIT_REMOTE//-/_}; \
-			popd > /dev/null; \
+			popd > /dev/null || exit 1; \
 		done; \
 	fi; \
 
