@@ -98,8 +98,8 @@ verify_git_obj () {
 
 tags="$(git tag "--points-at=$expected_hash" '--format=%(if)%(object)%(then)%(objectname):%(object):%(end)'|head -c 500)" || exit 1
 for tag in $tags; do
-    if [[ "${#tag}" -ne "$((hash_len * 2 + 2))" ]]; then
-        echo "---> Bad Git hash value (wrong length); failing" >&2
+    if (( ${#tag} != hash_len * 2 + 2)); then
+        echo '---> Bad Git hash value (wrong length); failing' >&2
         exit 1
     elif ! [[ "${tag:hash_len}" = ":$expected_hash:" ]]; then
         printf %s\\n "---> Tag has wrong hash (found ${tag:hash_len + 1:hash_len}, expected $expected_hash)">&2
