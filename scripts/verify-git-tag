@@ -8,7 +8,7 @@
 # Default ref: HEAD
 set -euo pipefail
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
-unset GNUPGHOME
+unset GNUPGHOME tags tag hash_len format expected_hash VALID_TAG_FOUND BUILDER_DIR
 
 case $0 in (/*) dir=${0%/*}/;; (*/*) dir=./${0%/*};; (*) dir=.;; esac
 BUILDER_DIR=$dir/..
@@ -76,7 +76,6 @@ esac
 
 pushd "$1" > /dev/null || exit 2
 
-unset tags tag hash_len
 hash_len=${#expected_hash}
 if [ "$hash_len" -ne 40 ] && [ "$hash_len" -ne 64 ]; then
     echo "---> Bad Git hash value (wrong length); failing" >&2
