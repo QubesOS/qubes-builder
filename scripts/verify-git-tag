@@ -95,9 +95,11 @@ verify_git_obj () {
     }
 }
 
-tags="$(git tag "--points-at=$expected_hash" \
-    '--format=%(if)%(object)%(then)%(objectname):%(object):%(end)' |
-    head -c 500)" || exit 1
+# Git format string, see man:git-for-each-ref(1) for details.
+# The %(if)...%(then)...%(end) skips lightweight tags, which have no object to
+# point to.
+format='%(if)%(object)%(then)%(objectname):%(object):%(end)'
+tags="$(git tag "--points-at=$expected_hash" "--format=$format" | head -c 500)" || exit 1
 for tag in $tags; do
     if (( ${#tag} != hash_len * 2 + 2)); then
         echo '---> Bad Git hash value (wrong length); failing' >&2
