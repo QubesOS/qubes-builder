@@ -59,7 +59,7 @@ else
 fi
 
 # Override GIT_URL with GIT_REMOTE if given
-[ -n "${GIT_REMOTE-}" ] && GIT_URL=$GIT_REMOTE
+[ -n "${GIT_REMOTE=}" ] && GIT_URL=$GIT_REMOTE
 
 branch_var="BRANCH_${COMPONENT//-/_}"
 
@@ -89,8 +89,8 @@ if [ "$REPO" == "." ] || [ -d "$REPO" ] && [ "${CLEAN-}" != '1' ]; then
         GIT_OPTIONS+="--unshallow"
     fi
     print_headers
-    if ! git fetch $GIT_OPTIONS -q "$GIT_URL" --tags "$BRANCH"; then
-        if [ "$IGNORE_MISSING" == "1" ]; then exit 0; else exit 1; fi
+    if ! git fetch $GIT_OPTIONS -q --tags -- "$GIT_URL" "$BRANCH"; then
+        if [ "$IGNORE_MISSING" = "1" ]; then exit 0; else exit 1; fi
     fi
     VERIFY_REF=FETCH_HEAD fresh_clone=false
     # shellcheck disable=SC2103
@@ -149,7 +149,7 @@ if [ "$CURRENT_BRANCH" != "$BRANCH" ] || "$fresh_clone"; then
     else
         red= green= normal=
     fi
-    if [ -n "$(git name-rev --name-only $BRANCH 2> /dev/null)" ]; then
+    if [ -n "$(git name-rev --name-only "$BRANCH" 2> /dev/null)" ]; then
         echo "--> Switching branch from $CURRENT_BRANCH branch to ${green}$BRANCH${normal}"
         git checkout -B "$BRANCH" "$VERIFY_REF" || exit 1
     else
@@ -161,9 +161,8 @@ fi
 if ! "$fresh_clone"; then
     echo "--> Merging..."
     git -c merge.verifySignatures=no merge --ff-only --commit -q "$VERIFY_REF"
-    if false && remote=$(exec git rev-parse --symbolic-full-name '@{u}' "$VERIFY_REF" 2>/dev/null) &&
-        [[ "$remote" =~ ^refs/remotes/ ]]; then
-        git update-ref -- "$remote" "$VERIFY_REF"
+    if git check-ref-format "refs/remotes/${GIT_REMOTE-}"; then
+        git update-ref -- "refs/remotes/$GIT_REMOTE/$BRANCH" "$VERIFY_REF"
     fi
 fi
 
