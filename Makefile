@@ -12,7 +12,7 @@ BUILDERCONF ?= builder.conf
 
 # Set defaults
 BRANCH ?= master
-GIT_BASEURL ?= git://github.com
+GIT_BASEURL ?= https://github.com
 GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
