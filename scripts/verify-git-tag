@@ -8,7 +8,7 @@
 # Default ref: HEAD
 set -euo pipefail
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
-unset GNUPGHOME tags tag hash_len format expected_hash VALID_TAG_FOUND BUILDER_DIR
+unset GNUPGHOME tags tag hash_len format expected_hash BUILDER_DIR
 
 case $0 in (/*) dir=${0%/*}/;; (*/*) dir=./${0%/*};; (*) dir=.;; esac
 BUILDER_DIR=$dir/..
@@ -66,8 +66,6 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
-VALID_TAG_FOUND=0
-
 case $# in
     (1) expected_hash=$(git rev-parse --verify -q HEAD);;
     (2) expected_hash=$2;;
@@ -111,7 +109,7 @@ for tag in $tags; do
         exit 1
     elif verify_git_obj tag "${tag:0:hash_len}"; then
         echo "---> Good tag ${tag:0:hash_len}"
-        VALID_TAG_FOUND=1
+        exit 0
     elif [ "0$VERBOSE" -ge 1 ]; then
         echo "---> Signed tag $tag cannot be verified"
     fi
@@ -119,8 +117,6 @@ done
 
 if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
-elif [ "$VALID_TAG_FOUND" = 1 ]; then
-    exit 0
 else
     echo "---> No valid signed tag found!"
     if [ "0$VERBOSE" -eq 0 ]; then
