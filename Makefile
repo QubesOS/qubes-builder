@@ -765,7 +765,8 @@ add-remote:
 		for REPO in $(GIT_REPOS); do \
 			pushd $$REPO > /dev/null || exit 1; \
 				COMPONENT=$$(basename $$REPO | sed 's/\./builder/g'); \
-				git remote add $${GIT_REMOTE//-/_} $(GIT_BASEURL)/$(GIT_PREFIX)$$COMPONENT$(GIT_SUFIX); \
+				git remote add -- "$${GIT_REMOTE//-/_}" "$$GIT_BASEURL/$$GIT_PREFIX$$COMPONENT$$GIT_SUFFIX" 2>/dev/null || \
+				git remote set-url -- "$${GIT_REMOTE//-/_}" "$$GIT_BASEURL/$$GIT_PREFIX$$COMPONENT$$GIT_SUFFIX"; \
 				if [ "$$AUTO_FETCH" = 1 ]; then git fetch -- "$${GIT_REMOTE//-/_}"; fi; \
 			popd > /dev/null || exit 1; \
 		done; \
