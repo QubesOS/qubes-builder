@@ -21,7 +21,7 @@ source "$dir/common"
 
 if [ "${NO_CHECK-}" != "" ]; then
     echo 'Sorry, NO_CHECK is no longer supported'>&2
-    echo 'If you really want to turn of signature checking, use “CHECK=insecure-no-check”'>&2
+    echo 'If you really want to turn of signature checking, use “INSECURE_SKIP_CHECKING” or “LESS_SECURE_SIGNED_COMMITS_SUFFICIENT” option'>&2
     exit 1
 fi
 
