@@ -8,7 +8,7 @@
 # Default ref: HEAD
 set -euo pipefail
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
-unset GNUPGHOME tags tag hash_len format expected_hash VALID_TAG_FOUND BUILDER_DIR
+unset GNUPGHOME tags tag hash_len format expected_hash BUILDER_DIR
 
 case $0 in (/*) dir=${0%/*}/;; (*/*) dir=./${0%/*};; (*) dir=.;; esac
 BUILDER_DIR=$dir/..
@@ -66,15 +66,13 @@ if [ -n "$KEYRING_DIR_GIT" ]; then
     gpgconf --kill gpg-agent
 fi
 
-VALID_TAG_FOUND=0
+pushd "$1" > /dev/null || exit 2
 
 case $# in
     (1) expected_hash=$(git rev-parse --verify -q HEAD);;
     (2) expected_hash=$2;;
     (*) echo 'USAGE: verify-git-tag directory [revision]'>&2; exit 1;;
 esac
-
-pushd "$1" > /dev/null || exit 2
 
 hash_len=${#expected_hash}
 if [ "$hash_len" -ne 40 ] && [ "$hash_len" -ne 64 ]; then
@@ -87,7 +85,7 @@ fi
 
 verify_git_obj () {
     local content newsig_number
-    content=$(git -c gpg.minTrustLevel=fully "verify-$1" --raw -- "$2" 2>&1 >/dev/null) &&
+    content=$(git -c gpg.program=gpg -c gpg.minTrustLevel=fully "verify-$1" --raw -- "$2" 2>&1 >/dev/null) &&
     newsig_number=$(printf %s\\n "$content" | grep -c '^\[GNUPG:] NEWSIG') &&
     [ "$newsig_number" = 1 ] && {
         printf %s\\n "$content" |
@@ -96,9 +94,11 @@ verify_git_obj () {
 }
 
 # Git format string, see man:git-for-each-ref(1) for details.
+#
 # The %(if)...%(then)...%(end) skips lightweight tags, which have no object to
-# point to.
-format='%(if)%(object)%(then)%(objectname):%(object):%(end)'
+# point to.  The colons allow a SHA-1 hash to be distinguished from a truncated
+# SHA-256 hash, and also allow a truncated line to be detected.
+format='%(if:equals=tag)%(objecttype)%(then)%(objectname):%(object):%(end)'
 tags="$(git tag "--points-at=$expected_hash" "--format=$format" | head -c 500)" || exit 1
 for tag in $tags; do
     if (( ${#tag} != hash_len * 2 + 2)); then
@@ -107,9 +107,11 @@ for tag in $tags; do
     elif ! [[ "${tag:hash_len}" = ":$expected_hash:" ]]; then
         printf %s\\n "---> Tag has wrong hash (found ${tag:hash_len + 1:hash_len}, expected $expected_hash)">&2
         exit 1
-    elif verify_git_obj tag "${tag:0:hash_len}"; then
-        echo "---> Good tag ${tag:0:hash_len}"
-        VALID_TAG_FOUND=1
+    fi
+    tag="${tag:0:hash_len}"
+    if verify_git_obj tag "$tag"; then
+        echo "---> Good tag $tag"
+        exit 0
     elif [ "0$VERBOSE" -ge 1 ]; then
         echo "---> Signed tag $tag cannot be verified"
     fi
@@ -117,12 +119,10 @@ done
 
 if [ -z "${tag+x}" ]; then
     echo "---> No tag pointing at $expected_hash"
-elif [ "$VALID_TAG_FOUND" = 1 ]; then
-    exit 0
 else
     echo "---> No valid signed tag found!"
     if [ "0$VERBOSE" -eq 0 ]; then
-        echo "---> One invalid tag: ${tag:0:hash_len}"
+        echo "---> One invalid tag: $tag"
     fi
 fi
 

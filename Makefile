@@ -12,7 +12,7 @@ BUILDERCONF ?= builder.conf
 
 # Set defaults
 BRANCH ?= master
-GIT_BASEURL ?= git://github.com
+GIT_BASEURL ?= https://github.com
 GIT_SUFFIX ?= .git
 DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
@@ -745,7 +745,7 @@ do-merge:
 		rev=$$(git -C $$REPO rev-parse -q --verify FETCH_HEAD) || continue; \
 		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
+		git -c merge.verifySignatures=false -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 do-merge-versions-only:
@@ -757,17 +757,18 @@ do-merge-versions-only:
 		git -C $$REPO tag --points-at "$$rev" | grep -q '^v' || continue; \
 		./scripts/verify-git-tag "$$REPO" "$$rev" || exit 1; \
 		echo "Merging FETCH_HEAD into $$REPO"; \
-		git -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
+		git -c merge.verifySignatures=false -C $$REPO merge --ff $(GIT_MERGE_OPTS) --no-edit "$$rev" || exit 1; \
 	done
 
 add-remote:
 	@if [ "x$${GIT_REMOTE//-/_}" != "x" ]; then \
 		for REPO in $(GIT_REPOS); do \
-			pushd $$REPO > /dev/null; \
+			pushd $$REPO > /dev/null || exit 1; \
 				COMPONENT=$$(basename $$REPO | sed 's/\./builder/g'); \
-				git remote add $${GIT_REMOTE//-/_} $(GIT_BASEURL)/$(GIT_PREFIX)$$COMPONENT$(GIT_SUFIX); \
-				git fetch $${GIT_REMOTE//-/_}; \
-			popd > /dev/null; \
+				git remote add -- "$${GIT_REMOTE//-/_}" "$$GIT_BASEURL/$$GIT_PREFIX$$COMPONENT$$GIT_SUFFIX" 2>/dev/null || \
+				git remote set-url -- "$${GIT_REMOTE//-/_}" "$$GIT_BASEURL/$$GIT_PREFIX$$COMPONENT$$GIT_SUFFIX"; \
+				if [ "$$AUTO_FETCH" = 1 ]; then git fetch -- "$${GIT_REMOTE//-/_}"; fi; \
+			popd > /dev/null || exit 1; \
 		done; \
 	fi; \
 
