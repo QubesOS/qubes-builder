@@ -118,7 +118,6 @@ VERIFY_REF=$(git -C "$REPO" rev-parse -q --verify "$VERIFY_REF") || exit
 
 if [ "$verify" = 'false' ]; then
     echo -e '\033[1;31m--> NOT verifying tags\033[0;0m'
-    exit 1
 else
     if [[ $CHECK = 'signed-tag-or-commit' ]]; then
         echo "--> Verifying tags or commits..."
