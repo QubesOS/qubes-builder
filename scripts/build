@@ -18,11 +18,7 @@ fi
 
 : "${MAKE_TARGET=rpms}"
 
-if [ ${DIST#fc} -ge 25 ]; then
-    YUM=dnf
-else
-    YUM=yum
-fi
+YUM=dnf
 
 ORIG_SRC=$PWD/qubes-src/$COMPONENT
 DIST_SRC_ROOT=$PWD/chroot-dom0-$DIST/home/user/qubes-src/
