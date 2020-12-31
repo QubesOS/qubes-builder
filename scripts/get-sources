@@ -31,10 +31,10 @@ set -eufo pipefail
 # shellcheck source=scripts/common
 source "$BUILDER_DIR/scripts/common"
 
-if ! [[ "${INSECURE_SKIP_CHECKING=}" =~ ^[A-Za-z0-9\ -\n]*$ ]]; then
+if ! [[ "${INSECURE_SKIP_CHECKING=}" =~ ^[A-Za-z0-9$'\x20\n'-]*$ ]]; then
     echo 'Invalid value for INSECURE_SKIP_CHECKING'>&2
     exit 1
-elif ! [[ "${LESS_SECURE_SIGNED_COMMITS_SUFFICIENT=}" =~ ^[A-Za-z0-9\ -\n]*$ ]]; then
+elif ! [[ "${LESS_SECURE_SIGNED_COMMITS_SUFFICIENT=}" =~ ^[A-Za-z0-9$'\x20\n'-]*$ ]]; then
     echo 'Invalid value for LESS_SECURE_SIGNED_COMMITS_SUFFICIENT'>&2
     exit 1
 fi
