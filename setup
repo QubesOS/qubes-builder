@@ -388,10 +388,10 @@ class DialogUI(DefaultUI):
 
     # Initialize a dialog.Dialog instance
     try:
-        dialog = Dialog(dialog=DIALOG)
+        dialog = Dialog(dialog=DIALOG, pass_args_via_file=False)
     except ExecutableNotFound:
         install_deps(['dialog'])
-        dialog = Dialog(dialog=DIALOG)
+        dialog = Dialog(dialog=DIALOG, pass_args_via_file=False)
 
     @classmethod
     def __init__(cls):
