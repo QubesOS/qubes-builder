@@ -1452,7 +1452,7 @@ class Wizard(Config):
                 """\
                 Do you have ssh access to the repos?
 
-                Select 'Yes' to configure urls to match git or 'No' for https"
+                Select 'Yes' to configure urls to match git or 'No' for https
             """
             ),
         }
