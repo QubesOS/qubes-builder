@@ -18,6 +18,10 @@ DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
 VERBOSE ?= 0
 
+http_proxy := $(REPO_PROXY)
+https_proxy := $(REPO_PROXY)
+ALL_PROXY := $(REPO_PROXY)
+
 # Beware of build order
 COMPONENTS ?= builder
 
