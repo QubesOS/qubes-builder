@@ -88,7 +88,15 @@ build_logs="linux-template-builder-vm-${template_dist}=$(get_build_log_url)"
 if ! DISTS_VM="$template_dist" scripts/make-with-log \
                COMPONENTS=linux-template-builder \
                BUILD_LOGS_URL="$build_logs" \
-               sign-all "update-repo-$repo"; then
+               sign-all; then
+    build_failure template sign "$template_dist" "$(get_build_log_url)"
+    exit 1
+fi
+
+if ! DISTS_VM="$template_dist" scripts/make-with-log \
+               COMPONENTS=linux-template-builder \
+               BUILD_LOGS_URL="$build_logs" \
+               "update-repo-$repo"; then
     build_failure template upload "$template_dist" "$(get_build_log_url)"
     exit 1
 fi
