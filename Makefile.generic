@@ -176,7 +176,7 @@ prepare-chroot: generic-prepare-chroot dist-prepare-chroot
 
 .PHONY: all
 ifneq (,$(PACKAGE_LIST))
-all: prepare-chroot prep copy-in packages
+all: packages
 else ifeq (2,$(VERBOSE))
 # Do nothing if no packages to compile
 all:
@@ -211,7 +211,9 @@ packages:
 	done
 
 .PHONY: rebuild-package
-rebuild-package: | dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
+rebuild-package: | prepare-chroot prep copy-in
+rebuild-package: | dist-build-dep dist-package
+rebuild-package: | dist-copy-out $(SOURCE_COPY_OUT)
 
 $(BUILD_STAMP_FILE) : $(shell git -C $(ORIG_SRC) ls-files -- |sed -e 's# #\\ #g' -e 's#^#$(ORIG_SRC)/#')
 	$(info  -> Building packages for $(COMPONENT)/pkgs/$(PACKAGE_SET)-$(DIST) from $(PACKAGE))
