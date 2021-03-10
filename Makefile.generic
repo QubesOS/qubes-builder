@@ -213,7 +213,7 @@ packages:
 .PHONY: rebuild-package
 rebuild-package: | dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
 
-$(BUILD_STAMP_FILE) : $(addprefix $(ORIG_SRC)/,$(shell git -C $(ORIG_SRC) ls-files))
+$(BUILD_STAMP_FILE) : $(shell git -C $(ORIG_SRC) ls-files -- |sed -e 's# #\\ #g' -e 's#^#$(ORIG_SRC)/#')
 	$(info  -> Building packages for $(COMPONENT)/pkgs/$(PACKAGE_SET)-$(DIST) from $(PACKAGE))
 	rm -f $@
 	$(MAKE) -f $(THIS_MAKEFILE) PACKAGE=$(PACKAGE) rebuild-package
