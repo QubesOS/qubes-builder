@@ -64,3 +64,101 @@ prep:non-fast-clone:
   variables:
     GIT_CLONE_FAST: ""
     COMPONENTS: "core-vchan-xen builder-rpm"
+
+### FULL BUILD
+
+## SOURCES
+
+sources:r4.1:
+  extends: .fullbuild_sources_job
+  variables:
+    RELEASE: "4.1"
+
+## COMPONENTS
+
+build:r4.1-vm-bullseye:
+  extends: .fullbuild_components_job
+  needs:
+    - sources:r4.1
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: bullseye
+
+build:r4.1-vm-fc33:
+  extends: .fullbuild_components_job
+  needs:
+    - sources:r4.1
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: fc33
+
+build:r4.1-vm-fc34:
+  extends: .fullbuild_components_job
+  needs:
+    - sources:r4.1
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: fc34
+
+build:r4.1-vm-centos8:
+  extends: .fullbuild_components_job
+  needs:
+    - sources:r4.1
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: centos8
+
+build:r4.1-vm-archlinux:
+  extends: .fullbuild_components_job
+  needs:
+    - sources:r4.1
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: archlinux
+
+## TEMPLATES
+
+tmpl:r4.1-vm-bullseye:
+  extends: .fullbuild_template_job
+  needs:
+    - sources:r4.1
+    - build:r4.1-vm-bullseye
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: bullseye
+
+tmpl:r4.1-vm-fc33:
+  extends: .fullbuild_template_job
+  needs:
+    - sources:r4.1
+    - build:r4.1-vm-fc33
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: fc33
+
+tmpl:r4.1-vm-fc34:
+  extends: .fullbuild_template_job
+  needs:
+    - sources:r4.1
+    - build:r4.1-vm-fc34
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: fc34
+
+tmpl:r4.1-vm-centos8:
+  extends: .fullbuild_template_job
+  needs:
+    - sources:r4.1
+    - build:r4.1-vm-centos8
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: centos8
+
+tmpl:r4.1-vm-archlinux:
+  extends: .fullbuild_template_job
+  needs:
+    - sources:r4.1
+    - build:r4.1-vm-archlinux
+  variables:
+    RELEASE: "4.1"
+    DISTS_VM: archlinux
