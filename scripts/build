@@ -18,12 +18,17 @@ fi
 
 : "${MAKE_TARGET=rpms}"
 
-YUM=dnf
+LOCAL_DIR="$(readlink -f "$(dirname "$0")")"
+BUILDER_DIR="$LOCAL_DIR/.."
+CHROOT_DIR="$BUILDER_DIR/chroot-dom0-$DIST"
 
-ORIG_SRC=$PWD/qubes-src/$COMPONENT
-DIST_SRC_ROOT=$PWD/chroot-dom0-$DIST/home/user/qubes-src/
-DIST_SRC=$DIST_SRC_ROOT/$COMPONENT
-BUILDER_REPO_DIR=$PWD/qubes-packages-mirror-repo/dom0-$DIST
+DNF=dnf
+DNF_OPTS="--installroot=$CHROOT_DIR"
+
+ORIG_SRC="$BUILDER_DIR/qubes-src/$COMPONENT"
+DIST_SRC_ROOT="$CHROOT_DIR/home/user/qubes-src/"
+DIST_SRC="$DIST_SRC_ROOT/$COMPONENT"
+BUILDER_REPO_DIR="$BUILDER_DIR/qubes-packages-mirror-repo/dom0-$DIST"
 
 MAKE_TARGET_ONLY="${MAKE_TARGET/ */}"
 REQ_PACKAGES="build-pkgs-$COMPONENT.list"
@@ -32,38 +37,38 @@ REQ_PACKAGES="build-pkgs-$COMPONENT.list"
 [ -r "$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list" ] && REQ_PACKAGES="$ORIG_SRC/build-deps-$MAKE_TARGET_ONLY.list"
 
 export USER_UID=$UID
-if ! [ -e "chroot-dom0-$DIST/home/user/.prepared_base" ]; then
+if ! [ -e "$CHROOT_DIR/home/user/.prepared_base" ]; then
     make --no-print-directory \
-        DIST=$DIST \
+        DIST="$DIST" \
         PACKAGE_SET=dom0 \
         COMPONENT=builder-rpm \
         USE_DIST_BUILD_TOOLS=0 \
         -f Makefile.generic prepare-chroot || exit 1;
 fi
 
-BUILDER_REPO_DIR="$BUILDER_REPO_DIR" $PWD/qubes-src/builder-rpm/update-local-repo.sh "$DIST"
-sudo chroot "$PWD/chroot-dom0-$DIST" $YUM $YUM_OPTS update -y
-if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
+BUILDER_REPO_DIR="$BUILDER_REPO_DIR" "$BUILDER_DIR/qubes-src/builder-rpm/update-local-repo.sh" "$DIST"
+sudo $DNF $DNF_OPTS update -y
+if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "$CHROOT_DIR/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
     echo "-> Installing $COMPONENT build dependencies in $DIST environment"
     TMP_PACKAGES_ARR=( $(cat build-pkgs-temp.list) )
 
     if [ "x${FEDORA_MIRROR}" != "x" ]; then
-        YUM_OPTS="$YUM_OPTS --setopt=fedora.baseurl=${FEDORA_MIRROR%/}/releases/${DIST#fc}/Everything/x86_64/os/"
-        YUM_OPTS="$YUM_OPTS --setopt=updates.baseurl=${FEDORA_MIRROR%/}/updates/${DIST#fc}/Everything/x86_64/"
+        DNF_OPTS="$DNF_OPTS --setopt=fedora.baseurl=${FEDORA_MIRROR%/}/releases/${DIST#fc}/Everything/x86_64/os/"
+        DNF_OPTS="$DNF_OPTS --setopt=updates.baseurl=${FEDORA_MIRROR%/}/updates/${DIST#fc}/Everything/x86_64/"
     fi
 
-    sudo chroot "$PWD/chroot-dom0-$DIST" $YUM $YUM_OPTS install -y "${TMP_PACKAGES_ARR[@]}"
+    sudo $DNF $DNF_OPTS install -y "${TMP_PACKAGES_ARR[@]}"
     rm -f build-pkgs-temp.list
-    touch "chroot-dom0-$DIST/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
+    touch "$CHROOT_DIR/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")"
 fi
 
-if ! [ -r "$PWD/chroot-dom0-$DIST/proc/cpuinfo" ]; then
-    sudo mount -t proc proc "$PWD/chroot-dom0-$DIST/proc"
+if ! [ -r "$CHROOT_DIR/proc/cpuinfo" ]; then
+    sudo mount -t proc proc "$CHROOT_DIR/proc"
 fi
 
-if ! [ -d "$PWD/chroot-dom0-$DIST/sys/devices" ]; then
-    sudo mount -t sysfs sysfs "$PWD/chroot-dom0-$DIST/sys"
+if ! [ -d "$CHROOT_DIR/sys/devices" ]; then
+    sudo mount -t sysfs sysfs "$CHROOT_DIR/sys"
 fi
 
 mkdir -p "$DIST_SRC_ROOT"
@@ -95,10 +100,10 @@ set +e
 MAKE_CMD="cd /home/user/qubes-src/$COMPONENT; NO_SIGN='$NO_SIGN' make $MAKE_OPTS $MAKE_TARGET"
 if [ "$VERBOSE" -eq 0 ]; then
     # shellcheck disable=SC2024
-    sudo -E chroot "chroot-dom0-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
+    sudo -E chroot "$CHROOT_DIR" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER" >"$BUILD_LOG" 2>&1
     BUILD_RETCODE=$?
 else
-    sudo -E chroot "chroot-dom0-$DIST" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER"
+    sudo -E chroot "$CHROOT_DIR" su -s /bin/bash -p -c "$MAKE_CMD" "$RUN_AS_USER"
     BUILD_RETCODE=$?
 fi
 if [ $BUILD_RETCODE -gt 0 ]; then
