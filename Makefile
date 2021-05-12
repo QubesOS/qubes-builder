@@ -32,6 +32,7 @@ RELEASE ?= $(patsubst r%,%,$(lastword $(subst /, ,$(LINUX_REPO_BASEDIR))))
 INSTALLER_COMPONENT ?= installer-qubes-os
 BACKEND_VMM ?= xen
 KEYRING_DIR_GIT ?= $(BUILDER_DIR)/keyrings/git
+FETCH_CMD := $(if $(REPO_PROXY),http_proxy='$(subst ','\'',$(REPO_PROXY))' https_proxy='$(subst ','\'',$(REPO_PROXY))' )curl --proto '=https' --tlsv1.2 --http1.1 -sSfL -o
 
 TESTING_DAYS = 7
 
