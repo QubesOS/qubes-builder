@@ -224,8 +224,8 @@ get-sources-git: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.g
 get-sources-extra: $(get-sources-extra-tgt)
 
 .PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
-check.rpm: $(if $(shell which rpm 2>/dev/null), /bin/true, please.install.rpm.and.try.again);
-check.dpkg: $(if $(shell which dpkg 2>/dev/null), /bin/true, please.install.dpkg.and.try.again);
+check.rpm: $(if $(shell rpm --version 2>/dev/null),/dev/null,/dev/null/please.install.rpm.and.try.again);
+check.dpkg: $(if $(shell dpkg --version 2>/dev/null),/dev/null,/dev/null/please.install.dpkg.and.try.again);
 check-depend.rpm:
 	@echo "Currently installed dependencies:" && rpm -q --whatprovides $(DEPENDENCIES) || \
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
