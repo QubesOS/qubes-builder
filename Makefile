@@ -223,16 +223,16 @@ get-sources: get-sources-git get-sources-extra
 get-sources-git: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
 get-sources-extra: $(get-sources-extra-tgt)
 
-.PHONY: check.rpm check.dpkg check-depend check-depend.rpm check-depend.dpkg
-check.rpm: $(if $(shell rpm --version 2>/dev/null),/dev/null,/dev/null/please.install.rpm.and.try.again);
-check.dpkg: $(if $(shell dpkg --version 2>/dev/null),/dev/null,/dev/null/please.install.dpkg.and.try.again);
+.PHONY: check-depend check-depend.rpm check-depend.dpkg
 check-depend.rpm:
-	@echo "Currently installed dependencies:" && rpm -q --whatprovides $(DEPENDENCIES) || \
+	$(if $(shell rpm --version 2>/dev/null),@,$(error RPM not installed, please install it))\
+	echo "Currently installed dependencies:" && rpm -q --whatprovides $(DEPENDENCIES) || \
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend.dpkg:
-	@test $$(dpkg -l $(DEPENDENCIES) | tail -n +5 | grep '^i' | wc -l) -eq $(words $(DEPENDENCIES)) || \
+	$(if $(shell dpkg --version 2>/dev/null),@,$(error dpkg not installed, please install it))\
+	test $$(dpkg -l $(DEPENDENCIES) | tail -n +5 | grep '^i' | wc -l) -eq $(words $(DEPENDENCIES)) || \
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
-check-depend: check.$(PKG_MANAGER) check-depend.$(PKG_MANAGER)
+check-depend: check-depend.$(PKG_MANAGER)
 
 prepare-chroot-dom0:
 ifneq ($(DIST_DOM0),)
