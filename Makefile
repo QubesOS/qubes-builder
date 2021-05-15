@@ -41,18 +41,25 @@ ifdef GIT_SUBDIR
 endif
 
 # checking for make from Makefile is pointless
-DEPENDENCIES ?= git rpmdevtools rpm-build python3-sh wget perl-Digest-MD5 perl-Digest-SHA
+DEPENDENCIES ?= git rpmdevtools rpm-build wget perl-Digest-MD5 distribution-gpg-keys
 
 # we add specific distro dependencies due to not common
 # set of packages available like 'createrepo' and 'createrepo_c'
 DEPENDENCIES.rpm ?= createrepo_c
 DEPENDENCIES.dpkg ?= createrepo
 
+DEPENDENCIES.fedora ?= perl-Digest-SHA python3-sh
+DEPENDENCIES.centos ?= $(DEPENDENCIES.fedora)
+DEPENDENCIES.debian ?= $(DEPENDENCIES.fedora)
+DEPENDENCIES.opensuse ?= perl-Digest-SHA1 $(shell rpm --eval %{python3_default})-sh
+
+HOST_DIST ?= $(shell cat /etc/os-release | grep -oP '^ID="*\K\w+"*')
+
 ifneq (1,$(NO_SIGN))
   DEPENDENCIES += rpm-sign
 endif
 
-DEPENDENCIES += $(DEPENDENCIES.$(PKG_MANAGER))
+DEPENDENCIES += $(DEPENDENCIES.$(PKG_MANAGER)) $(DEPENDENCIES.$(HOST_DIST))
 
 BUILDER_PLUGINS_DISTS :=
 _dist = $(word 1,$(subst +, ,$(_dist_vm)))
