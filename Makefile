@@ -349,7 +349,7 @@ template-local-%::
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
 	DIST_DOM0=$$(MAKEFLAGS= $(MAKE) -s get-var GET_VAR=DIST_DOM0 TEMPLATE_ONLY=0 2>/dev/null); \
-	plugins_var="BUILDER_PLUGINS_$$DIST"; \
+	plugins_var="BUILDER_PLUGINS_$${DIST//-/_}"; \
 	BUILDER_PLUGINS_COMBINED="$(BUILDER_PLUGINS) $${!plugins_var}"; \
 	BUILDER_PLUGINS_DIRS=`for d in $$BUILDER_PLUGINS_COMBINED; do echo -n " $(BUILDER_DIR)/$(SRC_DIR)/$$d"; done`; \
 	export BUILDER_PLUGINS_DIRS; \
@@ -1128,4 +1128,3 @@ install-deps.dpkg::
 .PHONY: about
 about::
 	@echo "Makefile"
-
