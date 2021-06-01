@@ -35,6 +35,8 @@ fi
 COMPONENT="$1"
 PACKAGE_SET="$2"
 DIST="$3"
+dist=${DIST%%+*}
+dist=${dist//-/_}
 
 ALL_REPOSITORIES="current current-testing security-testing unstable"
 UPDATE_REPO_SUBDIR="${PACKAGE_SET}/${DIST}"
@@ -45,7 +47,7 @@ UPDATE_REPO_SUBDIR="${PACKAGE_SET}/${DIST}"
 
 cd "$(dirname $0)/.."
 
-for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST%%+*}; do
+for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${dist}; do
     if [ -n "${!var}" ]; then
         continue
     fi
@@ -55,8 +57,6 @@ for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST%%+*}; do
     fi
 done
 
-dist=${DIST%%+*}
-dist=${dist//-/_}
 repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${dist}_BASEDIR)
 
 # a little more/different settings needed for templates
