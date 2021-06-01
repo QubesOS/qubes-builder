@@ -55,7 +55,9 @@ for var in TESTING_DAYS SRC_DIR BUILDER_PLUGINS BUILDER_PLUGINS_${DIST%%+*}; do
     fi
 done
 
-repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${DIST%%+*}_BASEDIR)
+dist=${DIST%%+*}
+dist=${dist//-/_}
+repo_dist_basedir=$(make -s get-var GET_VAR=LINUX_REPO_${dist}_BASEDIR)
 
 # a little more/different settings needed for templates
 if [ "$COMPONENT" = "linux-template-builder" ]; then

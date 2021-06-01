@@ -55,7 +55,7 @@ endif
 DEPENDENCIES += $(DEPENDENCIES.$(PKG_MANAGER))
 
 BUILDER_PLUGINS_DISTS :=
-_dist = $(word 1,$(subst +, ,$(_dist_vm)))
+_dist = $(subst -,_,$(word 1,$(subst +, ,$(_dist_vm))))
 _plugin = $(BUILDER_PLUGINS_$(_dist))
 BUILDER_PLUGINS_DISTS += $(strip $(foreach _dist_vm, $(DISTS_VM), $(_plugin)))
 
@@ -849,7 +849,7 @@ internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
 ifeq ($(MAKEREPO),1)
-	@repo_base_var="LINUX_REPO_$(DIST)_BASEDIR"; \
+	@repo_base_var="LINUX_REPO_$${DIST//-/_}_BASEDIR"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then \
 		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
 		repo_base_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
@@ -910,7 +910,7 @@ endif
 post-update-repo-%:
 ifeq ($(UPLOAD),1)
 	@for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
-		repo_base_var="LINUX_REPO_$${dist}_BASEDIR"; \
+		repo_base_var="LINUX_REPO_$${dist//-/_}_BASEDIR"; \
 		if [ -n "$${!repo_base_var}" ]; then \
 			repo_basedir="$${!repo_base_var}"; \
 		else \
