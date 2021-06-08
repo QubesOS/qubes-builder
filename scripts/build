@@ -21,6 +21,7 @@ fi
 LOCAL_DIR="$(readlink -f "$(dirname "$0")")"
 BUILDER_DIR="$LOCAL_DIR/.."
 CHROOT_DIR="$BUILDER_DIR/chroot-dom0-$DIST"
+CACHE_DIR="$BUILDER_DIR/cache/$DIST"
 
 DNF=dnf
 DNF_OPTS="--installroot=$CHROOT_DIR"
@@ -94,6 +95,13 @@ if [ "$VERBOSE" -ge 1 ]; then
     sed -i -e 's/rpmbuild/rpmbuild --quiet/' "$DIST_SRC"/Makefile*
     MAKE_OPTS="$MAKE_OPTS -s"
 fi
+# Build the rpmdb again, in case of huge rpm version difference that makes
+# rpmdb --rebuilddb doesn't work anymore. Export using rpm from outside
+# chroot and import using rpm from within chroot
+sudo rpmdb --root="$CHROOT_DIR" --exportdb > "$CACHE_DIR"/rpmdb.export
+sudo rm -rf "$CHROOT_DIR"/var/lib/rpm
+sudo chroot "$CHROOT_DIR" rpmdb --importdb < "$CACHE_DIR"/rpmdb.export
+
 # shellcheck disable=SC1090
 [ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
 set +e
