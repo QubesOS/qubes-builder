@@ -216,6 +216,26 @@ When building 'iso' target, build installation iso.
 When building 'iso' target, build live image. Can be set together with
 `ISO_INSTALLER` to build both.
 
+### ISO_USE_KERNEL_LATEST
+> Default: 0
+
+When building 'iso' target, use `kernel-latest` for building installer
+runtime and superseed `kernel` in the installation. It allows to boot
+installer and QubesOS with latest drivers provided by stable kernels
+and not only long term supported ones by default.
+
+### ISO_VERSION
+> Default: YYYYMMDD
+
+When building 'iso' target, build image name will be
+named as `Qubes-$(ISO_VERSION)-x86_64.iso`.
+
+### ISO_FLAVOR
+> Default: no value
+
+When building 'iso' target, build image name will be
+named as `Qubes-$(ISO_VERSION)-$(ISO_FLAVOR)-x86_64.iso`.
+
 ### `INSECURE_SKIP_CHECKING`
 > Default: no value
 
