@@ -99,8 +99,10 @@ fi
 # rpmdb --rebuilddb doesn't work anymore. Export using rpm from outside
 # chroot and import using rpm from within chroot
 sudo rpmdb --root="$CHROOT_DIR" --exportdb > "$CACHE_DIR"/rpmdb.export
-sudo rm -rf "$CHROOT_DIR"/var/lib/rpm
-sudo chroot "$CHROOT_DIR" rpmdb --importdb < "$CACHE_DIR"/rpmdb.export
+if [ -s "$CACHE_DIR"/rpmdb.export ]; then
+    sudo rm -rf "$CHROOT_DIR"/var/lib/rpm
+    sudo chroot "$CHROOT_DIR" rpmdb --importdb < "$CACHE_DIR"/rpmdb.export
+fi
 
 # shellcheck disable=SC1090
 [ -x "$ORIG_SRC/qubes-builder-pre-hook.sh" ] && source "$ORIG_SRC/qubes-builder-pre-hook.sh"
