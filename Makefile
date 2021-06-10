@@ -430,8 +430,13 @@ sign-all:: $(COMPONENTS_TO_SIGN:%=sign.%);
 sign-dom0:: $(COMPONENTS_TO_SIGN:%=sign.dom0.%);
 sign-vm:: $(COMPONENTS_TO_SIGN:%=sign.vm.%);
 sign-iso: ISO_VERSION=$(shell cat $(BUILDER_DIR)/iso/build_latest)
+ifneq (,$(ISO_FLAVOR))
+sign-iso: ISO_NAME=Qubes-$(ISO_VERSION)-$(ISO_FLAVOR)-x86_64
+else
+sign-iso: ISO_NAME=Qubes-$(ISO_VERSION)-x86_64
+endif
 sign-iso:
-	$(BUILDER_DIR)/scripts/release-iso iso/Qubes-$(ISO_VERSION)-x86_64.iso
+	$(BUILDER_DIR)/scripts/release-iso iso/$(ISO_NAME).iso
 
 qubes:: build-info $(COMPONENTS_NO_BUILDER)
 
@@ -943,8 +948,13 @@ template-name:
 	done
 
 upload-iso: ISO_VERSION=$(shell cat $(BUILDER_DIR)/iso/build_latest)
+ifneq (,$(ISO_FLAVOR))
+upload-iso: ISO_NAME=Qubes-$(ISO_VERSION)-$(ISO_FLAVOR)-x86_64
+else
+upload-iso: ISO_NAME=Qubes-$(ISO_VERSION)-x86_64
+endif
 upload-iso:
-	$(BUILDER_DIR)/scripts/upload-iso iso/Qubes-$(ISO_VERSION)-x86_64.iso
+	$(BUILDER_DIR)/scripts/upload-iso iso/$(ISO_NAME).iso
 
 check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
