@@ -18,6 +18,12 @@ DIST_DOM0 ?= fc20
 DISTS_VM ?= fc20
 VERBOSE ?= 0
 
+ifeq (${VERBOSE},2)
+Q =
+else
+Q = @
+endif
+
 http_proxy := $(REPO_PROXY)
 https_proxy := $(REPO_PROXY)
 ALL_PROXY := $(REPO_PROXY)
@@ -215,11 +221,11 @@ get-sources-tgt = $(get-sources-sort:%=%.get-sources)
 get-sources-extra-tgt = $(get-sources-sort:%=%.get-sources-extra)
 .PHONY: get-sources builder.get-sources $(get-sources-tgt) $(get-sources-extra-tgt)
 $(get-sources-tgt): build-info
-	@REPO=$(@:%.get-sources=$(SRC_DIR)/%) NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+	${Q}REPO=$(@:%.get-sources=$(SRC_DIR)/%) NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 $(get-sources-extra-tgt):
-	@REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
+	${Q}REPO=$(@:%.get-sources-extra=$(SRC_DIR)/%) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources-extra
 builder.get-sources: build-info
-	@REPO=. NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
+	${Q}REPO=. NO_COLOR=$(NO_COLOR) MAKE="$(MAKE)" $(BUILDER_DIR)/scripts/get-sources
 get-sources: get-sources-git get-sources-extra
 get-sources-git: $(BUILDERCONF) $(filter builder.get-sources, $(COMPONENTS:%=%.get-sources)) $(get-sources-tgt)
 get-sources-extra: $(get-sources-extra-tgt)
@@ -237,7 +243,7 @@ check-depend: check-depend.$(PKG_MANAGER)
 
 prepare-chroot-dom0:
 ifneq ($(DIST_DOM0),)
-	@if [ "$(VERBOSE)" -eq 0 ]; then \
+	${Q}if [ "$(VERBOSE)" -eq 0 ]; then \
 		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot > build-logs/chroot-dom0-$$DIST.log 2>&1 || exit 1;
 	else \
 		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
@@ -245,7 +251,7 @@ ifneq ($(DIST_DOM0),)
 endif
 
 prepare-chroot-vm:
-	@for DIST in $(DISTS_VM_NO_FLAVOR); do \
+	${Q}for DIST in $(DISTS_VM_NO_FLAVOR); do \
 		if [ "$(VERBOSE)" -eq 0 ]; then \
 			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm -f Makefile.generic prepare-chroot > build-logs/chroot-vm-$$DIST.log 2>&1 || exit 1;
 		else \
@@ -256,17 +262,17 @@ prepare-chroot-vm:
 $(COMPONENTS_NO_TPL_BUILDER): % : %-dom0 %-vm
 
 $(COMPONENTS_NO_TPL_BUILDER:%=%-vm) : %-vm : check-depend
-	@$(call check_branch,$*)
-	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+	${Q}$(call check_branch,$*)
+	${Q}if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		for DIST in $(DISTS_VM_NO_FLAVOR); do \
 			$(MAKE) --no-print-directory DIST=$$DIST PACKAGE_SET=vm COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) -f Makefile.generic all || exit 1; \
 		done; \
 	fi
 
 $(COMPONENTS_NO_TPL_BUILDER:%=%-dom0) : %-dom0 : check-depend
-	@$(call check_branch,$*)
+	${Q}$(call check_branch,$*)
 ifneq ($(DIST_DOM0),)
-	@if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
+	${Q}if [ -r $(SRC_DIR)/$*/Makefile.builder ]; then \
 		$(MAKE) -f Makefile.generic DIST=$(DIST_DOM0) PACKAGE_SET=dom0 COMPONENT=$* ENV_COMPONENT=$(ENV_$(subst -,_,$*)) all || exit 1; \
 	fi
 endif
@@ -290,8 +296,8 @@ sign.%: _space      = $(_empty) $(_empty)
 sign.%: COMPONENT   = $(word 3, $(subst ., ,$*))
 sign.%: $(SRC_DIR)/$(COMPONENT)
 sign.%:
-	@$(call check_branch,$(COMPONENT))
-	@SIGN_KEY=$(SIGN_KEY); \
+	${Q}$(call check_branch,$(COMPONENT))
+	${Q}SIGN_KEY=$(SIGN_KEY); \
 	sign_key_var="SIGN_KEY_$${DIST%%+*}"; \
 	[ -n "$${!sign_key_var}" ] && SIGN_KEY="$${!sign_key_var}"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then
@@ -328,11 +334,11 @@ sign.%:
 # from xfce4 repo...). "Empty" rule because real package are built by above
 # generic rule as xfce4-dom0-dom0
 xfce4-dom0:
-	@true
+	${Q}true
 
 # Nothing to be done there
 yum-dom0 yum-vm:
-	@true
+	${Q}true
 
 # Some components requires custom rules
 
@@ -343,7 +349,7 @@ template:: $(DISTS_VM:%=template-local-%)
 # Allow template flavors to be declared within the DISTS_VM declaration
 # <distro>+<template flavor>+<template options>+<template options>...
 template-local-%::
-	@DIST=$*; \
+	${Q}DIST=$*; \
 	dist_array=($${DIST//+/ }); \
 	DIST=$${dist_array[0]}; \
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
@@ -389,7 +395,7 @@ template-local-%::
 template-github: template-github.token $(DISTS_VM:%=template-github-%)
 
 template-github.token:
-	@if [ "x$(GITHUB_API_KEY)" != "x" ]; then \
+	${Q}if [ "x$(GITHUB_API_KEY)" != "x" ]; then \
 		echo "machine api.github.com login $(GITHUB_API_KEY) password x-oauth-basic" > $(BUILDER_DIR)/.netrc_github
 	else \
 		echo "Please provide GITHUB_API_KEY."; exit 1; \
@@ -398,7 +404,7 @@ template-github.token:
 template-github-%: DIST=$*
 template-github-%: GITHUB_API_FILE=$(BUILDER_DIR)/.netrc_github
 template-github-%:
-	@if [ "$(VERBOSE)" -eq 0 ]; then \
+	${Q}if [ "$(VERBOSE)" -eq 0 ]; then \
 		echo "-> Posting build command for template $$DIST (logfile: build-logs/template-github-$$DIST.log)..."; \
 		$(BUILDER_DIR)/scripts/generate_build_github.sh $(DIST) > build-logs/template-github-$$DIST.log 2>&1 || exit 1; \
 		echo "--> Done."; \
@@ -411,7 +417,7 @@ template-in-dispvm: $(DISTS_VM:%=template-in-dispvm-%)
 template-in-dispvm-%: DIST=$*
 template-in-dispvm-%: BUILD_LOG=build-logs/template-$(DIST).log
 template-in-dispvm-%:
-	@BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF))); \
+	${Q}BUILDER_TEMPLATE_CONF=$(lastword $(filter $(DIST):%,$(BUILDER_TEMPLATE_CONF))); \
 	if [ -e "$(BUILD_LOG)" ]; then\
 		mv -f "$(BUILD_LOG)" "$(BUILD_LOG).old";\
 	fi
@@ -453,21 +459,21 @@ clean-installer-rpms:
 	(cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum || cd $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum && ./clean_repos.sh) || true
 
 clean-rpms:: clean-installer-rpms
-	@for dist in $(DISTS_ALL); do \
+	${Q}for dist in $(DISTS_ALL); do \
 		echo "Cleaning up rpms in qubes-packages-mirror-repo/$$dist/..."; \
 		sudo rm -rf qubes-packages-mirror-repo/$$dist || true ;\
 	done
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'
-	@sudo rm -f $(SRC_DIR)/*/pkgs/*/*/*.rpm || true
+	${Q}sudo rm -f $(SRC_DIR)/*/pkgs/*/*/*.rpm || true
 
 clean-makefiles = $(filter-out ./Makefile,$(wildcard $(GIT_REPOS:%=%/Makefile)))
 clean-tgt = $(filter-out linux-template-builder.clean,$(clean-makefiles:$(SRC_DIR)/%/Makefile=%.clean))
 clean-builder-tgt = $(DISTS_VM_NO_FLAVOR:%=linux-template-builder.clean.%)
 .PHONY: clean $(clean-tgt) $(clean-builder-tgt)
 $(clean-tgt):
-	@-$(MAKE) -s -i -k -C $(SRC_DIR)/$(@:%.clean=% clean)
+	${Q}-$(MAKE) -s -i -k -C $(SRC_DIR)/$(@:%.clean=% clean)
 $(clean-builder-tgt):
-	@-if [ -d $(SRC_DIR)/linux-template-builder ]; then
+	${Q}-if [ -d $(SRC_DIR)/linux-template-builder ]; then
 		DIST=$(subst .,,$(suffix $@)) $(MAKE) -s -i -k -C $(SRC_DIR)/linux-template-builder clean
 	fi
 clean:: $(clean-tgt) $(clean-builder-tgt);
@@ -475,16 +481,16 @@ clean:: $(clean-tgt) $(clean-builder-tgt);
 clean-chroot-tgt = $(DISTS_ALL:%=chroot-%.clean)
 .PHONY: clean-chroot $(clean-chroot-tgt)
 $(clean-chroot-tgt): %.clean : %.umount
-	@sudo rm -rf $(BUILDER_DIR)/$(@:%.clean=%)
+	${Q}sudo rm -rf $(BUILDER_DIR)/$(@:%.clean=%)
 clean-chroot: $(clean-chroot-tgt)
 
 .PHONY: remount
 remount:
-	@./scripts/remount .
+	${Q}./scripts/remount .
 
 .PHONY: clean-all
 clean-all: clean-chroot clean-rpms clean
-	@sudo rm -rf $(SRC_DIR)
+	${Q}sudo rm -rf $(SRC_DIR)
 
 .PHONY: distclean
 distclean: clean-all
@@ -515,7 +521,7 @@ mostlyclean:: clean-chroot clean-rpms clean
 .PHONY: iso iso.clean-repos iso.copy-rpms iso.copy-template-rpms
 iso.clean-repos:
 	@echo "-> Preparing for ISO build..."
-	@$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos
+	${Q}$(MAKE) -s -C $(SRC_DIR)/$(INSTALLER_COMPONENT) clean-repos
 
 iso.copy-rpms: $(COMPONENTS_NO_TPL_BUILDER:%=iso.copy-rpms.%)
 
@@ -523,7 +529,7 @@ iso.copy-rpms.%: COMPONENT=$*
 iso.copy-rpms.%: REPO=$(SRC_DIR)/$(COMPONENT)
 iso.copy-rpms.%: $(SRC_DIR)/%/Makefile.builder
 	@echo "--> Copying $(COMPONENT) RPMs..."
-	@$(MAKE) --no-print-directory -f Makefile.generic \
+	${Q}$(MAKE) --no-print-directory -f Makefile.generic \
 		PACKAGE_SET=dom0 \
 		DIST=$(DIST_DOM0) \
 		COMPONENT=$(COMPONENT) \
@@ -545,7 +551,7 @@ iso.copy-template-rpms.%: DIST=$*
 
 iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
 	@echo "--> Copying template $(DIST) RPM..."
-	@export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
+	${Q}export TEMPLATE_NAME=$$(MAKEFLAGS= make -s \
 			-C $(SRC_DIR)/linux-template-builder \
 			DIST=$(DIST) \
 			template-name); \
@@ -559,25 +565,25 @@ iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile.builder
 
 iso.copy-template-rpms.%: $(SRC_DIR)/linux-template-builder/Makefile
 	@echo "--> Copying template $(DIST) RPM..."
-	@if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
+	${Q}if ! DIST=$(DIST) UPDATE_REPO=$(BUILDER_DIR)/$(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0 \
 		DIST=$(DIST) $(MAKE) -s -C $(SRC_DIR)/linux-template-builder update-repo-installer ; then \
 			echo "make update-repo-installer failed for template dist=$$DIST"; \
 			exit 1; \
 	fi
 
 iso: iso.clean-repos iso.copy-rpms iso.copy-template-rpms
-	@if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
+	${Q}if [ "$(LINUX_INSTALLER_MULTIPLE_KERNELS)" == "yes" ]; then \
 		ln -f $(SRC_DIR)/linux-kernel*/pkgs/fc*/x86_64/*.rpm $(SRC_DIR)/$(INSTALLER_COMPONENT)/yum/qubes-dom0/rpm/; \
 	fi
-	@MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
-	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
-	@ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest iso/ || exit 1
+	${Q}MAKE_TARGET="iso QUBES_RELEASE=$(QUBES_RELEASE)" ./scripts/build $(DIST_DOM0) $(INSTALLER_COMPONENT) root || exit 1
+	${Q}ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/*.iso iso/ || exit 1
+	${Q}ln -f $(SRC_DIR)/$(INSTALLER_COMPONENT)/build/ISO/qubes-x86_64/iso/build_latest iso/ || exit 1
 	@echo "The ISO can be found in iso/ subdirectory."
 	@echo "Thank you for building Qubes. Have a nice day!"
 
 
 check:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+	${Q}HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		git status | grep "^nothing to commit" > /dev/null; \
 		if [ $$? -ne 0 ]; then \
@@ -595,7 +601,7 @@ check:
 	done
 
 diff:
-	@for REPO in $(GIT_REPOS); do \
+	${Q}for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		git status | grep "^nothing to commit" > /dev/null; \
 		if [ $$? -ne 0 ]; then \
@@ -605,7 +611,7 @@ diff:
 	done
 
 show:
-	@if [ -n "$$REF" ]; then \
+	${Q}if [ -n "$$REF" ]; then \
 		for REPO in $(GIT_REPOS); do \
 			pushd $$REPO > /dev/null; \
 			git show $(REF) 2>/dev/null && \
@@ -620,11 +626,11 @@ grep-tgt = $(GIT_REPOS:$(SRC_DIR)/%=%.grep)
 RE ?= $(filter-out grep $(grep-tgt), $(MAKECMDGOALS))
 .PHONY: grep $(grep-tgt)
 $(grep-tgt):
-	@git -C $(@:%.grep=$(SRC_DIR)/%) grep "$(RE)" | sed "s#^#$(@:%.grep=$(SRC_DIR)\/%)/#"
+	${Q}git -C $(@:%.grep=$(SRC_DIR)/%) grep "$(RE)" | sed "s#^#$(@:%.grep=$(SRC_DIR)\/%)/#"
 grep: $(grep-tgt)
 
 switch-branch:
-	@for REPO in $(GIT_REPOS); do \
+	${Q}for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		echo -n "$$REPO: "; \
 		BRANCH=$(BRANCH); \
@@ -649,7 +655,7 @@ switch-branch:
 	done
 
 show-vtags:
-	@for REPO in $(GIT_REPOS); do \
+	${Q}for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		echo -n "$$REPO: "; \
 		git config --get-color color.decorate.tag "red bold"; \
@@ -676,7 +682,7 @@ show-vtags:
 	done
 
 show-authors:
-	@for REPO in $(GIT_REPOS); do \
+	${Q}for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		COMPONENT=`basename $$REPO`; \
 		[ "$$COMPONENT" == "." ] && COMPONENT=builder; \
@@ -685,7 +691,7 @@ show-authors:
 	done | awk -F: '{ comps[$$3]=comps[$$3] "\n  " $$1 " (" $$2 ")" } END { for (a in comps) { printf "$(c.bold)" a ":$(c.normal)"; print comps[a]; } }'
 
 push:
-	@HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
+	${Q}HEADER_PRINTED="" ; for REPO in $(GIT_REPOS); do \
 		pushd $$REPO > /dev/null; \
 		BRANCH=$(BRANCH); \
 		if [ "$$REPO" == "." ]; then
@@ -712,7 +718,7 @@ push:
 	echo "All stuff pushed succesfully."
 
 prepare-merge-fetch:
-	@set -a; \
+	${Q}set -a; \
 	SCRIPT_DIR=$(BUILDER_DIR)/scripts; \
 	SRC_ROOT=$(BUILDER_DIR)/$(SRC_DIR); \
 	FETCH_ONLY=1; \
@@ -728,7 +734,7 @@ prepare-merge: prepare-merge-fetch show-unmerged
 merge: prepare-merge-fetch do-merge
 
 show-unmerged:
-	@REPOS="$(GIT_REPOS)"; \
+	${Q}REPOS="$(GIT_REPOS)"; \
 	{ echo "Changes to be merged:"; \
 	for REPO in $$REPOS; do \
 		pushd $$REPO > /dev/null; \
@@ -748,7 +754,7 @@ show-unmerged:
 	done } | less -RM +Gg
 
 do-merge:
-	@REPOS="$(GIT_REPOS)"; \
+	${Q}REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
@@ -759,7 +765,7 @@ do-merge:
 	done
 
 do-merge-versions-only:
-	@REPOS="$(GIT_REPOS)"; \
+	${Q}REPOS="$(GIT_REPOS)"; \
 	components_var="REMOTE_COMPONENTS_$${GIT_REMOTE//-/_}"; \
 	[ -n "$${!components_var}" ] && REPOS="`echo $${!components_var} | sed 's@^\| @ $(SRC_DIR)/@g'`"; \
 	for REPO in $$REPOS; do \
@@ -771,7 +777,7 @@ do-merge-versions-only:
 	done
 
 add-remote:
-	@if [ "x$${GIT_REMOTE//-/_}" != "x" ]; then \
+	${Q}if [ "x$${GIT_REMOTE//-/_}" != "x" ]; then \
 		for REPO in $(GIT_REPOS); do \
 			pushd $$REPO > /dev/null || exit 1; \
 				COMPONENT=$$(basename $$REPO | sed 's/\./builder/g'); \
@@ -810,29 +816,29 @@ update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) $(a
 else
 update-repo-%: $(addprefix internal-update-repo-%.vm.,$(DISTS_VM_NO_FLAVOR)) post-update-repo-%
 endif
-	@true
+	${Q}true
 
 # similar for templates, but set PACKAGE_SET to "dom0" and use full DISTS_VM
 # instead of DISTS_VM_NO_FLAVOR
 update-repo-templates-%: $(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM:%=%.linux-template-builder)) post-update-repo-templates-%
-	@true
+	${Q}true
 
 
 # do not include builder itself in the template (it would fail anyway)
 update-repo-template:
-	@true
+	${Q}true
 
 $(addprefix internal-update-repo-current.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current.vm.% : $(addprefix internal-update-repo-current.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
-	@true
+	${Q}true
 $(addprefix internal-update-repo-current-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-current-testing.vm.% : $(addprefix internal-update-repo-current-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
-	@true
+	${Q}true
 $(addprefix internal-update-repo-security-testing.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-security-testing.vm.% : $(addprefix internal-update-repo-security-testing.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
-	@true
+	${Q}true
 $(addprefix internal-update-repo-unstable.vm.,$(DISTS_VM_NO_FLAVOR)): internal-update-repo-unstable.vm.% : $(addprefix internal-update-repo-unstable.vm.%., $(COMPONENTS_NO_TPL_BUILDER))
-	@true
+	${Q}true
 
 $(addprefix internal-update-repo-templates-%.vm.,$(DISTS_VM_NO_FLAVOR)):
-	@true
+	${Q}true
 
 # setup arguments
 internal-update-repo-%: TARGET_REPO = $(word 1, $(subst ., ,$*))
@@ -854,7 +860,7 @@ internal-update-repo-templates-%: UPDATE_REPO_SUBDIR = $(TARGET_REPO)
 # this is executed for every (DIST,PACKAGE_SET,COMPONENT) combination
 internal-update-repo-%:
 ifeq ($(MAKEREPO),1)
-	@repo_base_var="LINUX_REPO_$${DIST//-/_}_BASEDIR"; \
+	${Q}repo_base_var="LINUX_REPO_$${DIST//-/_}_BASEDIR"; \
 	if [ "$(COMPONENT)" = linux-template-builder ]; then \
 		# templates belongs to dom0 repository, even though PACKAGE_SET=vm
 		repo_base_var="LINUX_REPO_$(DIST_DOM0)_BASEDIR"; \
@@ -906,7 +912,7 @@ ifeq ($(MAKEREPO),1)
 	fi; \
 	echo
 else ifeq ($(MAKEREPO),0)
-	@true
+	${Q}true
 else
 	$(error bad value for $$(MAKEREPO))
 endif
@@ -914,7 +920,7 @@ endif
 # this is executed only once for all update-repo-* target
 post-update-repo-%:
 ifeq ($(UPLOAD),1)
-	@for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
+	${Q}for dist in $(DIST_DOM0) $(DISTS_VM_NO_FLAVOR); do \
 		repo_base_var="LINUX_REPO_$${dist//-/_}_BASEDIR"; \
 		if [ -n "$${!repo_base_var}" ]; then \
 			repo_basedir="$${!repo_base_var}"; \
@@ -936,13 +942,13 @@ ifeq ($(UPLOAD),1)
 		(cd $$repo/.. && ./update_repo-$*.sh r$(RELEASE) $$pkgset_dist); \
 	done
 else ifeq ($(UPLOAD),0)
-	@true
+	${Q}true
 else
 	$(error bad value for $$(UPLOAD))
 endif
 
 template-name:
-	@for DIST in $(DISTS_VM); do \
+	${Q}for DIST in $(DISTS_VM); do \
 		export DIST; \
 		$(MAKE) -s -C $(SRC_DIR)/linux-template-builder template-name; \
 	done
@@ -960,11 +966,11 @@ check-release-status: $(DISTS_VM_NO_FLAVOR:%=check-release-status-vm-%)
 
 ifneq (,$(DIST_DOM0))
 check-release-status: check-release-status-dom0-$(DIST_DOM0) $(if $(wildcard $(SRC_DIR)/linux-template-builder/rpm/noarch/*.rpm),check-release-status-templates)
-	@true
+	${Q}true
 endif
 
 check-release-status-templates:
-	@if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
+	${Q}if [ "0$(HTML_FORMAT)" -eq 1 ]; then \
 		printf '<h2>Templates</h2>\n'; \
 		printf '<table><tr><th>Template name</th><th>Version</th><th>Status</th></tr>\n'; \
 	else \
@@ -995,7 +1001,7 @@ check-release-status-%: PACKAGE_SET = $(word 1, $(subst -, ,$*))
 check-release-status-%: DIST        = $(subst $(null) $(null),-,$(wordlist 2, 10, $(subst -, ,$*)))
 check-release-status-%: MAKE_ARGS   = PACKAGE_SET=$(PACKAGE_SET) DIST=$(DIST) COMPONENT=$$C
 check-release-status-%:
-	@if [ "0$(HTML_FORMAT)" -eq 0 -a "0$(YAML_FORMAT)" -eq 0 ]; then \
+	${Q}if [ "0$(HTML_FORMAT)" -eq 0 -a "0$(YAML_FORMAT)" -eq 0 ]; then \
 		echo "-> Checking packages for $(c.bold)$(DIST) $(PACKAGE_SET)$(c.normal)"; \
 	fi; \
 	HEADER_PRINTED=; \
@@ -1075,17 +1081,17 @@ build-info::
 	@echo -e "Items in $(c.white)white$(c.normal) indicate it was automatically removed by configuration file(s)"
 	@echo "================================================================================"
 	# (1): Item Color, (2): Label, (3): Item, (4): Original item used to compare if changed
-	@$(call _info, $(text), DISTS_VM,        $(DISTS_VM), $(_ORIGINAL_DISTS_VM))
-	@$(call _info, $(text), DISTS_ALL,       $(DISTS_ALL), $(_ORIGINAL_DISTS_ALL))
-	@$(call _info, $(text), DIST_DOM0,       $(DIST_DOM0))
-	@$(call _info, $(text), BUILDER_PLUGINS, $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS), $(_ORIGINAL_BUILDER_PLUGINS))
-	@$(call _info, $(text), COMPONENTS,      $(COMPONENTS), $(_ORIGINAL_COMPONENTS))
-	@$(call _info, $(text), GIT_REPOS,       $(GIT_REPOS))
-	@$(call _info, $(text), TEMPLATE,        $(TEMPLATE), $(_ORIGINAL_TEMPLATE))
-	@$(call _info, $(text), TEMPLATE_FLAVOR_DIR,  $(TEMPLATE_FLAVOR_DIR), $(_ORIGINAL_TEMPLATE_FLAVOR_DIR))
-	@$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
-	@$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
-	@for component in $(COMPONENTS); do \
+	${Q}$(call _info, $(text), DISTS_VM,        $(DISTS_VM), $(_ORIGINAL_DISTS_VM))
+	${Q}$(call _info, $(text), DISTS_ALL,       $(DISTS_ALL), $(_ORIGINAL_DISTS_ALL))
+	${Q}$(call _info, $(text), DIST_DOM0,       $(DIST_DOM0))
+	${Q}$(call _info, $(text), BUILDER_PLUGINS, $(BUILDER_PLUGINS) $(BUILDER_PLUGINS_DISTS), $(_ORIGINAL_BUILDER_PLUGINS))
+	${Q}$(call _info, $(text), COMPONENTS,      $(COMPONENTS), $(_ORIGINAL_COMPONENTS))
+	${Q}$(call _info, $(text), GIT_REPOS,       $(GIT_REPOS))
+	${Q}$(call _info, $(text), TEMPLATE,        $(TEMPLATE), $(_ORIGINAL_TEMPLATE))
+	${Q}$(call _info, $(text), TEMPLATE_FLAVOR_DIR,  $(TEMPLATE_FLAVOR_DIR), $(_ORIGINAL_TEMPLATE_FLAVOR_DIR))
+	${Q}$(call _info, $(text), TEMPLATE_ALIAS,  $(TEMPLATE_ALIAS), $(_ORIGINAL_TEMPLATE_ALIAS))
+	${Q}$(call _info, $(text), TEMPLATE_LABEL,  $(TEMPLATE_LABEL), $(_ORIGINAL_TEMPLATE_LABEL))
+	${Q}for component in $(COMPONENTS); do \
 		component_env_var=`MAKEFLAGS= $(MAKE) -s get-var GET_VAR=ENV_$${component//-/_}`; \
 		if [ ! -z "$$component_env_var" ]; then $(call _info, $(text), ENV_$${component//-/_}, $${component_env_var}, ""); fi; \
 	done
@@ -1098,7 +1104,7 @@ build-id::
 	@echo "### The following settings copied to builder.conf will make builder use      ###"
 	@echo "### exactly the same sources                                                 ###"
 	@echo "################################################################################"
-	@for component in $(sort $(COMPONENTS) builder $(BUILDER_PLUGINS_ALL)); do \
+	${Q}for component in $(sort $(COMPONENTS) builder $(BUILDER_PLUGINS_ALL)); do \
 		dir="$(SRC_DIR)/$$component"; \
 		if [ "$$component" = "builder" ]; then dir="."; fi; \
 		if [ -n "`git -C "$$dir" status --porcelain`" ]; then
@@ -1120,14 +1126,14 @@ build-id::
 umount-tgt = $(DISTS_ALL:%=chroot-%.umount) $(SRC_DIR).umount
 .PHONY: umount $(umount-tgt)
 $(umount-tgt):
-	@sudo $(BUILDER_DIR)/scripts/umount_kill.sh $(BUILDER_DIR)/$(@:%.umount=%)
+	${Q}sudo $(BUILDER_DIR)/scripts/umount_kill.sh $(BUILDER_DIR)/$(@:%.umount=%)
 umount: $(umount-tgt)
 
 # Returns variable value
 # Example usage: GET_VAR=DISTS_VM make get-var
 .PHONY: get-var
 get-var::
-	@GET_VAR=$${!GET_VAR}; \
+	${Q}GET_VAR=$${!GET_VAR}; \
 	echo "$${GET_VAR}"
 
 .PHONY: install-deps
@@ -1135,11 +1141,11 @@ install-deps: install-deps.$(PKG_MANAGER)
 
 .PHONY: install-deps.rpm
 install-deps.rpm::
-	@sudo dnf install -y $(DEPENDENCIES) || sudo yum install -y $(DEPENDENCIES)
+	${Q}sudo dnf install -y $(DEPENDENCIES) || sudo yum install -y $(DEPENDENCIES)
 
 .PHONY: install-deps.dpkg
 install-deps.dpkg::
-	@sudo apt-get -y install $(DEPENDENCIES)
+	${Q}sudo apt-get -y install $(DEPENDENCIES)
 
 .PHONY: about
 about::

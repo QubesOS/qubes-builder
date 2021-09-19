@@ -6,6 +6,12 @@
 #  COMPONENT
 #  PACKAGE_SET (currently "dom0" or "vm")
 
+ifeq (${VERBOSE},2)
+Q =
+else
+Q = @
+endif
+
 ### Global variables
 
 .EXPORT_ALL_VARIABLES:
@@ -123,18 +129,18 @@ make-git-tarball:
 
 .PHONY: generic-copy-in
 generic-copy-in:
-	@mkdir -p $(CHROOT_DIR)/$(DIST_SRC_ROOT)
-	@cp $(THIS_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
-	@cp $(BUILDER_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
-	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)
-	@cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
-	@rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs
+	${Q}mkdir -p $(CHROOT_DIR)/$(DIST_SRC_ROOT)
+	${Q}cp $(THIS_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
+	${Q}cp $(BUILDER_MAKEFILE) $(CHROOT_DIR)/$(DIST_BUILD_DIR)/
+	${Q}rm -rf $(CHROOT_DIR)/$(DIST_SRC)
+	${Q}cp -alt $(CHROOT_DIR)/$(DIST_SRC_ROOT)/ $(ORIG_SRC)
+	${Q}rm -rf $(CHROOT_DIR)/$(DIST_SRC)/pkgs
 
 .PHONY: windows-image-extract
 windows-image-extract:
 ifneq (,$(WINDOWS_IMAGE_EXTRACT_EXTRA))
-	@rm -rf $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(ORIG_SRC)/%)
-	@cp -r $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(WINDOWS_IMAGE_DIR)/$(ORIG_SRC)/%) $(ORIG_SRC)/
+	${Q}rm -rf $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(ORIG_SRC)/%)
+	${Q}cp -r $(WINDOWS_IMAGE_EXTRACT_EXTRA:%=$(WINDOWS_IMAGE_DIR)/$(ORIG_SRC)/%) $(ORIG_SRC)/
 endif
 
 .PHONY: prep
@@ -142,13 +148,13 @@ prep: generic-prep dist-prep $(SOURCE_PREP)
 
 .PHONY: generic-prep
 generic-prep:
-	@if [ -e "$(BUILD_LOG)" ]; then\
+	${Q}if [ -e "$(BUILD_LOG)" ]; then\
 	   mv -f "$(BUILD_LOG)" "$(BUILD_LOG).old";\
 	fi
 
 .PHONY: generic-prepare-chroot
 generic-prepare-chroot:
-	@if [ "`id -u`" = 0 ]; then \
+	${Q}if [ "`id -u`" = 0 ]; then \
 		echo "*******************************************************************************"; \
 		echo "***                               ERROR                                      ***"; \
 		echo "*** Start the build as normal user, it will use sudo (only) where necessary! ***"; \
@@ -156,8 +162,8 @@ generic-prepare-chroot:
 		echo "*******************************************************************************"; \
 		exit 1; \
 	fi
-	@mkdir -p "$(CACHEDIR)"
-	@if ! scripts/test-sane-mount .; then \
+	${Q}mkdir -p "$(CACHEDIR)"
+	${Q}if ! scripts/test-sane-mount .; then \
 		mountpoint=$$(scripts/find-mount-point .); \
 		echo "*******************************************************************************"; \
 		echo "***                               ERROR                                      ***"; \
@@ -179,16 +185,16 @@ else ifeq (2,$(VERBOSE))
 # Do nothing if no packages to compile
 all:
 	$(info -> Nothing to be done in $(COMPONENT) for $(DIST) $(PACKAGE_SET))
-	@true
+	${Q}true
 else
 # Do nothing if no packages to compile
 all:
-	@true
+	${Q}true
 endif
 
 .PHONY: packages
 packages:
-	@for package in $(PACKAGE_LIST); do\
+	${Q}for package in $(PACKAGE_LIST); do\
 		set -o pipefail;\
 		echo "-> Building $(COMPONENT) ($$package) for $(DIST) $(PACKAGE_SET) (logfile: $(BUILD_LOG))";\
 		if [ $(VERBOSE) -eq 0 ]; then\
@@ -215,7 +221,7 @@ package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
 # Example usage: GET_VAR=DISTS_VM make get-var
 .PHONY: get-var
 get-var::
-	@GET_VAR=$${!GET_VAR}; \
+	${Q}GET_VAR=$${!GET_VAR}; \
 	echo "$${GET_VAR}"
 
 .PHONY: update-repo-date-check
