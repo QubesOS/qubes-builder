@@ -467,8 +467,8 @@ clean-builder-tgt = $(DISTS_VM_NO_FLAVOR:%=linux-template-builder.clean.%)
 $(clean-tgt):
 	@-$(MAKE) -s -i -k -C $(SRC_DIR)/$(@:%.clean=% clean)
 $(clean-builder-tgt):
-	if [ -d $(SRC_DIR)/linux-template-builder ]; then
-		@-DIST=$(subst .,,$(suffix $@)) $(MAKE) -s -i -k -C $(SRC_DIR)/linux-template-builder clean
+	@-if [ -d $(SRC_DIR)/linux-template-builder ]; then
+		DIST=$(subst .,,$(suffix $@)) $(MAKE) -s -i -k -C $(SRC_DIR)/linux-template-builder clean
 	fi
 clean:: $(clean-tgt) $(clean-builder-tgt);
 
