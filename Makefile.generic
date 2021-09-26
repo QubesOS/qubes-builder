@@ -49,6 +49,8 @@ BUILDER_REPO_DIR = $(PWD)/qubes-packages-mirror-repo/$(PACKAGE_SET)-$(DIST)
 
 OUTPUT_DIR = pkgs/$(PACKAGE_SET)-$(DIST)
 
+BUILD_STAMP_FILE = $(ORIG_SRC)/$(OUTPUT_DIR)/$(notdir $(PACKAGE)).build_stamp
+
 # build environment
 CHROOT_DIR = $(PWD)/chroot-$(PACKAGE_SET)-$(DIST)
 CACHEDIR = $(PWD)/cache/$(DIST)
@@ -174,7 +176,7 @@ prepare-chroot: generic-prepare-chroot dist-prepare-chroot
 
 .PHONY: all
 ifneq (,$(PACKAGE_LIST))
-all: prepare-chroot prep copy-in packages
+all: packages
 else ifeq (2,$(VERBOSE))
 # Do nothing if no packages to compile
 all:
@@ -208,8 +210,20 @@ packages:
 		fi;\
 	done
 
+.PHONY: rebuild-package
+rebuild-package: | prepare-chroot prep copy-in
+rebuild-package: | dist-build-dep dist-package
+rebuild-package: | dist-copy-out $(SOURCE_COPY_OUT)
+
+$(BUILD_STAMP_FILE) : $(shell git -C $(ORIG_SRC) ls-files -- |sed -e 's# #\\ #g' -e 's#^#$(ORIG_SRC)/#')
+	$(info  -> Building packages for $(COMPONENT)/pkgs/$(PACKAGE_SET)-$(DIST) from $(PACKAGE))
+	rm -f $@
+	$(MAKE) -f $(THIS_MAKEFILE) PACKAGE=$(PACKAGE) rebuild-package
+	touch $@
+
 .PHONY: package
-package: dist-build-dep dist-package dist-copy-out $(SOURCE_COPY_OUT)
+package: $(BUILD_STAMP_FILE)
+	$(info  -> Ready $(COMPONENT)/pkgs/$(DIST)-$(PACKAGE_SET) from $(PACKAGE))
 
 # Returns variable value
 # Example usage: GET_VAR=DISTS_VM make get-var

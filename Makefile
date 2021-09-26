@@ -459,6 +459,8 @@ clean-rpms:: clean-installer-rpms
 	done
 	@echo 'Cleaning up rpms in $(SRC_DIR)/*/pkgs/*/*/*...'
 	@sudo rm -f $(SRC_DIR)/*/pkgs/*/*/*.rpm || true
+	@find qubes-src -path \*/pkgs/\*.list -delete -print | sed -e 's/^/ removed /'
+	@find qubes-src -path \*/pkgs/\*.build_stamp -delete -print | sed -e 's/^/ removed /'
 
 clean-makefiles = $(filter-out ./Makefile,$(wildcard $(GIT_REPOS:%=%/Makefile)))
 clean-tgt = $(filter-out linux-template-builder.clean,$(clean-makefiles:$(SRC_DIR)/%/Makefile=%.clean))
