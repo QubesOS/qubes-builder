@@ -4,6 +4,8 @@
 #  - REPO=dir - specify repository directory, component will be guessed based
 #    on basename
 
+[ "$DEBUG" = "1" ] && set -x
+
 # For additionally download sources
 MAKE=${MAKE:-make}
 
@@ -20,7 +22,7 @@ if have_src_targets; then
     export GNUPGHOME="$PWD/keyrings/$COMPONENT"
     mkdir -m 700 -p "$GNUPGHOME"
     echo "--> Downloading additional sources for $COMPONENT..."
-    $MAKE --quiet -C $REPO get-sources
+    $MAKE -C $REPO get-sources
     echo "--> Verifying the sources..."
-    $MAKE --quiet -C $REPO verify-sources
+    $MAKE -C $REPO verify-sources
 fi
