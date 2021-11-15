@@ -68,7 +68,7 @@ CHROOT_ENV = BACKEND_VMM=$(BACKEND_VMM) $(ENV_COMPONENT)
 
 # default value
 ifndef MIN_AGE
-MIN_AGE = 7
+MIN_AGE = 5
 endif
 
 ### Load component-specific settings
