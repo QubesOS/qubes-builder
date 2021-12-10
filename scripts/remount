@@ -7,4 +7,4 @@ fi
 
 mountpoint=$($(dirname $0)/find-mount-point "$1")
 set -x
-sudo mount "$mountpoint" -o dev,remount
+sudo mount "$mountpoint" -o dev,suid,remount
