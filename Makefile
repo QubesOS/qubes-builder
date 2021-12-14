@@ -645,7 +645,7 @@ switch-branch:
 			git config --get-color color.decorate.tag "red bold"; \
 			echo -n "$$CURRENT_BRANCH -> "; \
 			git config --get-color "" "reset"; \
-			git checkout "$$BRANCH"; \
+			git checkout "$$BRANCH" --; \
 		else \
 			git config --get-color color.decorate.branch "green bold"; \
 			echo "$$CURRENT_BRANCH"; \
@@ -708,9 +708,9 @@ push:
 			echo "Not pushing anything!"; \
 		else \
 			echo "Pushing changes from $$REPO to remote repo $$PUSH_REMOTE $$BRANCH..."; \
-			TAGS_FROM_BRANCH=`git log --oneline --decorate $$BRANCH| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`; \
+			TAGS_FROM_BRANCH=`git log --oneline --decorate $$BRANCH --| grep '^.\{7\} (\(HEAD, \)\?tag: '| sed 's/^.\{7\} (\(HEAD, \)\?\(\(tag: [^, )]*\(, \)\?\)*\).*/\2/;s/tag: //g;s/, / /g'`; \
 			[ "$(VERBOSE)" == "0" ] && GIT_OPTS=-q; \
-			git push $$GIT_OPTS $$PUSH_REMOTE $$BRANCH $$TAGS_FROM_BRANCH; \
+			git push $$GIT_OPTS $$PUSH_REMOTE $$BRANCH $$TAGS_FROM_BRANCH --; \
 			if [ $$? -ne 0 ]; then exit 1; fi; \
 		fi; \
 		popd > /dev/null; \
