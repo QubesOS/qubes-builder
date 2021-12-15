@@ -11,8 +11,9 @@ read -r -n 1024 key
 exec < /dev/null
 test -n "$key"
 
-keyhash=$( echo -n "$key" | sha256sum | head -c64 )
-test -n "$keyhash"
+keyhash=$( echo -n "$key" | sha256sum )
+test "${#keyhash}" -eq 67
+keyhash=${keyhash:0:64}
 xpfile="$xd/export.$keyhash"
 
 # keys are one-time-use and expire after 1 day

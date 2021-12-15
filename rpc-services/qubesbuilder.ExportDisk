@@ -23,8 +23,9 @@ test -n "$QREXEC_REMOTE_DOMAIN"
 test -n "$key"
 test -n "$path"
 
-keyhash=$( echo -n "$key" | sha256sum | head -c64 )
-test -n "$keyhash"
+keyhash=$( echo -n "$key" | sha256sum )
+[[ "${#keyhash}" -eq 67 ]]
+keyhash=${keyhash:0:64}
 xpfile="$xd/export.$keyhash"
 tmpfile=$( mktemp "$xd/tmp.XXXXXX" )
 chmod 0660 "$tmpfile"
