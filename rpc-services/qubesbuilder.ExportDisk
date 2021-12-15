@@ -1,5 +1,5 @@
-#!/bin/sh
-set -e
+#!/bin/bash --
+set -eo pipefail
 umask 007
 xd=/tmp/qubesbuilder.exporteddisks
 install -m 02770 -g qubes -d "$xd"
