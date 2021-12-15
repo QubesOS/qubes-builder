@@ -7,7 +7,8 @@ install -m 02770 -g qubes -d "$xd"
 #exec 2>>"$xd/log"
 #set -x
 
-read -r key
+read -r -n 1024 key
+exec < /dev/null
 test -n "$key"
 
 keyhash=$( echo -n "$key" | sha256sum | head -c64 )

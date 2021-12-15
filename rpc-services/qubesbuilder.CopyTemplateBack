@@ -3,7 +3,8 @@
 exec 2>/tmp/log
 set -exo pipefail
 
-read -r attach_key
+read -r -n 1024 attach_key
+[[ "${#attach_key}" -lt 1024 ]]
 
 dir=
 while read key path; do
