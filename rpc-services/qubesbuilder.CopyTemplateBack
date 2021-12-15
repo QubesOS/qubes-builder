@@ -3,7 +3,7 @@
 exec 2>/tmp/log
 set -x
 
-read attach_key
+read -r attach_key
 
 dir=
 while read key path; do
