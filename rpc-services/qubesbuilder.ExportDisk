@@ -13,7 +13,7 @@ read -r -n 1024 path
 [[ "${#path}" -lt 1024 ]]
 
 if [ -z "$key" ]; then
-    key=$( head -c 20 /dev/urandom | xxd -p )
+    key=$( head -c 256 /dev/urandom | xxd -p -c0 )
     key_is_generated=1
 else
     key_is_generated=
