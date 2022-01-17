@@ -16,6 +16,7 @@
 import argparse
 import codecs
 import collections
+import collections.abc
 import copy
 import locale
 import os
@@ -800,9 +801,9 @@ class Config(object):
         return value
 
     def _coerce_values(self, defaults, values):
-        if not isinstance(defaults, collections.Mapping):
+        if not isinstance(defaults, collections.abc.Mapping):
             return values
-        if isinstance(values, collections.Mapping):
+        if isinstance(values, collections.abc.Mapping):
             for key, value in values.items():
                 if key in defaults:
                     values[key] = self._coerce_value(defaults[key], value)
