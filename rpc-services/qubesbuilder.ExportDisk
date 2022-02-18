@@ -1,5 +1,5 @@
-#!/bin/sh
-set -e
+#!/bin/bash --
+set -eo pipefail
 umask 007
 xd=/tmp/qubesbuilder.exporteddisks
 install -m 02770 -g qubes -d "$xd"
@@ -7,8 +7,10 @@ install -m 02770 -g qubes -d "$xd"
 #exec 2>>"$xd/log"
 #set -x
 
-read -r key
-read -r path
+read -r -n 1024 key
+read -r -n 1024 path
+[[ "${#key}" -lt 1024 ]]
+[[ "${#path}" -lt 1024 ]]
 
 if [ -z "$key" ]; then
     key=$( head -c 20 /dev/urandom | xxd -p )
@@ -21,8 +23,9 @@ test -n "$QREXEC_REMOTE_DOMAIN"
 test -n "$key"
 test -n "$path"
 
-keyhash=$( echo -n "$key" | sha256sum | head -c64 )
-test -n "$keyhash"
+keyhash=$( echo -n "$key" | sha256sum )
+[[ "${#keyhash}" -eq 67 ]]
+keyhash=${keyhash:0:64}
 xpfile="$xd/export.$keyhash"
 tmpfile=$( mktemp "$xd/tmp.XXXXXX" )
 chmod 0660 "$tmpfile"
