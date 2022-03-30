@@ -80,31 +80,44 @@ copyBuilder() {
 }
 
 allowIncomingTemplateCopy() {
-    key=$1
-    dir=$2
-
-    echo "$key $dir" >> /tmp/qubesbuilder.allowedtransfers
+    local hash dir
+    hash=$1 dir=$2
+    {
+        flock -n 1 -x && echo "$hash $dir"
+    } >> /tmp/qubesbuilder.allowedtransfers || exit
 }
 
 disallowIncomingTemplateCopy() {
-    key=$1
-    sed -i -e "/^$key/d" /tmp/qubesbuilder.allowedtransfers
-    if [ -n "$IMAGE_DEV" ]; then
-        sudo losetup -d "$IMAGE_DEV" || true
-    fi
+    local hash
+    {
+        hash=$1
+        flock -n 9
+        sed -i -e "/^$hash/d" /proc/self/fd/9
+        if [ -n "$IMAGE_DEV" ]; then
+            sudo losetup -d "$IMAGE_DEV" || true
+        fi
+    } 9 >>/tmp/qubesbuilder.allowedtransfers
 }
 
 runBuild() {
+    local key hash
     if ! read -r key < <(
         echo $'\n'"${PWD}/${IMAGE_NAME}" | /usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.ExportDisk
     ) || [ -z "$key" ]; then
         echo "ERROR: dom0 rpc-services must be installed or updated: qubesbuilder.ExportDisk, qubesbuilder.AttachDisk" >&2
         exit 1
     fi
+    hash=$(
+        set -o pipefail
+        printf %s "$key" | sha256sum
+    ) || exit
+    [[ "${#hash}" -eq 67 ]] || exit
+    [[ "${hash:64}" = '  -' ]] || exit
+    hash=${hash:0:64}
 
     mkdir -p "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
-    allowIncomingTemplateCopy "$key" "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
-    trap "disallowIncomingTemplateCopy $key" ERR
+    allowIncomingTemplateCopy "$hash" "$PWD/$SRC_DIR/$TEMPLATE_BUILDER_COMPONENT/qubeized_images/$TEMPLATE_NAME"
+    trap "disallowIncomingTemplateCopy $hash" ERR
     $QVM_RUN --dispvm "/usr/lib/qubes/qrexec-client-vm dom0 qubesbuilder.AttachDisk /bin/echo $key;
         exec 2>&1;
         echo Waiting for /dev/xvdi;
@@ -127,7 +140,7 @@ runBuild() {
         cp ../../template.conf template.conf;
         ls -l . ../../ untrusted_appmenus/;
         echo \"Build done, sending image back to the $HOSTNAME VM\";
-        /usr/lib/qubes/qrexec-client-vm $HOSTNAME qubesbuilder.CopyTemplateBack /bin/sh -c 'echo $key; exec tar chSz untrusted_appmenus root.img template.conf';
+        /usr/lib/qubes/qrexec-client-vm $HOSTNAME qubesbuilder.CopyTemplateBack /bin/sh -c 'echo $key; exec tar -chSz untrusted_appmenus root.img template.conf';
         cd /;
         sudo umount /mnt/removable"
     disallowIncomingTemplateCopy "$key"
