@@ -622,12 +622,17 @@ show:
 		echo "Error: show target needs REF= set" >&2; \
 	fi
 
-grep-tgt = $(GIT_REPOS:$(SRC_DIR)/%=%.grep)
+
+shellquote = '$(subst ','\'',$1)'#
+
+grep-tgt = $(filter-out .,$(GIT_REPOS:$(SRC_DIR)/%=%.grep))
+
 RE ?= $(filter-out grep $(grep-tgt), $(MAKECMDGOALS))
 .PHONY: grep $(grep-tgt)
 $(grep-tgt):
-	${Q}git -C $(@:%.grep=$(SRC_DIR)/%) grep "$(RE)" | sed "s#^#$(@:%.grep=$(SRC_DIR)\/%)/#"
+	@git -C $(@:%.grep=$(SRC_DIR)/%) grep -ne $(call shellquote,$(RE)) $(GREPFLAGS) | sed 's#^#$(@:%.grep=$(SRC_DIR)/%)/#'
 grep: $(grep-tgt)
+	@git grep -ne $(call shellquote,$(RE)) $(GREPFLAGS) || [ $$? -eq 1 ]
 
 switch-branch:
 	${Q}for REPO in $(GIT_REPOS); do \
