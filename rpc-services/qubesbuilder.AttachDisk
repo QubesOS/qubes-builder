@@ -35,7 +35,7 @@ if [ -z "$devname" ]; then
 fi
 attached_dev=$(qvm-block list \
     |grep "  $QREXEC_REMOTE_DOMAIN (frontend-dev=xvdi, read-only=[^ ]*)$" \
-    |cut -f 1 -d ' ')
+    |cut -f 1 -d ' ') || :
 if [ -n "$attached_dev" ]; then
     qvm-block detach "$QREXEC_REMOTE_DOMAIN" "$attached_dev"
 fi
