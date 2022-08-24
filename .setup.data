@@ -1,5 +1,5 @@
 [releases]
-default     : 4.0
+default     : 4.1
 2           : Qubes Release 2.0
 3           : Qubes Release 3.0
 3.1         : Qubes Release 3.1
@@ -45,7 +45,7 @@ id          : builder-debian
 type        : builder
 description : Debian Builder - Contains all Makefiles to build Debian based templates
 require     : None
-require_in  : jessie stretch buster whonix kali xenial bionic focal
+require_in  : jessie stretch buster bullseye whonix kali xenial bionic focal
 
 [builder-archlinux]
 id          : builder-archlinux
