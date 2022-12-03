@@ -12,26 +12,26 @@ prep:sources:
     COMPONENTS: "core-vchan-xen builder-rpm"
 
 # just any component build test
-tests:vm-fc32:no-upstream-tarball:
+tests:dom0-fc32:no-upstream-tarball:
   extends: .components_build
   stage: tests
   needs:
     - prep:sources
-    - project: QubesOS/qubes-builder-rpm
-      ref: master
-      job: chroot:vm-fc32
-      artifacts: true
+#    - project: QubesOS/qubes-builder-rpm
+#      ref: master
+#      job: chroot:dom0-fc32
+#      artifacts: true
   tags:
     - docker
   variables:
-    DISTS_VM: fc32
+    DIST_DOM0: fc32
     USE_QUBES_REPO_VERSION: "4.1"
     USE_QUBES_REPO_TESTING: "1"
-    USE_DIST_BUILD_TOOL: 1
+    USE_DIST_BUILD_TOOLS: 0
     COMPONENTS: core-vchan-xen
   script:
     - ~/qubes-builder/scripts/gitlab-build "$COMPONENTS"
-    - ls -l ~/qubes-builder/qubes-packages-mirror-repo/vm-fc32/rpm/*vchan*rpm
+    - ls -l ~/qubes-builder/qubes-packages-mirror-repo/dom0-fc32/rpm/*vchan*rpm
 
 tests:sources-unsigned:
   extends: .components_prepare
