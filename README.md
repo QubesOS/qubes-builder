@@ -10,6 +10,7 @@ and should ensure the following packages are installed:
 * git
 * createrepo
 * rpm-build
+* dnf-plugins-core
 * rpm-sign (if signing of build packages is enabled)
 * rpmdevtools
 * debootstrap
