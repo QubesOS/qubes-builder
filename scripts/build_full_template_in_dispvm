@@ -129,7 +129,7 @@ runBuild() {
         echo \"Build done, sending image back to the $HOSTNAME VM\";
         /usr/lib/qubes/qrexec-client-vm $HOSTNAME qubesbuilder.CopyTemplateBack /bin/sh -c 'echo $key; exec tar chSz untrusted_appmenus root.img template.conf';
         cd /;
-        sudo umount /mnt/removable"
+        sudo umount /mnt/removable || :"
     disallowIncomingTemplateCopy "$key"
 }
 
