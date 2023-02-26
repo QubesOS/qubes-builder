@@ -350,7 +350,7 @@ template:: $(DISTS_VM:%=template-local-%)
 # <distro>+<template flavor>+<template options>+<template options>...
 template-local-%::
 	${Q}DIST=$*; \
-	dist_array=($${DIST//+/ }); \
+	IFS=+ read -r -a dist_array <<<"$${DIST}"; \
 	DIST=$${dist_array[0]}; \
 	TEMPLATE_FLAVOR=$${dist_array[1]}; \
 	TEMPLATE_OPTIONS="$${dist_array[@]:2}"; \
