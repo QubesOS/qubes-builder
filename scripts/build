@@ -47,7 +47,7 @@ if ! [ -e "$CHROOT_DIR/home/user/.prepared_base" ]; then
         -f Makefile.generic prepare-chroot || exit 1;
 fi
 
-BUILDER_REPO_DIR="$BUILDER_REPO_DIR" "$BUILDER_DIR/qubes-src/builder-rpm/update-local-repo.sh" "$DIST"
+BUILDER_REPO_DIR="$BUILDER_REPO_DIR" "$BUILDER_DIR/qubes-src/builder-rpm/scripts/update-local-repo.sh" "$DIST"
 sudo $DNF $DNF_OPTS update -y
 if [ -r "$REQ_PACKAGES" ] && [ "$REQ_PACKAGES" -nt "$CHROOT_DIR/home/user/.installed_${COMPONENT}_$(basename "$REQ_PACKAGES")" ]; then
     sed "s/DIST/$DIST/g" "$REQ_PACKAGES" > build-pkgs-temp.list
