@@ -7,6 +7,7 @@
 #  mainstream/master
 # Default ref: HEAD
 set -euo pipefail
+shopt -s extglob
 : "${KEYRING_DIR_GIT=}" "${NO_CHECK=}" "${DEBUG=}" "${VERBOSE=0}"
 unset GNUPGHOME tags tag hash_len format expected_hash BUILDER_DIR
 
@@ -37,33 +38,50 @@ case ${CHECK=signed-tag} in
     ;;
 esac
 
+case ${SHA1_IS_WEAK=1} in
+(0|false) SHA1_IS_WEAK=;;
+(1|true) SHA1_IS_WEAK='weak-digest sha1\nweak-digest sha224\n';;
+(*) printf 'Invalid value for $SHA1_IS_WEAK: %q\n' "$SHA1_IS_WEAK">&2; exit 1;;
+esac
+
+case ${FORCE_KEYRING_REGEN=false} in
+(false|true) :;;
+(*) printf 'Invalid value for $FORCE_KEYRING_REGEN: %q\n' "$FORCE_KEYRING_REGEN">&2; exit 1;;
+esac
+
 if [ -n "$KEYRING_DIR_GIT" ]; then
     GNUPGHOME="$(readlink -m "$KEYRING_DIR_GIT")"
     export GNUPGHOME
     if [ ! -d "$GNUPGHOME" ]; then
-        mkdir -p "$GNUPGHOME"
-        chmod 700 "$GNUPGHOME"
-        gpg --import qubes-developers-keys.asc
-        # Trust Qubes Master Signing Key
-        echo '427F11FD0FAA4B080123F01CDDFA1A3E36879494:6:' | gpg --import-ownertrust
+        mkdir -p -m 0700 -- "$GNUPGHOME"
     fi
-    if [ qubes-developers-keys.asc -nt "$GNUPGHOME/pubring.gpg" ]; then
-        gpg --import qubes-developers-keys.asc
-        touch "$GNUPGHOME/pubring.gpg"
-    fi
-    maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}') || :
-    for maintainer in $maintainers
-    do
-        read -a allowed_components <<<"${!maintainer}"
-        COMPONENT="$(basename "$1")"
-        COMPONENT="${COMPONENT//./builder}"
-        if elementIn "$COMPONENT" "${allowed_components[@]}"; then
-            keyid=${maintainer#ALLOWED_COMPONENTS_}
-            gpg --import "$BUILDER_DIR/keys/$keyid.asc" || exit 1
-            echo "$keyid:6:" | gpg --import-ownertrust
+    {
+        flock 9
+        if [ "$FORCE_KEYRING_REGEN" = true ]; then rm -rf -- "$GNUPGHOME"/!(.|..|setup.lock); fi
+        if [[ qubes-developers-keys.asc -nt "$GNUPGHOME/import.done" ]]; then
+            gpg --import qubes-developers-keys.asc
+            # Trust Qubes Master Signing Key
+            echo '427F11FD0FAA4B080123F01CDDFA1A3E36879494:6:' | gpg --import-ownertrust
+            printf "weak-digest md5\nweak-digest ripemd160\n$SHA1_IS_WEAK" > "$GNUPGHOME/gpg.conf"
+            if [ qubes-developers-keys.asc -nt "$GNUPGHOME/pubring.gpg" ]; then
+                touch "$GNUPGHOME/pubring.gpg"
+            fi
+            maintainers=$(env | grep -oP '^ALLOWED_COMPONENTS_[a-fA-F0-9]{40}') || :
+            for maintainer in $maintainers
+            do
+                read -a allowed_components <<<"${!maintainer}"
+                COMPONENT="$(basename "$1")"
+                COMPONENT="${COMPONENT//./builder}"
+                if elementIn "$COMPONENT" "${allowed_components[@]}"; then
+                    keyid=${maintainer#ALLOWED_COMPONENTS_}
+                    gpg --import "$BUILDER_DIR/keys/$keyid.asc" || exit 1
+                    echo "$keyid:6:" | gpg --import-ownertrust
+                fi
+            done
+            gpgconf --kill gpg-agent
+            touch -- "$GNUPGHOME/import.done"
         fi
-    done
-    gpgconf --kill gpg-agent
+    } 9> "$GNUPGHOME/setup.lock"
 fi
 
 pushd "$1" > /dev/null || exit 2
