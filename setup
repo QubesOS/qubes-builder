@@ -1306,8 +1306,8 @@ class Wizard(Config):
                 self.check_gnupghome(gnupghome)
 
             try:
-                text = sh.gpg('--list-key', key, _env=env)
-                is_key_missing = text.exit_code
+                sh.gpg('--list-key', key, _env=env)
+                is_key_missing = False
             except sh.ErrorReturnCode as err:
                 # exit_code will be non-zero and will trigger installation and verification of keys
                 pass
@@ -1352,13 +1352,13 @@ class Wizard(Config):
                             _env=env
                         )
                         sh.gpg(
-                            sh.echo('{0}:6:'.format(key)),
                             '--import-ownertrust',
+                            _in='{0}:6:\n'.format(key),
                             _env=env
                         )
                     except sh.ErrorReturnCode as err:
                         print(err)
-                        exit(err)
+                        exit(err.stderr)
 
             # Verify key on every run
             result = self.gpg_verify_key(key_data, env)
@@ -1382,7 +1382,7 @@ class Wizard(Config):
         except sh.ErrorReturnCode as err:
             exit(
                 'Unable to import Qubes developer keys: {0}. Please install them manually.\n{1}'.format(
-                    QUBES_DEVELOPERS_KEYS, err
+                    QUBES_DEVELOPERS_KEYS, err.stderr
                 )
             )
 
