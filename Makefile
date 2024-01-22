@@ -244,7 +244,7 @@ check-depend: check-depend.$(PKG_MANAGER)
 prepare-chroot-dom0:
 ifneq ($(DIST_DOM0),)
 	${Q}if [ "$(VERBOSE)" -eq 0 ]; then \
-		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot > build-logs/chroot-dom0-$$DIST.log 2>&1 || exit 1;
+		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot > build-logs/chroot-dom0-$(DIST_DOM0).log 2>&1 || exit 1;
 	else \
 		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
 	fi
