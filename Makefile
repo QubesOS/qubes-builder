@@ -241,14 +241,17 @@ check-depend.dpkg:
 		{ echo "ERROR: call 'make install-deps' to install missing dependencies"; exit 1; }
 check-depend: check-depend.$(PKG_MANAGER)
 
-prepare-chroot-dom0:
+chroot-dom0-$(DIST_DOM0): builder.conf
 ifneq ($(DIST_DOM0),)
 	${Q}if [ "$(VERBOSE)" -eq 0 ]; then \
 		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot > build-logs/chroot-dom0-$$DIST.log 2>&1 || exit 1;
 	else \
 		$(MAKE) --no-print-directory DIST=$(DIST_DOM0) PACKAGE_SET=dom0 -f Makefile.generic prepare-chroot || exit 1;
-	fi
+	fi ; \
+        touch chroot-dom0-$(DIST_DOM0)
 endif
+prepare-chroot-dom0: chroot-dom0-$(DIST_DOM0)
+.PHONY: prepare-chroot-dom0
 
 prepare-chroot-vm:
 	${Q}for DIST in $(DISTS_VM_NO_FLAVOR); do \
