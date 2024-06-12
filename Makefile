@@ -51,7 +51,7 @@ DEPENDENCIES ?= git rpmdevtools rpm-build python3-sh wget perl-Digest-MD5 perl-D
 
 # we add specific distro dependencies due to not common
 # set of packages available like 'createrepo' and 'createrepo_c'
-DEPENDENCIES.rpm ?= createrepo_c
+DEPENDENCIES.rpm ?= createrepo_c which
 DEPENDENCIES.dpkg ?= createrepo
 
 ifneq (1,$(NO_SIGN))
